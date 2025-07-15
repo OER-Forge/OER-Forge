@@ -2,16 +2,16 @@
 <html lang="en">
 <head>
   <meta charset="UTF-8">
-  <title>Welcome to Mathematical Modeling in Physics</title>
+  <title>Announcements</title>
   
   <link rel="icon" href="static/images/favicon.ico">
-  <link rel="stylesheet" href="css/theme-dark.css" id="theme-css">
-  <script src="js/main.js" defer></script>
+  <link rel="stylesheet" href="../css/theme-dark.css" id="theme-css">
+  <script src="../js/main.js" defer></script>
 </head>
 <body>
   <header class="site-header">
   <div class="header-flex">
-    <img src="images/logo.png" alt="Site Logo" class="site-logo" />
+    <img src="../images/logo.png" alt="Site Logo" class="site-logo" />
     <div class="header-titles">
       <h1 class="site-title">OER-Forge</h1>
       <h2 class="site-subtitle"></h2>
@@ -21,11 +21,11 @@
   <nav class="site-nav" role="navigation" aria-label="Main menu">
     <ul class="nav-menu">
       
-        <li><a href="index.html">Home</a></li>
+        <li><a href="../index.html">Home</a></li>
       
-        <li><a href="stuff/index.html">Stuff</a></li>
+        <li><a href="../stuff/index.html">Stuff</a></li>
       
-        <li><a href="about/index.html">About</a></li>
+        <li><a href="../about/index.html">About</a></li>
       
     </ul>
   </nav>
@@ -38,7 +38,7 @@
       
   <article>
     
-    <h1>Welcome to Mathematical Modeling in Physics</h1>
+    <h1>Announcements</h1>
     
     <div id="font-controls" class="font-controls" aria-labelledby="font-controls-label">
       <p id="font-controls-label"><strong>Font Appearance Controls</strong>: Adjust font and spacing for readability. Settings persist as you browse.</p>
@@ -68,17 +68,17 @@
       </fieldset>
     </div>
     
-    <p>PHY 415, called, &quot;Mathematical Methods for Physicists&quot; is a course the brings together many of the mathematical approaches that we commonly use in physics and apply them to variety of problems. In this course, we will take a modeling-based approach where we focus on the mathematical descriptions of physical phenomenon and determine what mathematical and analytical approaches are useful in exploring those models.</p>
-<p>To get a sense of the course, please read all the pages associated with our syllabus.</p>
-<h2>Learning Objectives</h2>
-<p>In this course, you will learn to:</p>
+    <h2>🚀 Release v0.9.2 &quot;Unified Urubu&quot; Highlights</h2>
 <ul role="list">
-<li role="listitem">investigate physical systems using a variety of tools and approaches,</li>
-<li role="listitem">construct and document a reproducible process for those investigations,</li>
-<li role="listitem">use analytical, computational, and graphical approaches to answer specific questions in those investigations,</li>
-<li role="listitem">provide evidence of the quality of work using a variety of sources, and</li>
-<li role="listitem">collaborate effectively and contribute to a inclusive learning environment</li>
+<li role="listitem"><strong>Unified All-in-One Build:</strong> The <code>--all</code> flag now runs all major build steps in strict order: DOCX (and Markdown) → PDF → Jupyter Book HTML → Custom HTML web output. All output formats are copied to <code>docs/sources/&lt;notebook_stem&gt;/</code> for each notebook.</li>
+<li role="listitem"><strong>Jupyter Book HTML Improvements:</strong> Built into a temp directory, then copied to both <code>docs/jupyter/</code> and <code>docs/sources/jupyterbook_html/</code> for easy access and deployment.</li>
+<li role="listitem"><strong>Documentation Overhaul:</strong> <code>README.md</code> and <code>build.md</code> have been fully rewritten to reflect the new build workflow, directory structure, and usage patterns.</li>
+<li role="listitem"><strong>Output Directory Clarity:</strong> All outputs are organized in <code>_build/</code> (intermediate) and <code>docs/</code> (final, published), with clear subfolders for each format. Downloadable sources for each notebook are always available in <code>docs/sources/&lt;notebook_stem&gt;/</code>.</li>
+<li role="listitem"><strong>Robust Image Handling:</strong> All referenced images are collected into <code>_build/images/</code> and linked consistently in all output formats.</li>
+<li role="listitem"><strong>No Automatic Cleanup:</strong> The build system no longer deletes any files or folders automatically; manual cleanup is recommended if needed.</li>
 </ul>
+<p>See the <code>releases/</code> folder for full historical release notes.</p>
+<p>For more details and instructions, see the <a href="https://github.com/dannycab/modern-classical-mechanics/releases">Release Notes</a>.</p>
 <script src="https://cdn.jsdelivr.net/npm/mathjax@3/es5/tex-mml-chtml.js"></script>
   </article>
 

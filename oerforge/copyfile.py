@@ -1,0 +1,116 @@
+def copy_build_to_docs_safe():
+    """
+    Non-destructively copy everything from build/ to docs/.
+    Creates docs/ if missing, copies files over themselves, does not remove docs/.
+    """
+    DOCS_DIR = os.path.join(PROJECT_ROOT, 'docs')
+    BUILD_DIR = os.path.join(PROJECT_ROOT, 'build')
+    if not os.path.exists(DOCS_DIR):
+        os.makedirs(DOCS_DIR)
+    for root, dirs, files in os.walk(BUILD_DIR):
+        rel_path = os.path.relpath(root, BUILD_DIR)
+        target_dir = os.path.join(DOCS_DIR, rel_path) if rel_path != '.' else DOCS_DIR
+        if not os.path.exists(target_dir):
+            os.makedirs(target_dir)
+        for file in files:
+            src_file = os.path.join(root, file)
+            dst_file = os.path.join(target_dir, file)
+            shutil.copy2(src_file, dst_file)
+"""
+Module to copy project content and static assets into build directories for deployment.
+
+Features:
+- Copies all contents of 'content/' to 'build/files/'
+- Copies 'static/css/' to 'build/css/' and 'static/js/' to 'build/js/'
+- Creates target directories if they do not exist
+- Overwrites files each time it is called
+- Creates 'build/.nojekyll' to prevent GitHub Pages from running Jekyll
+
+Usage:
+    from oerforge.copyfile import copy_project_files
+    copy_project_files()
+"""
+
+import os
+import shutil
+import logging
+from oerforge.logging_utils import setup_logging
+
+PROJECT_ROOT = os.path.dirname(os.path.dirname(os.path.abspath(__file__)))
+BUILD_DIR = os.path.join(PROJECT_ROOT, 'build')
+CONTENT_SRC = os.path.join(PROJECT_ROOT, 'content')
+CONTENT_DST = os.path.join(BUILD_DIR, 'files')
+CSS_SRC = os.path.join(PROJECT_ROOT, 'static', 'css')
+CSS_DST = os.path.join(BUILD_DIR, 'css')
+JS_SRC = os.path.join(PROJECT_ROOT, 'static', 'js')
+JS_DST = os.path.join(BUILD_DIR, 'js')
+NOJEKYLL_PATH = os.path.join(BUILD_DIR, '.nojekyll')
+LOG_PATH = os.path.join(PROJECT_ROOT, 'log/build.log')
+
+
+# def copytree_overwrite(src, dst):
+#     """
+#     Recursively copy src directory to dst, overwriting existing files.
+#     """
+#     logging.debug(f"Copying from {src} to {dst}")
+#     if os.path.exists(dst):
+#         logging.debug(f"Removing existing directory: {dst}")
+#         shutil.rmtree(dst)
+#     shutil.copytree(src, dst)
+#     logging.info(f"Copied {src} to {dst}")
+
+
+def ensure_dir(path):
+    """
+    Ensure that a directory exists.
+    """
+    if not os.path.exists(path):
+        logging.debug(f"Creating directory: {path}")
+    os.makedirs(path, exist_ok=True)
+
+
+def create_nojekyll(path):
+    """
+    Create an empty .nojekyll file at the given path.
+    """
+    with open(path, 'w') as f:
+        f.write('')
+    logging.info(f"Created .nojekyll at {path}")
+
+
+# def copy_project_files(debug: bool = False):
+#     """
+#     Copy project content and static assets to build directories.
+#     If debug is True, log detailed actions to projectroot/loh.
+#     """
+#     setup_logging()
+#     logging.info("Starting copy_project_files")
+#     # Remove build directory if it exists (destructive)
+#     if os.path.exists(BUILD_DIR):
+#         logging.debug(f"Removing entire build directory: {BUILD_DIR}")
+#         shutil.rmtree(BUILD_DIR)
+#     ensure_dir(BUILD_DIR)
+#     copytree_overwrite(CONTENT_SRC, CONTENT_DST)
+#     copytree_overwrite(CSS_SRC, CSS_DST)
+#     copytree_overwrite(JS_SRC, JS_DST)
+#     # Copy images directory
+#     IMAGES_SRC = os.path.join(PROJECT_ROOT, 'static', 'images')
+#     IMAGES_DST = os.path.join(BUILD_DIR, 'images')
+#     if os.path.exists(IMAGES_SRC):
+#         copytree_overwrite(IMAGES_SRC, IMAGES_DST)
+#     else:
+#         logging.warning(f"Images source directory not found: {IMAGES_SRC}")
+#     create_nojekyll(NOJEKYLL_PATH)
+#     logging.info("Finished copy_project_files")
+
+# def copy_build_to_docs():
+#     """
+#     Copy everything from build/ to docs/, including .nojekyll
+#     """
+#     DOCS_DIR = os.path.join(PROJECT_ROOT, 'docs')
+#     logging.info(f"Copying all build/ contents to docs/: {BUILD_DIR} -> {DOCS_DIR}")
+#     if os.path.exists(DOCS_DIR):
+#         logging.debug(f"Removing existing docs directory: {DOCS_DIR}")
+#         shutil.rmtree(DOCS_DIR)
+#     shutil.copytree(BUILD_DIR, DOCS_DIR)
+#     logging.info(f"Copied build/ to docs/")

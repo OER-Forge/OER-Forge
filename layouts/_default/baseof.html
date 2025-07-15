@@ -1,0 +1,23 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <title>{% block title %}{{ Title }}{% endblock %}</title>
+  {% block meta %}{% endblock %}
+  <link rel="icon" href="{{ site.favicon }}">
+  <link rel="stylesheet" href="{{ css_path }}" id="theme-css">
+  <script src="{{ js_path }}" defer></script>
+</head>
+<body>
+  {% include 'partials/header.html' %}
+  <main id="main-content" tabindex="-1">
+    <div class="container">
+      <button id="theme-toggle" aria-label="Switch theme" class="theme-toggle">🌙
+        <span class="visually-hidden">Toggle dark/light theme</span>
+      </button>
+      {% block main %}{% endblock %}
+    </div>
+  </main>
+  {% include 'partials/footer.html' %}
+</body>
+</html>

@@ -1,0 +1,48 @@
+{% extends "_default/baseof.html" %}
+{% block main %}
+  <article>
+    {% if download_buttons %}
+    <nav class="download-nav" role="navigation" aria-label="Download options">
+      {% for btn in download_buttons %}
+        <a href="{{ btn.href }}"
+           class="download-btn theme-{{ btn.theme }}"
+           role="button"
+           aria-label="Download as {{ btn.label }}">
+          {{ btn.label }}
+        </a>
+      {% endfor %}
+    </nav>
+    {% endif %}
+    <h1>{{ Title }}</h1>
+    {% if output_file == 'index.html' %}
+    <div id="font-controls" class="font-controls" aria-labelledby="font-controls-label">
+      <p id="font-controls-label"><strong>Font Appearance Controls</strong>: Adjust font and spacing for readability. Settings persist as you browse.</p>
+      <fieldset>
+        <legend>Font Family</legend>
+        <label><input type="radio" name="font-family" id="font-family-sans" value="sans-serif" checked> Sans-serif</label>
+        <label><input type="radio" name="font-family" id="font-family-serif" value="serif"> Serif</label>
+        <label><input type="radio" name="font-family" id="font-family-mono" value="monospace"> Monospace</label>
+      </fieldset>
+      <fieldset>
+        <legend>Font Size</legend>
+        <label><input type="radio" name="font-size" id="font-size-small" value="14px"> Small</label>
+        <label><input type="radio" name="font-size" id="font-size-medium" value="17px" checked> Medium</label>
+        <label><input type="radio" name="font-size" id="font-size-large" value="22px"> Large</label>
+      </fieldset>
+      <fieldset>
+        <legend>Letter Spacing</legend>
+        <label><input type="radio" name="letter-spacing" id="letter-spacing-tight" value="0em"> Tight</label>
+        <label><input type="radio" name="letter-spacing" id="letter-spacing-normal" value="0.03em" checked> Normal</label>
+        <label><input type="radio" name="letter-spacing" id="letter-spacing-wide" value="0.12em"> Wide</label>
+      </fieldset>
+      <fieldset>
+        <legend>Paragraph Spacing</legend>
+        <label><input type="radio" name="line-height" id="line-height-short" value="1.2"> Short</label>
+        <label><input type="radio" name="line-height" id="line-height-normal" value="1.7" checked> Normal</label>
+        <label><input type="radio" name="line-height" id="line-height-tall" value="2.2"> Tall</label>
+      </fieldset>
+    </div>
+    {% endif %}
+    {{ Content | safe }}
+  </article>
+{% endblock %}

@@ -1,3 +1,7 @@
+import sys
+import os
+# Ensure project root is in sys.path for imports
+sys.path.insert(0, os.path.dirname(os.path.dirname(os.path.abspath(__file__))))
 """
 convert.py
 
@@ -13,6 +17,18 @@ Main features:
 Author: [Your Name]
 """
 
+
+import logging
+def setup_logging():
+    import logging
+    log_path = os.path.join(os.path.dirname(os.path.dirname(__file__)), "log", "export.log")
+    os.makedirs(os.path.dirname(log_path), exist_ok=True)
+    logging.basicConfig(
+        level=logging.INFO,
+        format="%(asctime)s %(levelname)s %(message)s",
+        handlers=[logging.FileHandler(log_path), logging.StreamHandler()]
+    )
+
 import sys
 import os
 import shutil
@@ -22,477 +38,347 @@ from nbconvert import MarkdownExporter
 from nbconvert.preprocessors import ExecutePreprocessor, ExtractOutputPreprocessor
 from traitlets.config import Config
 import re
+from markdown_it import MarkdownIt
 
 # --- Constants ---
 DB_PATH = os.path.join(os.path.dirname(os.path.dirname(__file__)), "db", "sqlite.db")
 CONTENT_ROOT = "content"
-BUILD_ROOT = "build/files"
+BUILD_ROOT = "build"
+BUILD_FILES_ROOT = os.path.join(BUILD_ROOT, "files")
+BUILD_IMAGES_ROOT = os.path.join(BUILD_ROOT, "images")
+IMAGES_ROOT = BUILD_IMAGES_ROOT  # For compatibility in image functions
 LOG_DIR = "log"
 
-# --- Environment and Dependency Checks ---
-
-def check_venv_and_packages():
+# --- Modular Image Handling for Markdown ---
+def query_images_for_content(content_record, conn):
     """
-    Ensure the script is running inside the correct virtual environment and
-    required Python packages are installed.
+    Query sqlite.db for all images associated with this content file.
+    Returns a list of image records (dicts).
     """
-    venv_path = os.path.join(os.path.dirname(__file__), '..', '.venv')
-    in_venv = (
-        hasattr(sys, 'real_prefix') or
-        (hasattr(sys, 'base_prefix') and sys.base_prefix != sys.prefix) or
-        os.path.abspath(sys.prefix).startswith(os.path.abspath(venv_path))
+    from oerforge.db_utils import get_records
+    images = get_records(
+        "files",
+        "is_image=1 AND referenced_page=?",
+        (content_record['source_path'],),
+        conn=conn
     )
-    print(f"[DEBUG] sys.prefix: {sys.prefix}")
-    print(f"[DEBUG] venv_path: {venv_path}")
-    print(f"[DEBUG] in_venv: {in_venv}")
-    if not in_venv:
-        print("[ERROR] You are not running inside the .venv environment.")
-        print(f"Activate it with: source {venv_path}/bin/activate")
-        sys.exit(1)
-
-    required = ["matplotlib", "numpy", "scipy"]
-    missing = []
-    for pkg in required:
-        try:
-            __import__(pkg)
-            print(f"[DEBUG] Package '{pkg}' is available.")
-        except ImportError:
-            print(f"[DEBUG] Package '{pkg}' is MISSING.")
-            missing.append(pkg)
-    if missing:
-        print(f"[ERROR] Missing required packages: {', '.join(missing)}")
-        print(f"Install them with: pip install {' '.join(missing)}")
-        sys.exit(1)
-
-check_venv_and_packages()
-
-def patch_markdown_with_db(md_path, page_id, conn):
-    """
-    Patch markdown image references using DB mapping from output_*.png to codeimg_*_*.png.
-    Non-destructive: if replacements are made, overwrite original; else, leave .patched.md.
-    """
-    cursor = conn.cursor()
-    cursor.execute("""
-        SELECT image_generated_cell_index, image_generated_output_index, image_relocated_filename
-        FROM page_images
-        WHERE image_page_id=?
-    """, (page_id,))
-    mapping = {}
-    for cell_idx, out_idx, relocated in cursor.fetchall():
-        if cell_idx is not None and out_idx is not None and relocated:
-            output_fname = f"output_{cell_idx}_{out_idx}.png"
-            mapping[output_fname] = relocated
-
-    if not os.path.isfile(md_path):
-        print(f"[ERROR] Markdown file not found: {md_path}")
-        return
-
-    with open(md_path, "r", encoding="utf-8") as f:
-        md_text = f.read()
-
-    changes = []
-    def replacer(match):
-        fname = match.group(0)
-        new_fname = mapping.get(fname)
-        if new_fname:
-            changes.append((fname, new_fname))
-            return new_fname
-        return fname
-
-    new_md_text = re.sub(r'output_[0-9_]+\.png', replacer, md_text)
-
-    new_md_path = md_path.replace(".md", ".patched.md")
-    with open(new_md_path, "w", encoding="utf-8") as f:
-        f.write(new_md_text)
-
-    if changes:
-        with open(md_path, "w", encoding="utf-8") as f:
-            f.write(new_md_text)
-        print(f"[OK] Replacements made. Original markdown file updated: {md_path}")
-    else:
-        print(f"[INFO] No replacements made. Patched file left at: {new_md_path}")
-
-# --- Database Helpers ---
-
-def get_db_connection(db_path=DB_PATH):
-    """
-    Connect to the SQLite database.
-    """
-    print(f"[DEBUG] Connecting to DB at {db_path}")
-    return sqlite3.connect(db_path)
-
-def get_page_info(full_path, conn):
-    """
-    Retrieve page information from the database for a given file path.
-    """
-    dir_path, filename = os.path.split(full_path)
-    print(f"[DEBUG] get_page_info: dir_path={dir_path}, filename={filename}")
-    cursor = conn.cursor()
-    cursor.execute(
-        "SELECT * FROM page WHERE page_filepath=? AND page_filename=?",
-        (dir_path, filename)
-    )
-    result = cursor.fetchone()
-    print(f"[DEBUG] get_page_info result: {result}")
-    return result
-
-def get_images_for_page(page_id, conn):
-    """
-    Get all images associated with a page from the database.
-    """
-    print(f"[DEBUG] get_images_for_page: page_id={page_id}")
-    cursor = conn.cursor()
-    cursor.execute("SELECT * FROM page_images WHERE image_page_id=?", (page_id,))
-    images = cursor.fetchall()
-    print(f"[DEBUG] Found {len(images)} images for page_id {page_id}")
+    logging.debug(f"[IMAGES] Found {len(images)} images for {content_record['source_path']}")
     return images
 
-def update_image_relocated_filename(img_id, new_path, conn):
+def copy_images_to_build(images, images_root=IMAGES_ROOT, conn=None):
     """
-    Update the relocated filename for an image in the database.
+    Copy each image to the top-level images directory. All images go in images/ with their filename only.
+    Uses the content table to resolve the correct source path for each image.
+    Returns a list of new build paths (absolute paths).
     """
-    print(f"[DEBUG] Updating image relocated filename for img_id={img_id} to {new_path}")
-    cursor = conn.cursor()
-    cursor.execute("UPDATE page_images SET image_relocated_filename=? WHERE id=?", (new_path, img_id))
-    conn.commit()
-
-def update_page_conversion_flag(page_id, flag, conn):
-    """
-    Set a conversion flag (e.g., page_built_ok_md) for a page in the database.
-    """
-    print(f"[DEBUG] Updating page conversion flag '{flag}' for page_id={page_id}")
-    cursor = conn.cursor()
-    cursor.execute(f"UPDATE page SET {flag}=1 WHERE page_id=?", (page_id,))
-    conn.commit()
-    cursor.execute(f"SELECT {flag} FROM page WHERE page_id=?", (page_id,))
-    print(f"[DEBUG] {flag} for page_id {page_id} is now:", cursor.fetchone())
-
-# --- File and Directory Utilities ---
-
-def ensure_dir(path):
-    """
-    Ensure that a directory exists; create it if necessary.
-    """
-    print(f"[DEBUG] Ensuring directory exists: {path}")
-    os.makedirs(path, exist_ok=True)
-
-def copy_file(src, dest):
-    """
-    Copy a file from src to dest, creating destination directories as needed.
-    """
-    print(f"[DEBUG] Copying file from {src} to {dest}")
-    ensure_dir(os.path.dirname(dest))
-    shutil.copy2(src, dest)
-
-def get_build_dir_for_file(src_path):
-    """
-    Get the build directory for a given source file path.
-    """
-    rel_dir = os.path.relpath(os.path.dirname(src_path), CONTENT_ROOT)
-    build_dir = os.path.join(BUILD_ROOT, rel_dir)
-    print(f"[DEBUG] Build dir for {src_path}: {build_dir}")
-    ensure_dir(build_dir)
-    return build_dir
-
-def log_action(message):
-    """
-    Append a log message to the conversion log file.
-    """
-    ensure_dir(LOG_DIR)
-    log_path = os.path.join(LOG_DIR, "convert.log")
-    print(f"[DEBUG] Logging action: {message}")
-    with open(log_path, "a") as logf:
-        logf.write(message + "\n")
-
-# --- Image Handling ---
-
-def build_image_map(page_id, conn):
-    """
-    Build a mapping from original image references to relocated filenames
-    for both markdown/static and code-generated images.
-    """
-    images = get_images_for_page(page_id, conn)
-    image_map = {}
+    os.makedirs(images_root, exist_ok=True)
+    copied = []
+    # Build a lookup for content source paths
+    content_lookup = {}
+    if conn is not None:
+        cursor = conn.cursor()
+        cursor.execute("SELECT source_path FROM content")
+        for row in cursor.fetchall():
+            content_lookup[row[0]] = row[0]
     for img in images:
-        img_filename = img[2]  # image_filename
-        img_remote = img[3]    # image_remote
-        img_filepath = img[5]  # image_filepath
-        img_url = img[6]       # image_url
-        img_relocated_filename = img[8]  # image_relocated_filename
-        img_generated = bool(img[9])     # image_generated
-
-        # For code-generated images, use relocated filename as key and value
-        if img_generated:
-            image_map[img_filename] = img_relocated_filename
-        # For remote images, use URL as key
-        elif img_remote:
-            image_map[img_url] = "REMOTE IMAGE"
-        # For static/markdown images, use filepath or filename as key
+        src = img.get('relative_path') or img.get('absolute_path')
+        referenced_page = img.get('referenced_page')
+        logging.debug(f"[IMAGES][DEBUG] src={src} img={img}")
+        if not src or img.get('is_remote'):
+            logging.warning(f"[IMAGES] Skipping remote or missing image: {img.get('filename')}")
+            continue
+        # Compute the actual source path
+        if referenced_page and referenced_page in content_lookup and not os.path.isabs(src):
+            # If src is relative, resolve it against the referenced_page's directory
+            src_path = os.path.normpath(os.path.join(os.path.dirname(referenced_page), src))
         else:
-            key = img_filepath if img_filepath else img_filename
-            image_map[key] = img_relocated_filename if img_relocated_filename else img_filename
-    return image_map
+            src_path = src
+        filename = os.path.basename(src)
+        dest = os.path.join(images_root, filename)
+        logging.debug(f"[IMAGES][DEBUG] Copying {src_path} to {dest}")
+        try:
+            shutil.copy2(src_path, dest)
+            logging.info(f"[IMAGES] Copied image {src_path} to {dest}")
+            copied.append(dest)
+        except Exception as e:
+            logging.error(f"[IMAGES] Failed to copy {src_path} to {dest}: {e}")
+    return copied
 
-def copy_images_for_ipynb(ipynb_path, conn=None):
+def update_markdown_image_links(md_path, images, images_root=IMAGES_ROOT):
     """
-    Copy all images associated with a notebook to the build directory,
-    updating the database and returning an image map.
-    Uses relocated filenames for code-generated images.
+    Update image links in the Markdown file to point to the copied images in the top-level images directory.
+    Uses sqlite.db to look up image records for this markdown file.
     """
-    print(f"[DEBUG] Copying images for notebook: {ipynb_path}")
-    if conn is None:
-        conn = get_db_connection()
-    page = get_page_info(ipynb_path, conn)
-    if not page:
-        raise ValueError(f"No DB entry for notebook: {ipynb_path}")
-    page_id = page[0]
-    images = get_images_for_page(page_id, conn)
-    build_dir = get_build_dir_for_file(ipynb_path)
-    image_map = {}
-    for img in images:
-        img_id = img[0]
-        img_filename = img[2]
-        img_remote = img[3]
-        img_filepath = img[5]
-        img_url = img[6]
-        img_relocated_filename = img[8]
-        img_generated = bool(img[9])
-        print(f"[DEBUG] Processing image: id={img_id}, filename={img_filename}, remote={img_remote}, filepath={img_filepath}, relocated={img_relocated_filename}, generated={img_generated}")
-        if img_remote:
-            image_map[img_url] = "REMOTE IMAGE"
-        elif img_generated:
-            # For code-generated images, copy using relocated filename
-            src_img_path = os.path.join(build_dir, img_filename)
-            dest_img_path = os.path.join(build_dir, img_relocated_filename)
-            if os.path.exists(src_img_path):
-                if src_img_path != dest_img_path:
-                    copy_file(src_img_path, dest_img_path)
-                image_map[img_filename] = img_relocated_filename
-                update_image_relocated_filename(img_id, img_relocated_filename, conn)
-            else:
-                print(f"[WARNING] Missing code-generated image file: {src_img_path}")
-                image_map[img_filename] = "MISSING IMAGE"
-        else:
-            # For static/markdown images, copy using original filename
-            src_img_path = os.path.join(CONTENT_ROOT, img_filepath)
-            dest_img_path = os.path.join(build_dir, img_filename)
-            if os.path.exists(src_img_path):
-                copy_file(src_img_path, dest_img_path)
-                rel_img_path = os.path.relpath(dest_img_path, build_dir)
-                image_map[img_filepath] = rel_img_path
-                update_image_relocated_filename(img_id, rel_img_path, conn)
-            else:
-                print(f"[WARNING] Missing image file: {src_img_path}")
-                image_map[img_filepath] = "MISSING IMAGE"
-    print(f"[DEBUG] Image map: {image_map}")
-    return image_map
-
-def update_image_refs_in_markdown(md_text, image_map):
-    """
-    Update image references in Markdown text using the provided image map.
-    """
-    print(f"[DEBUG] Updating image references in markdown")
-    for old, new in image_map.items():
-        if new == "REMOTE IMAGE":
-            md_text = md_text.replace(f"![]({old})", f"![REMOTE IMAGE]({old})")
-        elif new == "MISSING IMAGE":
-            md_text = md_text.replace(f"![]({old})", f"![MISSING IMAGE]({old})")
-        else:
-            md_text = md_text.replace(f"![]({old})", f"![]({new})")
-    return md_text
-
-# --- Notebook Execution and Conversion ---
-
-def execute_notebook(ipynb_path, executed_path, timeout=600):
-    """
-    Execute a Jupyter notebook and save the executed notebook to a new file.
-    """
-    import nbformat
-    import sys
-    print(f"[DEBUG] Entered execute_notebook for {ipynb_path}")
-    print(f"[DEBUG] Using Python executable: {sys.executable}")
-    with open(ipynb_path, "r", encoding="utf-8") as f:
-        nb = nbformat.read(f, as_version=4)
-    ep = ExecutePreprocessor(timeout=timeout, kernel_name="open-physics-ed-venv")
-    try:
-        ep.preprocess(nb, {'metadata': {'path': os.path.dirname(ipynb_path)}})
-        print(f"[DEBUG] Notebook executed successfully: {ipynb_path}")
-    except Exception as e:
-        print(f"[ERROR] Failed to execute notebook {ipynb_path}: {e}")
-        raise
-    with open(executed_path, "w", encoding="utf-8") as f:
-        nbformat.write(nb, f)
-    print(f"[DEBUG] Executed notebook saved at: {executed_path}")
-    return executed_path
-
-def ipynb_to_md(ipynb_path, output_path):
-    """
-    Convert a Jupyter notebook to Markdown, extracting images and updating references.
-    Returns the path to the generated Markdown file.
-    """
-    print(f"[DEBUG] ipynb_to_md called for {ipynb_path} -> {output_path}")
-    build_dir = get_build_dir_for_file(ipynb_path)
-    executed_ipynb_path = os.path.join(build_dir, os.path.basename(ipynb_path))
-
-    # Step 1: Execute notebook if not already present
-    if not os.path.exists(executed_ipynb_path):
-        print(f"[DEBUG] Executing notebook: {ipynb_path}")
-        execute_notebook(ipynb_path, executed_ipynb_path)
-        print(f"[DEBUG] Executed notebook saved at: {executed_ipynb_path}")
-    else:
-        print(f"[DEBUG] Using existing executed notebook: {executed_ipynb_path}")
-
-    # Step 2: Get DB info
-    conn = get_db_connection()
-    page = get_page_info(ipynb_path, conn)
-    if not page:
-        print(f"[ERROR] No DB entry for notebook: {ipynb_path}")
-        raise ValueError(f"No DB entry for notebook: {ipynb_path}")
-    page_id = page[0]
-
-    # Step 3: Configure nbconvert for image extraction
-    c = Config()
-    # Use page_id, cell_index, output_index for unique, DB-matching filenames
-    c.ExtractOutputPreprocessor.output_filename_template = f'codeimg_{page_id}_{{cell_index}}_{{index}}{{extension}}'
-    exporter = MarkdownExporter(config=c)
-    exporter.register_preprocessor(ExtractOutputPreprocessor(), enabled=True)
-
-    print(f"[DEBUG] Exporting notebook to Markdown: {executed_ipynb_path}")
-    body, resources = exporter.from_filename(executed_ipynb_path)
-    print(f"[DEBUG] resources keys: {list(resources.keys())}")
-    print(f"[DEBUG] resources['outputs'] keys: {list(resources.get('outputs', {}).keys())}")
-
-    # Step 4: Save extracted images
-    outputs = resources.get('outputs', {})
-    for fname, data in outputs.items():
-        out_path = os.path.join(build_dir, fname)
-        print(f"[DEBUG] Saving image: {out_path} ({len(data)} bytes)")
-        with open(out_path, "wb") as imgf:
-            imgf.write(data)
-
-    # Step 5: Update image references in Markdown
-    image_map = build_image_map(page_id, conn)
-    body = update_image_refs_in_markdown(body, image_map)
-
-    # Step 6: Write Markdown file
-    if output_path is None:
-        output_filename = os.path.splitext(os.path.basename(ipynb_path))[0] + ".md"
-    else:
-        output_filename = os.path.basename(output_path)
-    md_out_path = os.path.join(build_dir, output_filename)
-    print(f"[DEBUG] Writing Markdown file to: {md_out_path}")
-    with open(md_out_path, "w", encoding="utf-8") as f:
-        f.write(body)
-
-    # Patch markdown image references using DB mapping
-    patch_markdown_with_db(md_out_path, page_id, conn)
-
-    # Step 7: Update DB and log
-    update_page_conversion_flag(page_id, "page_built_ok_md", conn)
-    log_action(f"Converted {ipynb_path} to {md_out_path}")
-    conn.close()
-    print(f"[DEBUG] Markdown conversion complete for {ipynb_path}")
-    return md_out_path
-
-def md_to_docx(md_path, output_path):
-    """
-    Convert a Markdown file to a DOCX file using Pandoc.
-    Updates the database to mark DOCX as built for the page.
-    """
-    print(f"[DEBUG] md_to_docx called for {md_path} -> {output_path}")
-    md_dir = os.path.dirname(md_path)
-    out_dir = os.path.dirname(output_path)
-    if out_dir and not os.path.exists(out_dir):
-        os.makedirs(out_dir, exist_ok=True)
-    abs_output_path = os.path.abspath(output_path)
-    try:
-        subprocess.run([
-            "pandoc",
-            os.path.basename(md_path),
-            "-o",
-            abs_output_path
-        ], check=True, cwd=md_dir)
-        print(f"[OK] DOCX file created at: {abs_output_path}")
-    except Exception as e:
-        print(f"[ERROR] Pandoc conversion failed: {e}")
+    if not os.path.exists(md_path):
+        logging.warning(f"[IMAGES] Markdown file not found: {md_path}")
         return
+    # Compute the source_path for this markdown file
+    rel_path = os.path.relpath(md_path, BUILD_FILES_ROOT)
+    source_path = os.path.join(CONTENT_ROOT, rel_path)
+    # Query DB for images for this markdown file
+    img_map = {}
+    try:
+        conn = sqlite3.connect(DB_PATH)
+        cursor = conn.cursor()
+        cursor.execute("SELECT relative_path, absolute_path, filename FROM files WHERE is_image=1 AND referenced_page=?", (source_path,))
+        for row in cursor.fetchall():
+            rel, abs_path, filename = row
+            src = rel or abs_path
+            if not src:
+                continue
+            # Always use ../../images/<filename> for image references
+            rel_img_path = os.path.join('..', '..', 'images', filename)
+            img_map[os.path.basename(src)] = rel_img_path
+        conn.close()
+    except Exception as e:
+        logging.error(f"[IMAGES] DB lookup failed for {md_path}: {e}")
+    with open(md_path, "r", encoding="utf-8") as f:
+        content = f.read()
+    lines = content.splitlines()
+    new_lines = lines.copy()
+    # For each line, replace any image markdown src with correct relative path
+    for idx, line in enumerate(lines):
+        matches = re.findall(r'!\[[^\]]*\]\(([^)]+)\)', line)
+        for old_src in matches:
+            filename = os.path.basename(old_src)
+            if filename in img_map:
+                new_src = img_map[filename]
+                new_lines[idx] = new_lines[idx].replace(old_src, new_src)
+    with open(md_path, "w", encoding="utf-8") as f:
+        f.write("\n".join(new_lines))
+    logging.info(f"[IMAGES] Updated image links in {md_path} to use correct relative paths (DB-driven)")
 
-    # Update DB: mark DOCX as built for this page
-    conn = get_db_connection()
-    dir_path, filename = os.path.split(md_path)
+def handle_images_for_markdown(content_record, conn):
+    """
+    Orchestrate image handling for a Markdown file: query, copy, update links.
+    """
+    images = query_images_for_content(content_record, conn)
+    copied = copy_images_to_build(images, images_root=BUILD_IMAGES_ROOT)
+    rel_path = os.path.relpath(content_record['source_path'], CONTENT_ROOT)
+    md_path = os.path.join(BUILD_FILES_ROOT, rel_path)
+    os.makedirs(os.path.dirname(md_path), exist_ok=True)
+    # Copy original markdown to build/files if not already there
+    abs_src_path = os.path.join(CONTENT_ROOT, rel_path)
+    if not os.path.exists(md_path):
+        try:
+            shutil.copy2(abs_src_path, md_path)
+            logging.info(f"Copied original md to {md_path}")
+        except Exception as e:
+            logging.error(f"Failed to copy md: {e}")
+            return
+    update_markdown_image_links(md_path, images, images_root=BUILD_IMAGES_ROOT)
+    logging.info(f"[IMAGES] Finished handling images for {md_path}")
+    
+def convert_md_to_docx(src_path, out_path, record_id=None, conn=None):
+    """
+    Convert a Markdown file to DOCX using Pandoc.
+    Copy converted file to build/files. Update DB conversion status if record_id and conn provided.
+    """
+    import logging
+    logging.info(f"[DOCX] Starting conversion: {src_path} -> {out_path}")
+    os.makedirs(os.path.dirname(out_path), exist_ok=True)
+    try:
+        import subprocess
+        subprocess.run(["pandoc", src_path, "-o", out_path], check=True)
+        logging.info(f"[DOCX] Converted {src_path} to {out_path}")
+        # DB update logic remains, but use logging for status
+        if record_id:
+            from oerforge.db_utils import get_db_connection
+            import datetime
+            try:
+                db_conn = conn if conn is not None else get_db_connection()
+                db_cursor = db_conn.cursor()
+                db_cursor.execute(
+                    "INSERT INTO conversion_results (content_id, source_format, target_format, output_path, conversion_time, status) VALUES (?, ?, ?, ?, ?, ?)",
+                    (
+                        record_id,
+                        '.md',
+                        '.docx',
+                        out_path,
+                        datetime.datetime.now().isoformat(),
+                        'success'
+                    )
+                )
+                db_conn.commit()
+                logging.info(f"[DOCX] conversion_results updated for id {record_id}")
+                if conn is None:
+                    db_conn.close()
+            except Exception as e:
+                logging.error(f"[DOCX] conversion_results insert failed for id {record_id}: {e}")
+    except Exception as e:
+        logging.error(f"[DOCX] Pandoc conversion failed for {src_path}: {e}")
+
+def convert_md_to_pdf(src_path, out_path, record_id=None, conn=None):
+    """
+    Convert a Markdown file to PDF using Pandoc.
+    Update DB conversion status if record_id and conn provided.
+    """
+    import logging
+    logging.info(f"[PDF] Starting conversion: {src_path} -> {out_path}")
+    os.makedirs(os.path.dirname(out_path), exist_ok=True)
+    try:
+        import subprocess
+        subprocess.run(["pandoc", src_path, "-o", out_path], check=True)
+        logging.info(f"[PDF] Converted {src_path} to {out_path}")
+        if record_id:
+            from oerforge.db_utils import get_db_connection
+            import datetime
+            try:
+                db_conn = conn if conn is not None else get_db_connection()
+                db_cursor = db_conn.cursor()
+                db_cursor.execute(
+                    "INSERT INTO conversion_results (content_id, source_format, target_format, output_path, conversion_time, status) VALUES (?, ?, ?, ?, ?, ?)",
+                    (
+                        record_id,
+                        '.md',
+                        '.pdf',
+                        out_path,
+                        datetime.datetime.now().isoformat(),
+                        'success'
+                    )
+                )
+                db_conn.commit()
+                logging.info(f"[PDF] conversion_results updated for id {record_id}")
+                if conn is None:
+                    db_conn.close()
+            except Exception as e:
+                logging.error(f"[PDF] conversion_results insert failed for id {record_id}: {e}")
+    except Exception as e:
+        logging.error(f"[PDF] Pandoc conversion failed for {src_path}: {e}")
+
+def convert_md_to_tex(src_path, out_path, record_id=None, conn=None):
+    """
+    Convert a Markdown file to LaTeX using Pandoc.
+    Update DB conversion status if record_id and conn provided.
+    """
+    import logging
+    logging.info(f"[TEX] Starting conversion: {src_path} -> {out_path}")
+    os.makedirs(os.path.dirname(out_path), exist_ok=True)
+    try:
+        import subprocess
+        subprocess.run(["pandoc", src_path, "-o", out_path], check=True)
+        logging.info(f"[TEX] Converted {src_path} to {out_path}")
+        if record_id:
+            from oerforge.db_utils import get_db_connection
+            import datetime
+            try:
+                db_conn = conn if conn is not None else get_db_connection()
+                db_cursor = db_conn.cursor()
+                db_cursor.execute(
+                    "INSERT INTO conversion_results (content_id, source_format, target_format, output_path, conversion_time, status) VALUES (?, ?, ?, ?, ?, ?)",
+                    (
+                        record_id,
+                        '.md',
+                        '.tex',
+                        out_path,
+                        datetime.datetime.now().isoformat(),
+                        'success'
+                    )
+                )
+                db_conn.commit()
+                logging.info(f"[TEX] conversion_results updated for id {record_id}")
+                if conn is None:
+                    db_conn.close()
+            except Exception as e:
+                logging.error(f"[TEX] conversion_results insert failed for id {record_id}: {e}")
+    except Exception as e:
+        logging.error(f"[TEX] Pandoc conversion failed for {src_path}: {e}")
+
+# --- Batch Conversion Orchestrator ---
+def batch_convert_all_content(config_path=None):
+    """
+    Main entry point: batch process all files in the content table.
+    For each file, check conversion flags and call appropriate conversion stubs.
+    Copy original files to build/files. Organize output to mirror TOC hierarchy.
+    Log all errors and warnings to log/convert.log.
+    config_path: Optional path to _config.yml. If None, uses default location.
+    """
+    print("[DEBUG] Starting batch conversion for all content records.")
+    logging.info("Starting batch conversion for all content records.")
+    import yaml
+    project_root = os.path.dirname(os.path.dirname(os.path.abspath(__file__)))
+    if config_path is None:
+        config_path = os.path.join(project_root, "_content.yml")
+    with open(config_path, 'r', encoding='utf-8') as f:
+        config = yaml.safe_load(f)
+    toc = config.get('toc', [])
+
+    # --- Generic Conversion Logic ---
+    import sqlite3
+    conn = sqlite3.connect(DB_PATH)
     cursor = conn.cursor()
-    cursor.execute(
-        "SELECT page_id FROM page WHERE page_filepath=? AND page_filename=?",
-        (dir_path, filename)
-    )
-    result = cursor.fetchone()
-    if result:
-        page_id = result[0]
-        update_page_conversion_flag(page_id, "page_built_ok_docx", conn)
-        log_action(f"Converted {md_path} to {output_path}")
-    else:
-        print(f"[WARNING] No DB entry found for markdown file: {md_path}")
+    # Get all enabled conversions
+    cursor.execute("SELECT source_format, target_format FROM conversion_capabilities WHERE is_enabled=1")
+    conversions = cursor.fetchall()
+    # Get all content files with output_path
+    cursor.execute("SELECT id, source_path, output_path, slug FROM content")
+    content_files = cursor.fetchall()
+    for record_id, source_path, output_path, slug in content_files:
+        if not source_path or not output_path:
+            logging.warning(f"Skipping content record id={record_id} with None source_path or output_path")
+            logging.info(f"SKIP: id={record_id} source_path={source_path} output_path={output_path}")
+            continue
+        src_ext = os.path.splitext(source_path)[1]
+        rel_path = os.path.relpath(source_path, CONTENT_ROOT)
+        src_path = os.path.join(CONTENT_ROOT, rel_path)
+        # --- Per-page folder logic ---
+        if slug:
+            out_dir = os.path.join(BUILD_FILES_ROOT, slug)
+        else:
+            out_dir = os.path.dirname(output_path)
+        os.makedirs(out_dir, exist_ok=True)
+        for conv_src, conv_target in conversions:
+            if src_ext == conv_src:
+                out_name = os.path.splitext(os.path.basename(output_path))[0] + conv_target
+                out_path = os.path.join(out_dir, out_name)
+                # Dispatch conversion
+                if conv_src == ".md" and conv_target == ".md":
+                    try:
+                        shutil.copy2(src_path, out_path)
+                        logging.info(f"COPY: {src_path} -> {out_path}")
+                    except Exception as e:
+                        logging.error(f"ERROR: Failed to copy {src_path} -> {out_path}: {e}")
+                elif conv_src == ".md" and conv_target == ".docx":
+                    convert_md_to_docx(src_path, out_path, record_id, conn)
+                    logging.info(f"CONVERT: {src_path} -> {out_path} (docx)")
+                elif conv_src == ".md" and conv_target == ".pdf":
+                    convert_md_to_pdf(src_path, out_path, record_id, conn)
+                    logging.info(f"CONVERT: {src_path} -> {out_path} (pdf)")
+                elif conv_src == ".md" and conv_target == ".tex":
+                    convert_md_to_tex(src_path, out_path, record_id, conn)
+                    logging.info(f"CONVERT: {src_path} -> {out_path} (tex)")
+                elif conv_src == ".ipynb" and conv_target == ".jupyter":
+                    logging.info(f"JUPYTER: {src_path} -> {out_path}")
+                # Add more elifs for other conversions as needed
     conn.close()
+    logging.info("Batch conversion complete.")
 
-def ipynb_to_docx(ipynb_path, output_path):
-    """
-    Convert a Jupyter notebook to a DOCX file.
-    Uses Markdown as intermediate.
-    """
-    print(f"[DEBUG] ipynb_to_docx called for {ipynb_path} -> {output_path}")
-    # Step 1: Convert notebook to Markdown
-    md_path = ipynb_to_md(ipynb_path, output_path.replace(".docx", ".md"))
-    # Step 2: Convert Markdown to DOCX
-    md_to_docx(md_path, output_path)
+# --- Main Entry Point ---
+if __name__ == "__main__":
+    import argparse
+    setup_logging()
+    parser = argparse.ArgumentParser(description="OERForge Conversion CLI")
+    parser.add_argument("mode", choices=["batch", "single"], help="Conversion mode: batch or single file")
+    parser.add_argument("--src", type=str, help="Source file path (for single mode)")
+    parser.add_argument("--out", type=str, help="Output file path (for single mode)")
+    parser.add_argument("--fmt", choices=["docx", "pdf", "tex"], help="Target format (for single mode)")
+    parser.add_argument("--record_id", type=int, default=None, help="Content record ID (optional)")
+    args = parser.parse_args()
 
-# --- Conversion Stubs ---
+    if args.mode == "batch":
+        logging.info("[convert] __main__ entry: running batch_convert_all_content()")
+        batch_convert_all_content()
+    elif args.mode == "single":
+        if not args.src or not args.out or not args.fmt:
+            print("Error: --src, --out, and --fmt are required for single mode.")
+            exit(1)
+        if args.fmt == "docx":
+            convert_md_to_docx(args.src, args.out, args.record_id)
+        elif args.fmt == "pdf":
+            convert_md_to_pdf(args.src, args.out, args.record_id)
+        elif args.fmt == "tex":
+            convert_md_to_tex(args.src, args.out, args.record_id)
+        else:
+            print(f"Unknown format: {args.fmt}")
+            exit(1)
 
-def ipynb_to_tex(ipynb_path, output_path):
-    """
-    Convert a Jupyter notebook to a LaTeX file.
-    (Stub; not implemented.)
-    """
-    print(f"[DEBUG] ipynb_to_tex called for {ipynb_path} -> {output_path}")
-    pass
-
-def ipynb_to_pdf(ipynb_path, output_path):
-    """
-    Convert a Jupyter notebook to a PDF file.
-    (Stub; not implemented.)
-    """
-    print(f"[DEBUG] ipynb_to_pdf called for {ipynb_path} -> {output_path}")
-    pass
-
-def md_to_tex(md_path, output_path):
-    """
-    Convert a Markdown file to a LaTeX file.
-    (Stub; not implemented.)
-    """
-    print(f"[DEBUG] md_to_tex called for {md_path} -> {output_path}")
-    pass
-
-def md_to_pdf(md_path, output_path):
-    """
-    Convert a Markdown file to a PDF file.
-    (Stub; not implemented.)
-    """
-    print(f"[DEBUG] md_to_pdf called for {md_path} -> {output_path}")
-    pass
-
-def docx_to_md(docx_path, output_path):
-    """
-    Convert a DOCX file to Markdown.
-    (Stub; not implemented.)
-    """
-    print(f"[DEBUG] docx_to_md called for {docx_path} -> {output_path}")
-    pass
-
-def docx_to_pdf(docx_path, output_path):
-    """
-    Convert a DOCX file to PDF.
-    (Stub; not implemented.)
-    """
-    print(f"[DEBUG] docx_to_pdf called for {docx_path} -> {output_path}")
-    pass
-
-# End of module

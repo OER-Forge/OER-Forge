@@ -1,0 +1,67 @@
+site:
+  title: "OER-Forge"
+  author: "Danny Caballero"
+  subititle: "Open source"
+  description: "An open source."
+  logo: "static/images/logo.png"
+  favicon: "static/images/favicon.ico"
+  theme:
+    default: dark
+    light: light
+    dark: dark
+  language: "en"
+  github_url: "https://github.com/open-physics-ed-org/oer-forge"
+  
+toc:
+  - title: "Home"
+    menu: true
+    file: index.md
+  - title: "Stuff"
+    menu: true
+    children:
+      - title: "Resources"
+        file: stuff/resources.md
+      - title: "Activities"
+        file: stuff/activities.md
+      - title: "Cards"
+        file: stuff/cards.md
+      - title: "Announcements (Broken because file is at top level; bug)"
+        file: announcements.md
+  - title: "About"
+    menu: true
+    file: about.md
+
+footer:
+  text: |
+    Made with tons of ☕️  and lots of ❤️ for students and educators everywhere. | Built with <a href="https://github.com/OER-Forge/">OER Forge</a>
+
+static:
+  images:
+    - path: static/images/
+      description: "Site-wide images and figures"
+  css:
+    - path: static/css/
+      description: "Custom CSS files"
+  js:
+    - path: static/js/
+      description: "Custom JavaScript files"
+  templates:
+    - path: static/templates/
+      description: "HTML templates"
+  themes:
+    - path: static/themes/
+      description: "Theme files"
+
+# Metadata for automated build and export
+build:
+  outputs:
+    - html
+    - pdf
+    - docx
+    - md
+    - tex
+    - jupyter
+    - ppt
+    - ipynb
+  output_dir: _build/
+  docs_dir: docs/

@@ -1,0 +1,40 @@
+{% extends "_default/baseof.html" %}
+{% block main %}
+  <section>
+    <h1>{{ Title }}</h1>
+    {% if Title == 'Home' %}
+    <div id="font-controls" class="font-controls">
+      <label>Font Family:
+        <select id="font-family">
+          <option value="sans-serif">Sans-serif</option>
+          <option value="serif">Serif</option>
+          <option value="monospace">Monospace</option>
+        </select>
+      </label>
+      <label>Font Size:
+        <input type="range" id="font-size" min="14" max="24" value="17" />
+      </label>
+      <label>Letter Spacing:
+        <input type="range" id="letter-spacing" min="0" max="0.2" step="0.01" value="0.03" />
+      </label>
+      <label>Paragraph Spacing:
+        <input type="range" id="line-height" min="1.2" max="2.5" step="0.05" value="1.7" />
+      </label>
+    </div>
+    {% endif %}
+    {% if Children %}
+      <ul>
+        {% for child in Children %}
+          <li style="margin-left: {{ child.level|default(0)|int * 2 }}em;">
+            <a href="{{ child.link }}">{{ child.title }}</a>
+            {% if child.description %}
+              <div class="desc">{{ child.description }}</div>
+            {% endif %}
+          </li>
+        {% endfor %}
+      </ul>
+    {% else %}
+      <p>No content found in this section.</p>
+    {% endif %}
+  </section>
+{% endblock %}

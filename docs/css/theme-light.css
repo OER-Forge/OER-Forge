@@ -101,16 +101,51 @@ body {
 body.dark .site-header {
   border-bottom: 3px solid var(--color-link-hover);
 }
-.site-title {
-  text-align: center;
-  margin: 0;
-  font-size: 3.2em;
-  font-weight: 800;
-  color: var(--color-link);
-  letter-spacing: 0.01em;
-  line-height: 1.1;
+.site-logo {
+  height: 5.0em;
+  width: auto;
+  margin-right: 1em;
+  border-radius: 8px;
+  box-shadow: 0 2px 8px rgba(0,0,0,0.07);
 }
-
+.header-flex {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  gap: 1.5em;
+  margin-bottom: 0.5em;
+}
+.header-titles {
+  display: flex;
+  flex-direction: column;
+  align-items: flex-start;
+  justify-content: center;
+}
+.site-title {
+  text-align: left;
+  font-size: 2.2em;
+  font-weight: 700;
+  color: var(--color-link);
+  margin: 0;
+  letter-spacing: 0.02em;
+}
+.site-subtitle {
+  text-align: left;
+  font-size: 1.15em;
+  font-weight: 400;
+  color: var(--color-menu);
+  margin: 0.1em 0 0.7em 0;
+  letter-spacing: 0.04em;
+  font-style: italic;
+}
+.theme-toggle {
+  margin-left: auto;
+  font-size: 1.5em;
+  background: none;
+  border: none;
+  cursor: pointer;
+  color: var(--color-link);
+}
 .site-nav {
   display: flex;
   justify-content: center;
@@ -200,6 +235,27 @@ body.dark .site-header {
 .site-nav li ul a:focus {
   background: var(--color-link);
   color: #fff;
+}
+.nav-menu {
+  display: flex;
+  gap: 1.5em;
+  list-style: none;
+  padding: 0;
+  margin: 0;
+  font-size: 1.05em;
+  font-weight: 500;
+}
+.nav-menu li a {
+  color: var(--color-menu);
+  text-decoration: none;
+  border-bottom: 2px solid transparent;
+  padding-bottom: 2px;
+  transition: border-color 0.2s, color 0.2s;
+}
+.nav-menu li a:hover, .nav-menu li a:focus {
+  color: var(--color-menu-hover);
+  border-bottom: 2px solid var(--color-menu-hover);
+  background: var(--color-card);
 }
 
 /* Nav and toggle button */
@@ -506,6 +562,12 @@ footer a:hover, footer a:focus {
   text-decoration: none;
   outline: none;
 }
+.footer-text {
+  font-size: 1em;
+  color: var(--color-fg);
+  margin-top: 2em;
+  text-align: center;
+}
 
 /* ===========================
   12. Code & Notebook Styling
@@ -729,4 +791,30 @@ img.content-img {
 .font-controls input[type="radio"]:checked + label {
   background: var(--color-link);
   color: #fff;
+}
+
+/* ===========================
+  15. Focus Styles
+  =========================== */
+nav[role="navigation"] a,
+nav[role="navigation"] button {
+  outline: none;
+  transition: box-shadow 0.2s;
+}
+nav[role="navigation"] a:focus,
+nav[role="navigation"] button:focus {
+  box-shadow: 0 0 0 3px var(--color-link);
+  background: var(--color-menu-hover);
+  color: var(--color-link);
+}
+
+.visually-hidden {
+  position: absolute;
+  width: 1px;
+  height: 1px;
+  padding: 0;
+  margin: -1px;
+  overflow: hidden;
+  clip: rect(0,0,0,0);
+  border: 0;
 }

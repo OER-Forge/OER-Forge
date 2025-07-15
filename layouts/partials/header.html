@@ -1,0 +1,17 @@
+<header class="site-header">
+  <div class="header-flex">
+    <img src="{{ logo_path }}" alt="Site Logo" class="site-logo" />
+    <div class="header-titles">
+      <h1 class="site-title">{{ site.title }}</h1>
+      <h2 class="site-subtitle">{{ site.subtitle }}</h2>
+    </div>
+    <!-- Theme toggle button moved to main content container in baseof.html -->
+  </div>
+  <nav class="site-nav" role="navigation" aria-label="Main menu">
+    <ul class="nav-menu">
+      {% for item in top_menu %}
+        <li><a href="{{ item.link }}">{{ item.title }}</a></li>
+      {% endfor %}
+    </ul>
+  </nav>
+</header>

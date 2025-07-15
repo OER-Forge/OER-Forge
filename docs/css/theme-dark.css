@@ -89,14 +89,59 @@ body {
 body.dark .site-header {
   border-bottom: 3px solid var(--color-link-hover);
 }
+/* Header Flex Layout */
+.header-flex {
+  display: flex;
+  align-items: center;
+  justify-content: flex-start;
+  gap: 1.5em;
+  margin-bottom: 0.5em;
+  width: 100%;
+}
+.site-logo {
+  height: 5.0em;
+  width: auto;
+  margin-right: 1em;
+  border-radius: 8px;
+  box-shadow: 0 2px 8px rgba(0,0,0,0.14);
+}
+.header-flex {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  gap: 1.5em;
+  margin-bottom: 0.5em;
+}
+.header-titles {
+  display: flex;
+  flex-direction: column;
+  align-items: flex-start;
+  justify-content: center;
+}
 .site-title {
-  text-align: center;
-  margin: 0;
-  font-size: 3.2em;
-  font-weight: 800;
+  text-align: left;
+  font-size: 2.2em;
+  font-weight: 700;
   color: var(--color-link);
-  letter-spacing: 0.01em;
-  line-height: 1.1;
+  margin: 0;
+  letter-spacing: 0.02em;
+}
+.site-subtitle {
+  text-align: left;
+  font-size: 1.15em;
+  font-weight: 400;
+  color: var(--color-title);
+  margin: 0.1em 0 0.7em 0;
+  letter-spacing: 0.04em;
+  font-style: italic;
+}
+.theme-toggle {
+  margin-left: auto;
+  font-size: 1.5em;
+  background: none;
+  border: none;
+  cursor: pointer;
+  color: var(--color-link);
 }
 
 .site-nav {
@@ -290,6 +335,12 @@ footer a:hover, footer a:focus {
   background: var(--color-menu-hover);
   text-decoration: none;
   outline: none;
+}
+.footer-text {
+  font-size: 1em;
+  color: var(--color-fg);
+  margin-top: 2em;
+  text-align: center;
 }
 
 /* =========================
@@ -717,4 +768,27 @@ nav {
 .font-controls input[type="radio"]:checked + label {
   background: var(--color-link);
   color: #fff;
+}
+
+nav[role="navigation"] a,
+nav[role="navigation"] button {
+  outline: none;
+  transition: box-shadow 0.2s;
+}
+nav[role="navigation"] a:focus,
+nav[role="navigation"] button:focus {
+  box-shadow: 0 0 0 3px var(--color-link);
+  background: var(--color-menu-hover);
+  color: var(--color-link);
+}
+
+.visually-hidden {
+  position: absolute;
+  width: 1px;
+  height: 1px;
+  padding: 0;
+  margin: -1px;
+  overflow: hidden;
+  clip: rect(0,0,0,0);
+  border: 0;
 }

@@ -15,7 +15,10 @@ document.addEventListener('DOMContentLoaded', function() {
     themeBtn.addEventListener('click', function() {
       const href = themeLink.getAttribute('href');
       const isLight = href && href.includes('light');
-      themeLink.setAttribute('href', isLight ? 'css/theme-dark.css' : 'css/theme-light.css');
+      // Compute correct relative path for theme CSS
+      let basePath = href.replace(/theme-(light|dark)\.css$/, '');
+      let newTheme = isLight ? 'theme-dark.css' : 'theme-light.css';
+      themeLink.setAttribute('href', basePath + newTheme);
       updateThemeButton();
     });
 
@@ -60,3 +63,39 @@ document.addEventListener('DOMContentLoaded', function() {
     });
   });
 });
+// Font controls only on homepage
+const fontControls = document.getElementById('font-controls');
+if (fontControls) {
+  document.querySelectorAll('input[name="font-family"]').forEach(function(radio) {
+    radio.addEventListener('change', function(e) {
+      const value = e.target.value;
+      document.body.style.fontFamily = value;
+      const container = document.querySelector('.container');
+      if (container) container.style.fontFamily = value;
+      const markdownBody = document.querySelector('.markdown-body');
+      if (markdownBody) markdownBody.style.fontFamily = value;
+      localStorage.setItem('font-family', value);
+    });
+  });
+  document.querySelectorAll('input[name="font-size"]').forEach(function(radio) {
+    radio.addEventListener('change', function(e) {
+      const value = e.target.value;
+      document.documentElement.style.setProperty('--font-size', value);
+      localStorage.setItem('font-size', value);
+    });
+  });
+  document.querySelectorAll('input[name="letter-spacing"]').forEach(function(radio) {
+    radio.addEventListener('change', function(e) {
+      const value = e.target.value;
+      document.documentElement.style.setProperty('--letter-spacing', value);
+      localStorage.setItem('letter-spacing', value);
+    });
+  });
+  document.querySelectorAll('input[name="line-height"]').forEach(function(radio) {
+    radio.addEventListener('change', function(e) {
+      const value = e.target.value;
+      document.documentElement.style.setProperty('--line-height', value);
+      localStorage.setItem('line-height', value);
+    });
+  });
+}
