@@ -1,0 +1,141 @@
+<!DOCTYPE html>
+
+<html lang="en">
+<head>
+<meta charset="utf-8"/>
+<title>pa11y.py - OER-Forge WCAG checker</title>
+<link href="static/images/favicon.ico" rel="icon"/>
+<link href="../css/theme-dark.css" id="theme-css" rel="stylesheet"/>
+<script defer="" src="../js/main.js"></script>
+<!-- Favicons and Mobile Icons -->
+<link href="/static/images/favicon-16x16.png" rel="icon" sizes="16x16" type="image/png"/>
+<link href="/static/images/favicon-32x32.png" rel="icon" sizes="32x32" type="image/png"/>
+<link href="/static/images/favicon.ico" rel="icon" type="image/x-icon"/>
+<link href="/static/images/apple-touch-icon.png" rel="apple-touch-icon" sizes="180x180"/>
+<link href="/static/images/android-chrome-192x192.png" rel="icon" sizes="192x192" type="image/png"/>
+<link href="/static/images/android-chrome-512x512.png" rel="icon" sizes="512x512" type="image/png"/>
+<!-- Web Manifest (optional, for PWA) -->
+<link href="/static/images/site.webmanifest" rel="manifest"/>
+<!-- Open Graph Meta Tags for Sharing -->
+<meta content="OER-Forge: WCAG-Compliant OER Build System" property="og:title"/>
+<meta content="OER-Forge is a suite of tools to help authors create WCAG-compliant Open Educational Resources (OERs)." property="og:description"/>
+<meta content="/static/images/logo.png" property="og:image"/>
+<meta content="https://open-physics-ed-org.github.io/oer-forge" property="og:url"/>
+<!-- Twitter Card Meta Tags -->
+<meta content="summary_large_image" name="twitter:card"/>
+<meta content="OER-Forge: WCAG-Compliant OER Build System" name="twitter:title"/>
+<meta content="OER-Forge is a suite of tools to help authors create WCAG-compliant Open Educational Resources (OERs)." name="twitter:description"/>
+<meta content="/static/images/logo.png" name="twitter:image"/>
+</head>
+<body>
+<header class="site-header">
+<div class="header-flex">
+<img alt="Site Logo" class="site-logo" src="../images/logo.png"/>
+<div class="header-titles">
+<h1 class="site-title">OER-Forge: Documentation</h1>
+<h2 class="site-subtitle">An open source platform for building and sharing open educational resources.</h2>
+</div>
+<!-- Theme toggle button moved to main content container in baseof.html -->
+</div>
+<nav aria-label="Main menu" class="site-nav" role="navigation">
+<ul class="nav-menu">
+<li><a href="../index.html">Home</a></li>
+<li><a href="../news-roll/index.html">News</a></li>
+<li><a href="../sample-resources/index.html">Example</a></li>
+<li><a href="index.html">Docs</a></li>
+<li><a href="../about/index.html">About</a></li>
+</ul>
+</nav>
+</header>
+<main id="main-content" tabindex="-1">
+<div class="container">
+<button aria-label="Switch theme" class="theme-toggle" id="theme-toggle">🌙
+        <span class="visually-hidden">Toggle dark/light theme</span>
+</button>
+<span id="accessibility-report-placeholder"></span><a aria-label="View Accessibility Report" class="wcag-badge wcag-badge-error" data-accessibility-report-btn="1" href="wcag_report_pa11y.html"><img alt="WCAG WCAG22AAA Conformance Logo" src="https://www.w3.org/WAI/WCAG22/wcag2.2AAA-blue.svg" style="height:2em;vertical-align:middle;"/></a>
+<article>
+<nav aria-label="Download options" class="download-nav" role="navigation">
+<a aria-label="Download as PDF" class="download-btn theme-download-pdf" href="../files/documentation/pa11y.pdf" role="button">
+          PDF
+        </a>
+<a aria-label="Download as Word" class="download-btn theme-download-docx" href="../files/documentation/pa11y.docx" role="button">
+          Word
+        </a>
+<a aria-label="Download as LaTeX" class="download-btn theme-download-tex" href="../files/documentation/pa11y.tex" role="button">
+          LaTeX
+        </a>
+<a aria-label="Download as Markdown" class="download-btn theme-download-md" href="../files/documentation/pa11y.md" role="button">
+          Markdown
+        </a>
+<a aria-label="Download as Plain Text" class="download-btn theme-download-txt" href="../files/documentation/pa11y.txt" role="button">
+          Plain Text
+        </a>
+</nav>
+<h1>pa11y.py - OER-Forge WCAG checker</h1>
+<h2>Overview</h2>
+<p><code>pa11y.py</code> is a command-line utility for running automated accessibility checks on all HTML files in the OERForge build directory using Pa11y. It loads configuration from YAML, validates required files and directories, and orchestrates the batch checking and reporting workflow. This script is designed for new users and programmers to provide a simple, robust entry point for accessibility validation.</p>
+<ul role="list">
+<li role="listitem"><strong>Loads Pa11y and site configuration from YAML</strong></li>
+<li role="listitem"><strong>Validates existence of build directory, config file, and database</strong></li>
+<li role="listitem"><strong>Runs accessibility checks on all HTML files using Pa11y</strong></li>
+<li role="listitem"><strong>Uses custom config and WCAG level from YAML</strong></li>
+<li role="listitem"><strong>Handles errors and missing files gracefully</strong></li>
+<li role="listitem"><strong>Integrates with OERForge reporting and badge generation</strong></li>
+</ul>
+<hr/>
+<h2>Functions</h2>
+<h3>main()</h3>
+<p>Main entry point for the batch accessibility runner.</p>
+<p><strong>Workflow Steps</strong></p>
+<ol role="list">
+<li role="listitem">Sets paths for build directory, config file, and database.</li>
+<li role="listitem">Checks that all required files and directories exist.</li>
+<li role="listitem">Loads Pa11y configuration and WCAG level from YAML.</li>
+<li role="listitem">Validates the Pa11y config file exists.</li>
+<li role="listitem">Calls <code>process_all_html_files</code> to run checks and generate reports.</li>
+</ol>
+<p><strong>Parameters</strong></p>
+<ul role="list">
+<li role="listitem">None</li>
+</ul>
+<p><strong>Returns</strong></p>
+<ul role="list">
+<li role="listitem">None</li>
+</ul>
+<hr/>
+<h2>Usage</h2>
+<p>Run from the command line:</p>
+<pre><code class="language-bash">python pa11y.py
+</code></pre>
+<p>Or import and call <code>main()</code> from another script:</p>
+<pre><code class="language-python">import pa11y
+pa11y.main()
+</code></pre>
+<hr/>
+<h2>Error Handling</h2>
+<ul role="list">
+<li role="listitem">Prints clear error messages and exits if required files or directories are missing.</li>
+<li role="listitem">Handles missing config values with sensible defaults.</li>
+<li role="listitem">Validates Pa11y config file before running checks.</li>
+</ul>
+<h2>Logging</h2>
+<ul role="list">
+<li role="listitem">All accessibility check results and errors are logged by the underlying OERForge modules (see <code>log/pa11y.log</code>).</li>
+</ul>
+<h2>Example YAML Configuration</h2>
+<pre><code class="language-yaml">pa11y:
+  wcag_level: WCAG2AAA
+  config: pa11y-config/pa11y.wcag.aaa.json
+</code></pre>
+<hr/>
+<h2>License</h2>
+<p>See LICENSE in the project root.</p>
+<script src="https://cdn.jsdelivr.net/npm/mathjax@3/es5/tex-mml-chtml.js"></script>
+</article>
+</div>
+</main>
+<footer>
+  Made with tons of ☕️  and lots of ❤️ for students and educators everywhere. | Built with <a href="https://github.com/OER-Forge/">OER Forge</a>
+</footer>
+</body>
+</html>

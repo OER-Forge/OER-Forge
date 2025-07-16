@@ -1,0 +1,216 @@
+oerforge.scan
+
+Static Site Asset and Content Scanner for OERForge
+
+Overview
+
+ provides functions for scanning site content, extracting assets, and populating the SQLite database with page, section, and file records. It supports Markdown, Jupyter Notebooks, and DOCX files, and maintains hierarchical relationships from the Table of Contents (TOC) YAML. Logging is standardized and all major operations are traced for debugging.
+
+Functions
+
+batch_read_files
+
+Read multiple files and return their contents as a dictionary . Supports , , , and other file types.
+
+Parameters
+
+ (list[str]): List of file paths.
+
+
+Returns
+
+: Mapping of file paths to contents.
+
+
+read_markdown_file
+
+Read a Markdown file and return its content as a string.
+
+Parameters
+
+ (str): Path to the Markdown file.
+
+
+Returns
+
+ or : File content or  on error.
+
+
+read_notebook_file
+
+Read a Jupyter notebook file and return its content as a dictionary.
+
+Parameters
+
+ (str): Path to the notebook file.
+
+
+Returns
+
+ or : Notebook content or  on error.
+
+
+read_docx_file
+
+Read a DOCX file and return its text content as a string.
+
+Parameters
+
+ (str): Path to the DOCX file.
+
+
+Returns
+
+ or : Text content or  on error.
+
+
+batch_extract_assets
+
+Extract assets from multiple file contents in one pass. Returns a dictionary .
+
+Parameters
+
+ (dict): Mapping of file paths to contents.
+
+
+ (str): Type of content ('markdown', 'notebook', 'docx', etc.).
+
+
+: Additional arguments for DB connection/cursor.
+
+
+Returns
+
+: Mapping of file paths to lists of asset records.
+
+
+extract_linked_files_from_markdown_content
+
+Extract asset links from Markdown text.
+
+Parameters
+
+ (str): Markdown content.
+
+
+ (optional): Page identifier for DB linking.
+
+
+Returns
+
+: File record dicts for each asset found.
+
+
+extract_linked_files_from_notebook_cell_content
+
+Extract asset links from a notebook cell.
+
+Parameters
+
+ (dict): Notebook cell.
+
+
+ (str, optional): Notebook file path.
+
+
+Returns
+
+: File record dicts for each asset found.
+
+
+extract_linked_files_from_docx_content
+
+Extract asset links from a DOCX file.
+
+Parameters
+
+ (str): Path to DOCX file.
+
+
+ (optional): Page identifier for DB linking.
+
+
+Returns
+
+: File record dicts for each asset found.
+
+
+populate_site_info_from_config
+
+Populate the  table from the given config file.
+
+Parameters
+
+ (str): Name of the config file (default: '_config.yml').
+
+
+get_conversion_flags
+
+Get conversion capability flags for a given file extension using the database.
+
+Parameters
+
+ (str): File extension (e.g., '.md', '.ipynb').
+
+
+Returns
+
+: Conversion capability flags.
+
+
+scan_toc_and_populate_db
+
+Walk the TOC from the config YAML, read each file, extract assets/images, and populate the DB with content and asset records. Maintains TOC hierarchy and section relationships.
+
+Parameters
+
+ (str): Path to the config YAML file.
+
+
+get_descendants_for_parent
+
+Query all children, grandchildren, and deeper descendants for a given parent section using a recursive CTE.
+
+Parameters
+
+ (str): Output path of the parent section.
+
+
+ (str): Path to the SQLite database.
+
+
+Returns
+
+: Dicts for each descendant (id, title, output_path, parent_output_path, slug, level).
+
+
+Usage Example
+
+Requirements
+
+Python 3.7+
+
+
+SQLite3
+
+
+PyYAML
+
+
+python-docx
+
+
+See Also
+
+Python-Markdown
+
+
+Jupyter Notebook Format
+
+
+python-docx Documentation
+
+
+License
+
+See  in the project root.

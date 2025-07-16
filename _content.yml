@@ -1,67 +1,73 @@
+# Site-wide content and organization
 site:
-  title: "OER-Forge"
+  title: "OER-Forge: Documentation"
   author: "Danny Caballero"
-  subititle: "Open source"
-  description: "An open source."
+  subtitle: "An open source platform for building and sharing open educational resources."
+  description: "An open source platform for building and sharing open educational resources."
   logo: "static/images/logo.png"
   favicon: "static/images/favicon.ico"
   theme:
-    default: dark
+    default: light
     light: light
     dark: dark
   language: "en"
-  github_url: "https://github.com/open-physics-ed-org/oer-forge"
-  
-toc:
-  - title: "Home"
-    menu: true
-    file: index.md
-  - title: "Stuff"
-    menu: true
-    children:
-      - title: "Resources"
-        file: stuff/resources.md
-      - title: "Activities"
-        file: stuff/activities.md
-      - title: "Cards"
-        file: stuff/cards.md
-      - title: "Announcements (Broken because file is at top level; bug)"
-        file: announcements.md
-  - title: "About"
-    menu: true
-    file: about.md
+  github_url: "https://github.com/oer-forge/docs"
 
 footer:
   text: |
     Made with tons of ☕️  and lots of ❤️ for students and educators everywhere. | Built with <a href="https://github.com/OER-Forge/">OER Forge</a>
 
-static:
-  images:
-    - path: static/images/
-      description: "Site-wide images and figures"
-  css:
-    - path: static/css/
-      description: "Custom CSS files"
-  js:
-    - path: static/js/
-      description: "Custom JavaScript files"
-  templates:
-    - path: static/templates/
-      description: "HTML templates"
-  themes:
-    - path: static/themes/
-      description: "Theme files"
+toc:
+  - title: "Home"
+    menu: true
+    file: index.md
+  - title: "News"
+    menu: true
+    slug: news-roll
+    children:
+      - title: "Launching the Open Physics Education Network: A New Home for Open Physics Course Materials"
+        file: news/2025-07-08-launching-open-physics-ed-org.md
+        menu: false
+  - title: "Example"
+    menu: true
+    slug: sample-resources
+    children:
+      - title: "Introduction"
+        file: sample/welcome.md
+        menu: false
+      - title: "Activities"
+        file: sample/activities.md
+        menu: false
+  - title: "Docs"
+    menu: true
+    slug: documentation
+    children:
+      - title: "build.py - OER-Forge Orchestrator"
+        file: documentation/build.md
+      - title: "pa11y.py - OER-Forge WCAG checker"
+        file: documentation/pa11y.md
+      - title: "db_utils.py — OER-Forge Database Utilities"
+        file: documentation/oerforge.db_utils.md
+      - title: "scan.py - OER-Forge Content Scanner"
+        file: documentation/oerforge.scan.md
+      - title: "convert.py - OER-Forge Content Converter"
+        file: documentation/oerforge.convert.md
+      - title: "make.py - OER-Forge Static Site Generator"
+        file: documentation/oerforge.make.md
+      - title: "copyfile.py - OER-Forge File Copier"
+        file: documentation/oerforge.copyfile.md
+      - title: "export_all.py - OER-Forge Content Exporter"
+        file: documentation/oerforge.export_all.md
+      - title: "verify.py - OER-Forge Accessibility Verifier"
+        file: documentation/oerforge.verify.md
+  - title: "About"
+    menu: true
+    file: about.md
 
-# Metadata for automated build and export
-build:
-  outputs:
-    - html
-    - pdf
-    - docx
-    - md
-    - tex
-    - jupyter
-    - ppt
-    - ipynb
-  output_dir: _build/
-  docs_dir: docs/
+# Optional (needs pa11y installed)
+# Defaults:
+# - wcag_level: WCAG2AA
+# - config: pa11y.wcag.aa.json
+pa11y:
+  wcag_level: WCAG22AAA
+  config: pa11y.wcag22.aaa.json

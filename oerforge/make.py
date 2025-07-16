@@ -1,25 +1,68 @@
-"""
-make-hugo-like.py - Hugo-style Markdown to HTML Static Site Generator (function stubs)
 
-This script provides function stubs for a Hugo-like static site generator in Python.
-It assumes use of a template engine (e.g., Jinja2) that supports blocks, inheritance, and partials.
+"""
+make.py
+========
+
+Hugo-style Markdown to HTML Static Site Generator
+------------------------------------------------
+
+This module provides the core logic for building a static website from Markdown and other content sources, inspired by Hugo and similar SSGs. It supports Jinja2 templating, asset management, navigation, accessibility enhancements, and integration with a SQLite database for content tracking.
+
+Features:
+    - Markdown to HTML conversion with accessibility improvements
+    - Jinja2-based template rendering (blocks, inheritance, partials)
+    - Asset copying and management (CSS, JS, images)
+    - Navigation menu generation from database
+    - Section index autogeneration
+    - Download button context for multiple formats
+    - Robust logging for build operations
+    - Modular, extensible design for new content types
+
+Intended Audience:
+    - New users and programmers
+    - Educators and open content creators
+    - Developers seeking a clear, well-documented SSG foundation
+
+Dependencies:
+    - Python 3.7+
+    - Jinja2
+    - markdown-it-py, mdit-py-plugins
+    - PyYAML
+    - SQLite3
+
+Usage:
+    Import and call the main build functions from your workflow script (e.g., build.py).
+    See individual function docstrings for details.
 """
 
-# from multiprocessing import context  # Removed invalid import
 import os
 import logging
 import yaml
 import re
-import shutil
 import sqlite3
-# from jinja2 import Environment, FileSystemLoader  # Uncomment when implementing
+
+BUILD_DIR = 'build'
+FILES_DIR = 'files'
+LOG_DIR = 'log'
+LOG_FILENAME = 'build.log'
+
+PROJECT_ROOT = os.path.dirname(os.path.dirname(os.path.abspath(__file__)))
+BUILD_FILES_DIR = os.path.join(PROJECT_ROOT, BUILD_DIR, FILES_DIR)
+BUILD_HTML_DIR = os.path.join(PROJECT_ROOT, BUILD_DIR)
+LOG_PATH = os.path.join(PROJECT_ROOT, LOG_DIR, LOG_FILENAME)
+LAYOUTS_DIR = os.path.join(PROJECT_ROOT, 'layouts')
 
 # Stub for copying static assets (CSS, JS, images) to build/
 def copy_static_assets_to_build():
     """
-    Copy static assets (css, js, images) from static/ to build/.
-    Creates build/css/, build/js/, build/images/ if missing.
-    Overwrites files each time it is called.
+    Copy static assets (CSS, JS, images) from the project's static/ directory to build/.
+
+    This function ensures that all required asset directories exist in the build output,
+    and overwrites files on each call to guarantee up-to-date assets.
+
+    Logging:
+        - Logs info on successful copy
+        - Logs warnings if source directories are missing
     """
     import logging
     import shutil
@@ -44,12 +87,6 @@ def copy_static_assets_to_build():
     copytree_overwrite(JS_SRC, JS_DST)
     copytree_overwrite(IMAGES_SRC, IMAGES_DST)
     logging.info("[ASSET] Static assets copied to build/.")
-
-PROJECT_ROOT = os.path.dirname(os.path.dirname(os.path.abspath(__file__)))
-BUILD_FILES_DIR = os.path.join(PROJECT_ROOT, 'build', 'files')
-BUILD_HTML_DIR = os.path.join(PROJECT_ROOT, 'build')
-LOG_PATH = os.path.join(PROJECT_ROOT, 'log', 'build.log')
-LAYOUTS_DIR = os.path.join(PROJECT_ROOT, 'layouts')
 
 # =========================
 # Utility Functions
@@ -188,8 +225,9 @@ def setup_template_env():
     """Set up Jinja2 template environment."""
     from jinja2 import Environment, FileSystemLoader, select_autoescape
     layouts_default = os.path.join(LAYOUTS_DIR, '_default')
+    layouts_partials = os.path.join(LAYOUTS_DIR, 'partials')
     env = Environment(
-        loader=FileSystemLoader([LAYOUTS_DIR, layouts_default]),
+        loader=FileSystemLoader([LAYOUTS_DIR, layouts_default, layouts_partials]),
         autoescape=select_autoescape(['html', 'xml'])
     )
     return env
@@ -375,6 +413,54 @@ def add_asset_paths(context, rel_path):
     logo_name = os.path.basename(logo_file)
     context['logo_path'] = get_asset_path('images', logo_name, rel_path)
     return context
+
+# Autogenerate index.html for top-level sections from the database
+def get_top_level_sections(db_path=None):
+    import sqlite3
+    logging.info(f"Path to database: {db_path}")
+    if db_path is None:
+        db_path = os.path.join(PROJECT_ROOT, 'db', 'sqlite.db')
+        logging.info(f"Using default database path: {db_path}")
+    try:
+        conn = sqlite3.connect(db_path)
+        cursor = conn.cursor()
+        query = "SELECT title, output_path FROM content WHERE is_autobuilt=1 AND output_path LIKE '%/index.html'"
+        cursor.execute(query)
+        rows = cursor.fetchall()
+        conn.close()
+
+        result = [(row[0], os.path.dirname(row[1])) for row in rows]
+        logging.info(f"get_top_level_sections result: {result}")
+        return result
+    except Exception as e:
+        logging.error(f"[ERROR] get_top_level_sections failed: {e}")
+        import traceback
+        logging.error(traceback.format_exc())
+        return []
+        
+def build_section_indexes():
+    config_path = os.path.join(PROJECT_ROOT, '_content.yml')
+    config = load_yaml_config(config_path)
+    logging.info(f"Config path: {config_path}")
+    logging.info(f"File exists: {os.path.exists(config_path)}")
+    logging.info(f"File size: {os.path.getsize(config_path) if os.path.exists(config_path) else 'N/A'}")
+    toc = config.get('toc', [])
+    logging.info(f"Full TOC: {toc}")
+    sections = get_top_level_sections()
+    debug_path = os.path.join(PROJECT_ROOT, 'debug_sections.txt')
+    with open(debug_path, 'w', encoding='utf-8') as dbg:
+        dbg.write(f"get_top_level_sections() returned: {sections}\n")
+        found_news = False
+        for section_title, output_dir in sections:
+            dbg.write(f"Processing section: {section_title} at {output_dir}\n")
+            if section_title.lower() == 'news':
+                found_news = True
+            if not os.path.exists(output_dir):
+                os.makedirs(output_dir, exist_ok=True)
+            logging.info(f"[AUTO] Generating section index for: {section_title} at {output_dir}")
+            create_section_index_html(section_title, output_dir, {"toc": toc})
+        if not found_news:
+            dbg.write("[WARNING] News section NOT found in get_top_level_sections()!\n")
 
 def build_all_markdown_files():
     """Build all markdown files using Hugo-style rendering, using first # header as title."""

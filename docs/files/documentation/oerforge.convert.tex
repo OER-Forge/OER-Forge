@@ -1,0 +1,235 @@
+\section{oerforge.convert}\label{oerforge.convert}
+
+Content Conversion Utilities for OERForge
+
+\begin{center}\rule{0.5\linewidth}{0.5pt}\end{center}
+
+\subsection{Overview}\label{overview}
+
+\texttt{oerforge.convert} provides functions for converting Jupyter
+notebooks (\texttt{.ipynb}) and Markdown files to various formats,
+managing associated images, and updating a SQLite database with
+conversion status. It supports batch and single-file conversion, image
+extraction and copying, and database logging.
+
+\begin{center}\rule{0.5\linewidth}{0.5pt}\end{center}
+
+\subsection{Functions}\label{functions}
+
+\subsubsection{setup\_logging}\label{setup_logging}
+
+\begin{Shaded}
+\begin{Highlighting}[]
+\KeywordTok{def}\NormalTok{ setup\_logging()}
+\end{Highlighting}
+\end{Shaded}
+
+Configure logging for conversion actions. Logs to
+\texttt{log/export.log} and the console.
+
+\begin{center}\rule{0.5\linewidth}{0.5pt}\end{center}
+
+\subsubsection{query\_images\_for\_content}\label{query_images_for_content}
+
+\begin{Shaded}
+\begin{Highlighting}[]
+\KeywordTok{def}\NormalTok{ query\_images\_for\_content(content\_record, conn)}
+\end{Highlighting}
+\end{Shaded}
+
+Query the database for all images associated with a content file.
+
+\textbf{Parameters} - \texttt{content\_record} (dict): Content record
+dictionary. - \texttt{conn}: SQLite connection object.
+
+\textbf{Returns} - \texttt{list{[}dict{]}}: List of image records.
+
+\begin{center}\rule{0.5\linewidth}{0.5pt}\end{center}
+
+\subsubsection{copy\_images\_to\_build}\label{copy_images_to_build}
+
+\begin{Shaded}
+\begin{Highlighting}[]
+\KeywordTok{def}\NormalTok{ copy\_images\_to\_build(images, images\_root}\OperatorTok{=}\NormalTok{IMAGES\_ROOT, conn}\OperatorTok{=}\VariableTok{None}\NormalTok{)}
+\end{Highlighting}
+\end{Shaded}
+
+Copy images to the build images directory. Returns a list of new build
+paths.
+
+\textbf{Parameters} - \texttt{images} (list{[}dict{]}): List of image
+records. - \texttt{images\_root} (str): Destination directory for
+images. - \texttt{conn}: SQLite connection object (optional).
+
+\textbf{Returns} - \texttt{list{[}str{]}}: List of copied image paths.
+
+\begin{center}\rule{0.5\linewidth}{0.5pt}\end{center}
+
+\subsubsection{update\_markdown\_image\_links}\label{update_markdown_image_links}
+
+\begin{Shaded}
+\begin{Highlighting}[]
+\KeywordTok{def}\NormalTok{ update\_markdown\_image\_links(md\_path, images, images\_root}\OperatorTok{=}\NormalTok{IMAGES\_ROOT)}
+\end{Highlighting}
+\end{Shaded}
+
+Update image links in a Markdown file to point to copied images in the
+build directory.
+
+\textbf{Parameters} - \texttt{md\_path} (str): Path to the Markdown
+file. - \texttt{images} (list{[}dict{]}): List of image records. -
+\texttt{images\_root} (str): Images directory.
+
+\begin{center}\rule{0.5\linewidth}{0.5pt}\end{center}
+
+\subsubsection{handle\_images\_for\_markdown}\label{handle_images_for_markdown}
+
+\begin{Shaded}
+\begin{Highlighting}[]
+\KeywordTok{def}\NormalTok{ handle\_images\_for\_markdown(content\_record, conn)}
+\end{Highlighting}
+\end{Shaded}
+
+Orchestrate image handling for a Markdown file: query, copy, and update
+links.
+
+\textbf{Parameters} - \texttt{content\_record} (dict): Content record
+dictionary. - \texttt{conn}: SQLite connection object.
+
+\begin{center}\rule{0.5\linewidth}{0.5pt}\end{center}
+
+\subsubsection{convert\_md\_to\_docx}\label{convert_md_to_docx}
+
+\begin{Shaded}
+\begin{Highlighting}[]
+\KeywordTok{def}\NormalTok{ convert\_md\_to\_docx(src\_path, out\_path, record\_id}\OperatorTok{=}\VariableTok{None}\NormalTok{, conn}\OperatorTok{=}\VariableTok{None}\NormalTok{)}
+\end{Highlighting}
+\end{Shaded}
+
+Convert a Markdown file to DOCX using Pandoc. Updates DB conversion
+status if \texttt{record\_id} and \texttt{conn} are provided.
+
+\textbf{Parameters} - \texttt{src\_path} (str): Source Markdown file
+path. - \texttt{out\_path} (str): Output DOCX file path. -
+\texttt{record\_id} (int, optional): Content record ID. - \texttt{conn}:
+SQLite connection object (optional).
+
+\begin{center}\rule{0.5\linewidth}{0.5pt}\end{center}
+
+\subsubsection{convert\_md\_to\_pdf}\label{convert_md_to_pdf}
+
+\begin{Shaded}
+\begin{Highlighting}[]
+\KeywordTok{def}\NormalTok{ convert\_md\_to\_pdf(src\_path, out\_path, record\_id}\OperatorTok{=}\VariableTok{None}\NormalTok{, conn}\OperatorTok{=}\VariableTok{None}\NormalTok{)}
+\end{Highlighting}
+\end{Shaded}
+
+Convert a Markdown file to PDF using Pandoc. Updates DB conversion
+status if \texttt{record\_id} and \texttt{conn} are provided.
+
+\textbf{Parameters} - \texttt{src\_path} (str): Source Markdown file
+path. - \texttt{out\_path} (str): Output PDF file path. -
+\texttt{record\_id} (int, optional): Content record ID. - \texttt{conn}:
+SQLite connection object (optional).
+
+\begin{center}\rule{0.5\linewidth}{0.5pt}\end{center}
+
+\subsubsection{convert\_md\_to\_tex}\label{convert_md_to_tex}
+
+\begin{Shaded}
+\begin{Highlighting}[]
+\KeywordTok{def}\NormalTok{ convert\_md\_to\_tex(src\_path, out\_path, record\_id}\OperatorTok{=}\VariableTok{None}\NormalTok{, conn}\OperatorTok{=}\VariableTok{None}\NormalTok{)}
+\end{Highlighting}
+\end{Shaded}
+
+Convert a Markdown file to LaTeX using Pandoc. Updates DB conversion
+status if \texttt{record\_id} and \texttt{conn} are provided.
+
+\textbf{Parameters} - \texttt{src\_path} (str): Source Markdown file
+path. - \texttt{out\_path} (str): Output LaTeX file path. -
+\texttt{record\_id} (int, optional): Content record ID. - \texttt{conn}:
+SQLite connection object (optional).
+
+\begin{center}\rule{0.5\linewidth}{0.5pt}\end{center}
+
+\subsubsection{convert\_md\_to\_txt}\label{convert_md_to_txt}
+
+\begin{Shaded}
+\begin{Highlighting}[]
+\KeywordTok{def}\NormalTok{ convert\_md\_to\_txt(src\_path, out\_path, record\_id}\OperatorTok{=}\VariableTok{None}\NormalTok{, conn}\OperatorTok{=}\VariableTok{None}\NormalTok{)}
+\end{Highlighting}
+\end{Shaded}
+
+Convert a Markdown file to plain TXT (extracts readable text). Updates
+DB conversion status if \texttt{record\_id} and \texttt{conn} are
+provided.
+
+\textbf{Parameters} - \texttt{src\_path} (str): Source Markdown file
+path. - \texttt{out\_path} (str): Output TXT file path. -
+\texttt{record\_id} (int, optional): Content record ID. - \texttt{conn}:
+SQLite connection object (optional).
+
+\begin{center}\rule{0.5\linewidth}{0.5pt}\end{center}
+
+\subsubsection{batch\_convert\_all\_content}\label{batch_convert_all_content}
+
+\begin{Shaded}
+\begin{Highlighting}[]
+\KeywordTok{def}\NormalTok{ batch\_convert\_all\_content(config\_path}\OperatorTok{=}\VariableTok{None}\NormalTok{)}
+\end{Highlighting}
+\end{Shaded}
+
+Batch process all files in the content table. For each file, checks
+conversion flags and calls appropriate conversion functions. Organizes
+output to mirror TOC hierarchy.
+
+\textbf{Parameters} - \texttt{config\_path} (str, optional): Path to
+\texttt{\_content.yml} config file.
+
+\begin{center}\rule{0.5\linewidth}{0.5pt}\end{center}
+
+\subsection{CLI Usage}\label{cli-usage}
+
+\begin{Shaded}
+\begin{Highlighting}[]
+\ExtensionTok{python}\NormalTok{ convert.py batch}
+\ExtensionTok{python}\NormalTok{ convert.py single }\AttributeTok{{-}{-}src} \OperatorTok{\textless{}}\NormalTok{source}\OperatorTok{\textgreater{}}\NormalTok{ {-}{-}out }\OperatorTok{\textless{}}\NormalTok{output}\OperatorTok{\textgreater{}}\NormalTok{ {-}{-}fmt }\OperatorTok{\textless{}}\NormalTok{format}\OperatorTok{\textgreater{}}\NormalTok{ [{-}{-}record\_id }\OperatorTok{\textless{}}\NormalTok{id}\OperatorTok{\textgreater{}}\NormalTok{]}
+\end{Highlighting}
+\end{Shaded}
+
+\begin{center}\rule{0.5\linewidth}{0.5pt}\end{center}
+
+\subsection{Requirements}\label{requirements}
+
+\begin{itemize}
+\tightlist
+\item
+  Python 3.7+
+\item
+  Pandoc (for docx, pdf, tex conversions)
+\item
+  nbconvert
+\item
+  markdown-it-py
+\item
+  SQLite3
+\end{itemize}
+
+\begin{center}\rule{0.5\linewidth}{0.5pt}\end{center}
+
+\subsection{See Also}\label{see-also}
+
+\begin{itemize}
+\tightlist
+\item
+  \href{https://pandoc.org/}{Pandoc Documentation}
+\item
+  \href{https://nbconvert.readthedocs.io/en/latest/}{nbconvert
+  Documentation}
+\end{itemize}
+
+\begin{center}\rule{0.5\linewidth}{0.5pt}\end{center}
+
+\subsection{License}\label{license}
+
+See \texttt{LICENSE} in the project root.

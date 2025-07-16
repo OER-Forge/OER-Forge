@@ -1,0 +1,215 @@
+oerforge.db_utils
+
+Database utilities for OERForge: initialization, asset tracking, page-file relationships, site metadata, and general-purpose queries for SQLite.
+
+Overview
+
+ provides a set of functions to manage and interact with the SQLite database used in the OERForge project. It supports schema setup, record insertion and fetching, asset linking, conversion tracking, and pretty-printing for debugging. Designed for contributors and users who need to extend or inspect the database layer.
+
+Functions
+
+initialize_database
+
+Initialize the database schema, create all required tables, and insert default conversion capabilities.
+
+set_relative_link
+
+Update the  for a content item.
+
+Parameters
+
+ (int): Content item ID.
+
+
+ (str): Relative link to set.
+
+
+ (str, optional): Path to the database file.
+
+
+set_menu_context
+
+Update the  for a content item.
+
+Parameters
+
+ (int): Content item ID.
+
+
+ (str): Menu context value.
+
+
+ (str, optional): Path to the database file.
+
+
+get_menu_items
+
+Fetch all menu items with their links and context.
+
+Parameters
+
+ (str, optional): Path to the database file.
+
+
+Returns
+
+: List of menu item dictionaries.
+
+
+get_db_connection
+
+Get a SQLite3 connection to the database.
+
+Parameters
+
+ (str, optional): Path to the database file.
+
+
+Returns
+
+: Connection object.
+
+
+get_records
+
+Fetch records from a table with optional WHERE clause and parameters.
+
+Parameters
+
+ (str): Table name.
+
+
+ (str, optional): SQL WHERE clause (without 'WHERE').
+
+
+ (tuple/list, optional): Parameters for WHERE clause.
+
+
+ (str, optional): Path to the database file.
+
+
+, : Optional existing connection/cursor.
+
+
+Returns
+
+: List of records as dictionaries.
+
+
+insert_records
+
+Batch insert records into any table. Returns list of inserted row IDs.
+
+Parameters
+
+ (str): Table name.
+
+
+ (list[dict]): List of column-value dicts.
+
+
+ (str, optional): Path to the database file.
+
+
+, : Optional existing connection/cursor.
+
+
+Returns
+
+: List of inserted row IDs.
+
+
+get_enabled_conversions
+
+Get enabled target formats for a given source format.
+
+Parameters
+
+ (str): Source file extension (e.g., '.md').
+
+
+ (str, optional): Path to the database file.
+
+
+Returns
+
+: List of enabled target formats.
+
+
+pretty_print_table
+
+Pretty-print all rows of a table to the log and terminal for inspection/debugging.
+
+Parameters
+
+ (str): Table name.
+
+
+ (str, optional): Path to the database file.
+
+
+, : Optional existing connection/cursor.
+
+
+log_event
+
+Log an event to both stdout and a log file in the project root.
+
+Parameters
+
+ (str): Log message.
+
+
+ (str): Severity level ("INFO", "ERROR", etc.).
+
+
+link_files_to_pages
+
+Link files to pages in the  table.
+
+Parameters
+
+ (list[tuple]): Each tuple is (file_id, page_path).
+
+
+ (str, optional): Path to the database file.
+
+
+, : Optional existing connection/cursor.
+
+
+get_available_conversions_for_page
+
+Return all successful conversions for a page output path.
+
+Parameters
+
+ (str): Output path of the page.
+
+
+ (str, optional): Path to the database file.
+
+
+Returns
+
+: List of dicts with , , and .
+
+
+Usage Example
+
+Requirements
+
+Python 3.7+
+
+
+SQLite3
+
+
+See Also
+
+SQLite Documentation
+
+
+License
+
+See  in the project root.

@@ -284,7 +284,154 @@ def convert_md_to_tex(src_path, out_path, record_id=None, conn=None):
     except Exception as e:
         logging.error(f"[TEX] Pandoc conversion failed for {src_path}: {e}")
 
-# --- Batch Conversion Orchestrator ---
+def convert_md_to_txt(src_path, out_path, record_id=None, conn=None):
+    """
+    Convert a Markdown file to plain TXT (extracts readable text).
+    Update DB conversion status if record_id and conn provided.
+    """
+    import logging
+    logging.info(f"[TXT] Starting conversion: {src_path} -> {out_path}")
+    os.makedirs(os.path.dirname(out_path), exist_ok=True)
+    try:
+        from markdown_it import MarkdownIt
+
+        # Read markdown content
+        with open(src_path, "r", encoding="utf-8") as f:
+            md_text = f.read()
+
+        # Parse markdown and extract plain text
+        md = MarkdownIt()
+        tokens = md.parse(md_text)
+
+
+        def extract_text_with_newlines(tokens, depth=0):
+            import logging
+            indent = '  ' * depth
+            if tokens is None:
+                logging.warning(f"[TXT][extract_text] tokens is None at depth {depth}")
+                return ""
+            if not tokens:
+                logging.debug(f"[TXT][extract_text] tokens is empty at depth {depth}")
+                return ""
+            text = []
+            for t in tokens:
+                logging.debug(f"{indent}[TXT][extract_text] token type: {getattr(t, 'type', None)}, content: {getattr(t, 'content', None)}")
+                # Handle links: if token is a link_open, extract the href and append as (URL)
+                if getattr(t, 'type', None) == "link_open":
+                    href = None
+                    for attr in getattr(t, 'attrs', []) or []:
+                        if attr[0] == 'href':
+                            href = attr[1]
+                            break
+                    # Find the next inline/text child for link text
+                    link_text = ""
+                    # Find the children between link_open and link_close
+                    # In markdown-it, link_open is followed by inline/text, then link_close
+                    # So we need to look ahead in the tokens list
+                    # But in the tree, children of inline will be handled recursively
+                    # So just append (URL) after the children are processed
+                    # We'll let the children be processed as normal, then append (URL)
+                    # So do nothing here, but after children, append (URL)
+                    text.append("")
+                elif getattr(t, 'type', None) == "link_close":
+                    # Find the href from the previous link_open
+                    # In markdown-it, link_open and link_close are paired, but href is only in link_open
+                    # So we need to look back for the last link_open
+                    # Instead, we can keep a stack, but for simplicity, just skip here
+                    # We'll handle appending (URL) in the inline handler below
+                    text.append("")
+                elif getattr(t, 'type', None) == "inline" and hasattr(t, "children"):
+                    # Check if this inline is a link
+                    is_link = False
+                    href = None
+                    if hasattr(t, 'parent') and getattr(t.parent, 'type', None) == 'link_open':
+                        is_link = True
+                        for attr in getattr(t.parent, 'attrs', []) or []:
+                            if attr[0] == 'href':
+                                href = attr[1]
+                                break
+                    # Actually, markdown-it-py does not set parent, so we need to scan children for link_open/link_close
+                    # Instead, we can scan children for link_open, then text, then link_close
+                    i = 0
+                    children = t.children or []
+                    while i < len(children):
+                        child = children[i]
+                        if getattr(child, 'type', None) == 'link_open':
+                            # Get href
+                            href = None
+                            for attr in getattr(child, 'attrs', []) or []:
+                                if attr[0] == 'href':
+                                    href = attr[1]
+                                    break
+                            # The next child(ren) are the link text, until link_close
+                            link_text = ""
+                            j = i + 1
+                            while j < len(children) and getattr(children[j], 'type', None) != 'link_close':
+                                if getattr(children[j], 'type', None) == 'text':
+                                    link_text += children[j].content
+                                elif hasattr(children[j], 'children'):
+                                    link_text += extract_text_with_newlines(children[j].children, depth+2)
+                                j += 1
+                            # Append the link text and (URL)
+                            if link_text:
+                                text.append(link_text)
+                            if href:
+                                text.append(f" ({href})")
+                            i = j  # Skip to link_close
+                        elif getattr(child, 'type', None) == 'text':
+                            text.append(child.content)
+                        elif hasattr(child, 'children'):
+                            text.append(extract_text_with_newlines(child.children, depth+2))
+                        i += 1
+                elif getattr(t, 'type', None) == "text":
+                    text.append(t.content)
+                elif t.type in ("paragraph_close", "heading_close"):
+                    text.append("\n\n")
+                elif t.type in ("list_item_close"):
+                    text.append("\n")
+                elif hasattr(t, "children"):
+                    text.append(extract_text_with_newlines(t.children, depth+1))
+            try:
+                joined = "".join(text)
+            except Exception as e:
+                logging.error(f"[TXT][extract_text] join failed at depth {depth}: {e}, text={text}")
+                raise
+            return joined
+
+        plain_text = extract_text_with_newlines(tokens).strip()
+
+        # Write plain text to output
+        with open(out_path, "w", encoding="utf-8") as f:
+            f.write(plain_text)
+
+        logging.info(f"[TXT] Converted {src_path} to {out_path}")
+        if record_id:
+            from oerforge.db_utils import get_db_connection
+            import datetime
+            try:
+                db_conn = conn if conn is not None else get_db_connection()
+                db_cursor = db_conn.cursor()
+                db_cursor.execute(
+                    "INSERT INTO conversion_results (content_id, source_format, target_format, output_path, conversion_time, status) VALUES (?, ?, ?, ?, ?, ?)",
+                    (
+                        record_id,
+                        '.md',
+                        '.txt',
+                        out_path,
+                        datetime.datetime.now().isoformat(),
+                        'success'
+                    )
+                )
+                db_conn.commit()
+                logging.info(f"[TXT] conversion_results updated for id {record_id}")
+                if conn is None:
+                    db_conn.close()
+            except Exception as e:
+                logging.error(f"[TXT] conversion_results insert failed for id {record_id}: {e}")
+    except Exception as e:
+        logging.error(f"[TXT] Conversion failed for {src_path}: {e}")
+        
+# --- Batch sion Orchestrator ---
 def batch_convert_all_content(config_path=None):
     """
     Main entry point: batch process all files in the content table.
@@ -347,6 +494,9 @@ def batch_convert_all_content(config_path=None):
                 elif conv_src == ".md" and conv_target == ".tex":
                     convert_md_to_tex(src_path, out_path, record_id, conn)
                     logging.info(f"CONVERT: {src_path} -> {out_path} (tex)")
+                elif conv_src == ".md" and conv_target == ".txt":
+                    convert_md_to_txt(src_path, out_path, record_id, conn)
+                    logging.info(f"CONVERT: {src_path} -> {out_path} (txt)")
                 elif conv_src == ".ipynb" and conv_target == ".jupyter":
                     logging.info(f"JUPYTER: {src_path} -> {out_path}")
                 # Add more elifs for other conversions as needed
@@ -378,6 +528,8 @@ if __name__ == "__main__":
             convert_md_to_pdf(args.src, args.out, args.record_id)
         elif args.fmt == "tex":
             convert_md_to_tex(args.src, args.out, args.record_id)
+        elif args.fmt == "txt":
+            convert_md_to_txt(args.src, args.out, args.record_id)
         else:
             print(f"Unknown format: {args.fmt}")
             exit(1)

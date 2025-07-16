@@ -1,3 +1,4 @@
-get_top_level_sections() returned: [('Stuff', 'build/stuff')]
-Processing section: Stuff at build/stuff
-[WARNING] News section NOT found in get_top_level_sections()!
+get_top_level_sections() returned: [('News', 'build/news-roll'), ('Example', 'build/sample-resources'), ('Docs', 'build/documentation')]
+Processing section: News at build/news-roll
+Processing section: Example at build/sample-resources
+Processing section: Docs at build/documentation

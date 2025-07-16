@@ -1,0 +1,263 @@
+\section{oerforge.db\_utils}\label{oerforge.db_utils}
+
+Database utilities for OERForge: initialization, asset tracking,
+page-file relationships, site metadata, and general-purpose queries for
+SQLite.
+
+\begin{center}\rule{0.5\linewidth}{0.5pt}\end{center}
+
+\subsection{Overview}\label{overview}
+
+\texttt{oerforge.db\_utils} provides a set of functions to manage and
+interact with the SQLite database used in the OERForge project. It
+supports schema setup, record insertion and fetching, asset linking,
+conversion tracking, and pretty-printing for debugging. Designed for
+contributors and users who need to extend or inspect the database layer.
+
+\begin{center}\rule{0.5\linewidth}{0.5pt}\end{center}
+
+\subsection{Functions}\label{functions}
+
+\subsubsection{initialize\_database}\label{initialize_database}
+
+\begin{Shaded}
+\begin{Highlighting}[]
+\KeywordTok{def}\NormalTok{ initialize\_database()}
+\end{Highlighting}
+\end{Shaded}
+
+Initialize the database schema, create all required tables, and insert
+default conversion capabilities.
+
+\begin{center}\rule{0.5\linewidth}{0.5pt}\end{center}
+
+\subsubsection{set\_relative\_link}\label{set_relative_link}
+
+\begin{Shaded}
+\begin{Highlighting}[]
+\KeywordTok{def}\NormalTok{ set\_relative\_link(content\_id, relative\_link, db\_path}\OperatorTok{=}\VariableTok{None}\NormalTok{)}
+\end{Highlighting}
+\end{Shaded}
+
+Update the \texttt{relative\_link} for a content item.
+
+\textbf{Parameters} - \texttt{content\_id} (int): Content item ID. -
+\texttt{relative\_link} (str): Relative link to set. - \texttt{db\_path}
+(str, optional): Path to the database file.
+
+\begin{center}\rule{0.5\linewidth}{0.5pt}\end{center}
+
+\subsubsection{set\_menu\_context}\label{set_menu_context}
+
+\begin{Shaded}
+\begin{Highlighting}[]
+\KeywordTok{def}\NormalTok{ set\_menu\_context(content\_id, menu\_context, db\_path}\OperatorTok{=}\VariableTok{None}\NormalTok{)}
+\end{Highlighting}
+\end{Shaded}
+
+Update the \texttt{menu\_context} for a content item.
+
+\textbf{Parameters} - \texttt{content\_id} (int): Content item ID. -
+\texttt{menu\_context} (str): Menu context value. - \texttt{db\_path}
+(str, optional): Path to the database file.
+
+\begin{center}\rule{0.5\linewidth}{0.5pt}\end{center}
+
+\subsubsection{get\_menu\_items}\label{get_menu_items}
+
+\begin{Shaded}
+\begin{Highlighting}[]
+\KeywordTok{def}\NormalTok{ get\_menu\_items(db\_path}\OperatorTok{=}\VariableTok{None}\NormalTok{)}
+\end{Highlighting}
+\end{Shaded}
+
+Fetch all menu items with their links and context.
+
+\textbf{Parameters} - \texttt{db\_path} (str, optional): Path to the
+database file.
+
+\textbf{Returns} - \texttt{list{[}dict{]}}: List of menu item
+dictionaries.
+
+\begin{center}\rule{0.5\linewidth}{0.5pt}\end{center}
+
+\subsubsection{get\_db\_connection}\label{get_db_connection}
+
+\begin{Shaded}
+\begin{Highlighting}[]
+\KeywordTok{def}\NormalTok{ get\_db\_connection(db\_path}\OperatorTok{=}\VariableTok{None}\NormalTok{)}
+\end{Highlighting}
+\end{Shaded}
+
+Get a SQLite3 connection to the database.
+
+\textbf{Parameters} - \texttt{db\_path} (str, optional): Path to the
+database file.
+
+\textbf{Returns} - \texttt{sqlite3.Connection}: Connection object.
+
+\begin{center}\rule{0.5\linewidth}{0.5pt}\end{center}
+
+\subsubsection{get\_records}\label{get_records}
+
+\begin{Shaded}
+\begin{Highlighting}[]
+\KeywordTok{def}\NormalTok{ get\_records(table\_name, where\_clause}\OperatorTok{=}\VariableTok{None}\NormalTok{, params}\OperatorTok{=}\VariableTok{None}\NormalTok{, db\_path}\OperatorTok{=}\VariableTok{None}\NormalTok{, conn}\OperatorTok{=}\VariableTok{None}\NormalTok{, cursor}\OperatorTok{=}\VariableTok{None}\NormalTok{)}
+\end{Highlighting}
+\end{Shaded}
+
+Fetch records from a table with optional WHERE clause and parameters.
+
+\textbf{Parameters} - \texttt{table\_name} (str): Table name. -
+\texttt{where\_clause} (str, optional): SQL WHERE clause (without
+`WHERE'). - \texttt{params} (tuple/list, optional): Parameters for WHERE
+clause. - \texttt{db\_path} (str, optional): Path to the database file.
+- \texttt{conn}, \texttt{cursor}: Optional existing connection/cursor.
+
+\textbf{Returns} - \texttt{list{[}dict{]}}: List of records as
+dictionaries.
+
+\begin{center}\rule{0.5\linewidth}{0.5pt}\end{center}
+
+\subsubsection{insert\_records}\label{insert_records}
+
+\begin{Shaded}
+\begin{Highlighting}[]
+\KeywordTok{def}\NormalTok{ insert\_records(table\_name, records, db\_path}\OperatorTok{=}\VariableTok{None}\NormalTok{, conn}\OperatorTok{=}\VariableTok{None}\NormalTok{, cursor}\OperatorTok{=}\VariableTok{None}\NormalTok{)}
+\end{Highlighting}
+\end{Shaded}
+
+Batch insert records into any table. Returns list of inserted row IDs.
+
+\textbf{Parameters} - \texttt{table\_name} (str): Table name. -
+\texttt{records} (list{[}dict{]}): List of column-value dicts. -
+\texttt{db\_path} (str, optional): Path to the database file. -
+\texttt{conn}, \texttt{cursor}: Optional existing connection/cursor.
+
+\textbf{Returns} - \texttt{list{[}int{]}}: List of inserted row IDs.
+
+\begin{center}\rule{0.5\linewidth}{0.5pt}\end{center}
+
+\subsubsection{get\_enabled\_conversions}\label{get_enabled_conversions}
+
+\begin{Shaded}
+\begin{Highlighting}[]
+\KeywordTok{def}\NormalTok{ get\_enabled\_conversions(source\_format, db\_path}\OperatorTok{=}\VariableTok{None}\NormalTok{)}
+\end{Highlighting}
+\end{Shaded}
+
+Get enabled target formats for a given source format.
+
+\textbf{Parameters} - \texttt{source\_format} (str): Source file
+extension (e.g., `.md'). - \texttt{db\_path} (str, optional): Path to
+the database file.
+
+\textbf{Returns} - \texttt{list{[}str{]}}: List of enabled target
+formats.
+
+\begin{center}\rule{0.5\linewidth}{0.5pt}\end{center}
+
+\subsubsection{pretty\_print\_table}\label{pretty_print_table}
+
+\begin{Shaded}
+\begin{Highlighting}[]
+\KeywordTok{def}\NormalTok{ pretty\_print\_table(table\_name, db\_path}\OperatorTok{=}\VariableTok{None}\NormalTok{, conn}\OperatorTok{=}\VariableTok{None}\NormalTok{, cursor}\OperatorTok{=}\VariableTok{None}\NormalTok{)}
+\end{Highlighting}
+\end{Shaded}
+
+Pretty-print all rows of a table to the log and terminal for
+inspection/debugging.
+
+\textbf{Parameters} - \texttt{table\_name} (str): Table name. -
+\texttt{db\_path} (str, optional): Path to the database file. -
+\texttt{conn}, \texttt{cursor}: Optional existing connection/cursor.
+
+\begin{center}\rule{0.5\linewidth}{0.5pt}\end{center}
+
+\subsubsection{log\_event}\label{log_event}
+
+\begin{Shaded}
+\begin{Highlighting}[]
+\KeywordTok{def}\NormalTok{ log\_event(message, level}\OperatorTok{=}\StringTok{"INFO"}\NormalTok{)}
+\end{Highlighting}
+\end{Shaded}
+
+Log an event to both stdout and a log file in the project root.
+
+\textbf{Parameters} - \texttt{message} (str): Log message. -
+\texttt{level} (str): Severity level (``INFO'', ``ERROR'', etc.).
+
+\begin{center}\rule{0.5\linewidth}{0.5pt}\end{center}
+
+\subsubsection{link\_files\_to\_pages}\label{link_files_to_pages}
+
+\begin{Shaded}
+\begin{Highlighting}[]
+\KeywordTok{def}\NormalTok{ link\_files\_to\_pages(file\_page\_pairs, db\_path}\OperatorTok{=}\VariableTok{None}\NormalTok{, conn}\OperatorTok{=}\VariableTok{None}\NormalTok{, cursor}\OperatorTok{=}\VariableTok{None}\NormalTok{)}
+\end{Highlighting}
+\end{Shaded}
+
+Link files to pages in the \texttt{pages\_files} table.
+
+\textbf{Parameters} - \texttt{file\_page\_pairs} (list{[}tuple{]}): Each
+tuple is (file\_id, page\_path). - \texttt{db\_path} (str, optional):
+Path to the database file. - \texttt{conn}, \texttt{cursor}: Optional
+existing connection/cursor.
+
+\begin{center}\rule{0.5\linewidth}{0.5pt}\end{center}
+
+\subsubsection{get\_available\_conversions\_for\_page}\label{get_available_conversions_for_page}
+
+\begin{Shaded}
+\begin{Highlighting}[]
+\KeywordTok{def}\NormalTok{ get\_available\_conversions\_for\_page(output\_path, db\_path}\OperatorTok{=}\VariableTok{None}\NormalTok{)}
+\end{Highlighting}
+\end{Shaded}
+
+Return all successful conversions for a page output path.
+
+\textbf{Parameters} - \texttt{output\_path} (str): Output path of the
+page. - \texttt{db\_path} (str, optional): Path to the database file.
+
+\textbf{Returns} - \texttt{list{[}dict{]}}: List of dicts with
+\texttt{target\_format}, \texttt{output\_path}, and \texttt{status}.
+
+\begin{center}\rule{0.5\linewidth}{0.5pt}\end{center}
+
+\subsection{Usage Example}\label{usage-example}
+
+\begin{Shaded}
+\begin{Highlighting}[]
+\ImportTok{from}\NormalTok{ oerforge }\ImportTok{import}\NormalTok{ db\_utils}
+\NormalTok{conn }\OperatorTok{=}\NormalTok{ db\_utils.get\_db\_connection()}
+\NormalTok{db\_utils.pretty\_print\_table(}\StringTok{\textquotesingle{}content\textquotesingle{}}\NormalTok{, conn}\OperatorTok{=}\NormalTok{conn)}
+\end{Highlighting}
+\end{Shaded}
+
+\begin{center}\rule{0.5\linewidth}{0.5pt}\end{center}
+
+\subsection{Requirements}\label{requirements}
+
+\begin{itemize}
+\tightlist
+\item
+  Python 3.7+
+\item
+  SQLite3
+\end{itemize}
+
+\begin{center}\rule{0.5\linewidth}{0.5pt}\end{center}
+
+\subsection{See Also}\label{see-also}
+
+\begin{itemize}
+\tightlist
+\item
+  \href{https://sqlite.org/docs.html}{SQLite Documentation}
+\end{itemize}
+
+\begin{center}\rule{0.5\linewidth}{0.5pt}\end{center}
+
+\subsection{License}\label{license}
+
+See \texttt{LICENSE} in the project root.

@@ -1,0 +1,96 @@
+build.py — OERForge Build Orchestrator
+
+Overview
+
+ is the main workflow orchestrator for the OERForge static site generator. It coordinates the entire build process, including database initialization, content scanning, conversion, HTML generation, exporting, and deployment preparation. This script is designed for new users and programmers to provide a clear, step-by-step build pipeline for open educational resources.
+
+Initializes the content database
+
+
+Scans the table of contents and populates the database
+
+
+Converts all source content to output formats
+
+
+Exports all content and assets to the build directory
+
+
+Builds HTML pages and section indexes
+
+
+Copies build outputs to docs/ for publishing
+
+
+Logs all major steps and errors
+
+
+Functions
+
+run()
+
+Runs the complete OERForge build workflow.
+
+Parameters
+
+None
+
+
+Returns
+
+None
+
+
+Workflow Steps
+
+Initializes the SQLite database for content and assets.
+
+
+Scans the table of contents () and populates the database.
+
+
+Converts all source content (Markdown, Jupyter, DOCX) to output formats.
+
+
+Exports all content and assets to the build directory.
+
+
+Builds HTML pages and section indexes using templates.
+
+
+Copies the build output to  for publishing (e.g., GitHub Pages).
+
+
+Logs all steps and errors to the build log.
+
+
+Constants
+
+: Path to the build output directory.
+
+
+: Subdirectory for files in build.
+
+
+: Absolute path to the project root.
+
+
+: Path to files in build.
+
+
+: Path to HTML output in build.
+
+
+Logging
+
+All major operations and errors are logged for debugging and auditing. The build log can be found in the  directory.
+
+Error Handling
+
+Robust error handling is implemented in each step of the workflow modules. All failures are logged with context.
+
+Example Usage
+
+License
+
+See LICENSE in the project root.

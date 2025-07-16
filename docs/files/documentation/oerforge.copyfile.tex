@@ -1,0 +1,121 @@
+\section{oerforge.copyfile --- Project File and Asset Copy
+Utilities}\label{oerforge.copyfile-project-file-and-asset-copy-utilities}
+
+\subsection{Overview}\label{overview}
+
+\texttt{oerforge.copyfile} provides utilities for copying project
+content, static assets, and build outputs into deployment directories.
+It is designed for new users and programmers to automate file
+preparation for static site hosting (e.g., GitHub Pages).
+
+\begin{itemize}
+\tightlist
+\item
+  \textbf{Copies all content and assets to build/ and docs/}
+\item
+  \textbf{Ensures target directories exist}
+\item
+  \textbf{Overwrites files to keep outputs up-to-date}
+\item
+  \textbf{Creates .nojekyll to prevent Jekyll processing on GitHub
+  Pages}
+\item
+  \textbf{Robust logging and error handling}
+\end{itemize}
+
+\begin{center}\rule{0.5\linewidth}{0.5pt}\end{center}
+
+\subsection{Functions}\label{functions}
+
+\subsubsection{copy\_build\_to\_docs()}\label{copy_build_to_docs}
+
+Non-destructively copy everything from \texttt{build/} to
+\texttt{docs/}.
+
+\textbf{Parameters} - None
+
+\textbf{Returns} - None
+
+\textbf{Notes} - Creates \texttt{docs/} if missing. - Copies files over
+themselves, does not remove files from \texttt{docs/}. - Preserves
+directory structure.
+
+\begin{center}\rule{0.5\linewidth}{0.5pt}\end{center}
+
+\subsubsection{ensure\_dir(path)}\label{ensure_dirpath}
+
+Ensure that a directory exists, creating it if necessary.
+
+\textbf{Parameters} - \texttt{path} (str): Directory path to ensure.
+
+\textbf{Returns} - None
+
+\textbf{Notes} - Logs directory creation for debugging.
+
+\begin{center}\rule{0.5\linewidth}{0.5pt}\end{center}
+
+\subsubsection{create\_nojekyll(path)}\label{create_nojekyllpath}
+
+Create an empty \texttt{.nojekyll} file at the given path.
+
+\textbf{Parameters} - \texttt{path} (str): Path to \texttt{.nojekyll}
+file.
+
+\textbf{Returns} - None
+
+\textbf{Notes} - Used to prevent GitHub Pages from running Jekyll on the
+build output. - Logs file creation.
+
+\begin{center}\rule{0.5\linewidth}{0.5pt}\end{center}
+
+\subsection{Constants}\label{constants}
+
+\begin{itemize}
+\tightlist
+\item
+  \texttt{PROJECT\_ROOT}: Absolute path to the project root directory.
+\item
+  \texttt{BUILD\_DIR}: Path to the build output directory.
+\item
+  \texttt{CONTENT\_SRC}, \texttt{CONTENT\_DST}: Source and destination
+  for content files.
+\item
+  \texttt{CSS\_SRC}, \texttt{CSS\_DST}: Source and destination for CSS
+  assets.
+\item
+  \texttt{JS\_SRC}, \texttt{JS\_DST}: Source and destination for JS
+  assets.
+\item
+  \texttt{NOJEKYLL\_PATH}: Path to the \texttt{.nojekyll} file in build.
+\item
+  \texttt{LOG\_PATH}: Path to the build log file.
+\end{itemize}
+
+\begin{center}\rule{0.5\linewidth}{0.5pt}\end{center}
+
+\subsection{Logging}\label{logging}
+
+All major operations and errors are logged for debugging and auditing.
+Log files are written to \texttt{log/build.log}.
+
+\subsection{Error Handling}\label{error-handling}
+
+Robust error handling is implemented for file and directory operations.
+All failures are logged with context.
+
+\subsection{Example Usage}\label{example-usage}
+
+\begin{Shaded}
+\begin{Highlighting}[]
+\ImportTok{from}\NormalTok{ oerforge.copyfile }\ImportTok{import}\NormalTok{ copy\_build\_to\_docs, ensure\_dir, create\_nojekyll}
+\NormalTok{copy\_build\_to\_docs()}
+\NormalTok{ensure\_dir(}\StringTok{\textquotesingle{}build/files\textquotesingle{}}\NormalTok{)}
+\NormalTok{create\_nojekyll(}\StringTok{\textquotesingle{}build/.nojekyll\textquotesingle{}}\NormalTok{)}
+\end{Highlighting}
+\end{Shaded}
+
+\begin{center}\rule{0.5\linewidth}{0.5pt}\end{center}
+
+\subsection{License}\label{license}
+
+See LICENSE in the project root.

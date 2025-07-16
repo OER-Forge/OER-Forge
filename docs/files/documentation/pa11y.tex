@@ -1,0 +1,108 @@
+\section{pa11y.py --- OERForge Accessibility Batch
+Runner}\label{pa11y.py-oerforge-accessibility-batch-runner}
+
+\subsection{Overview}\label{overview}
+
+\texttt{pa11y.py} is a command-line utility for running automated
+accessibility checks on all HTML files in the OERForge build directory
+using Pa11y. It loads configuration from YAML, validates required files
+and directories, and orchestrates the batch checking and reporting
+workflow. This script is designed for new users and programmers to
+provide a simple, robust entry point for accessibility validation.
+
+\begin{itemize}
+\tightlist
+\item
+  \textbf{Loads Pa11y and site configuration from YAML}
+\item
+  \textbf{Validates existence of build directory, config file, and
+  database}
+\item
+  \textbf{Runs accessibility checks on all HTML files using Pa11y}
+\item
+  \textbf{Uses custom config and WCAG level from YAML}
+\item
+  \textbf{Handles errors and missing files gracefully}
+\item
+  \textbf{Integrates with OERForge reporting and badge generation}
+\end{itemize}
+
+\begin{center}\rule{0.5\linewidth}{0.5pt}\end{center}
+
+\subsection{Functions}\label{functions}
+
+\subsubsection{main()}\label{main}
+
+Main entry point for the batch accessibility runner.
+
+\textbf{Workflow Steps} 1. Sets paths for build directory, config file,
+and database. 2. Checks that all required files and directories exist.
+3. Loads Pa11y configuration and WCAG level from YAML. 4. Validates the
+Pa11y config file exists. 5. Calls \texttt{process\_all\_html\_files} to
+run checks and generate reports.
+
+\textbf{Parameters} - None
+
+\textbf{Returns} - None
+
+\begin{center}\rule{0.5\linewidth}{0.5pt}\end{center}
+
+\subsection{Usage}\label{usage}
+
+Run from the command line:
+
+\begin{Shaded}
+\begin{Highlighting}[]
+\ExtensionTok{python}\NormalTok{ pa11y.py}
+\end{Highlighting}
+\end{Shaded}
+
+Or import and call \texttt{main()} from another script:
+
+\begin{Shaded}
+\begin{Highlighting}[]
+\ImportTok{import}\NormalTok{ pa11y}
+\NormalTok{pa11y.main()}
+\end{Highlighting}
+\end{Shaded}
+
+\begin{center}\rule{0.5\linewidth}{0.5pt}\end{center}
+
+\subsection{Error Handling}\label{error-handling}
+
+\begin{itemize}
+\tightlist
+\item
+  Prints clear error messages and exits if required files or directories
+  are missing.
+\item
+  Handles missing config values with sensible defaults.
+\item
+  Validates Pa11y config file before running checks.
+\end{itemize}
+
+\subsection{Logging}\label{logging}
+
+\begin{itemize}
+\tightlist
+\item
+  All accessibility check results and errors are logged by the
+  underlying OERForge modules (see \texttt{log/pa11y.log}).
+\end{itemize}
+
+\subsection{Example YAML
+Configuration}\label{example-yaml-configuration}
+
+\begin{Shaded}
+\begin{Highlighting}[]
+\FunctionTok{pa11y}\KeywordTok{:}
+\AttributeTok{  }\FunctionTok{wcag\_level}\KeywordTok{:}\AttributeTok{ WCAG2AAA}
+\AttributeTok{  }\FunctionTok{config}\KeywordTok{:}\AttributeTok{ pa11y{-}config/pa11y.wcag.aaa.json}
+\end{Highlighting}
+\end{Shaded}
+
+\begin{center}\rule{0.5\linewidth}{0.5pt}\end{center}
+
+\subsection{License}\label{license}
+
+See LICENSE in the project root.

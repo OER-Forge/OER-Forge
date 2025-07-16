@@ -3,6 +3,20 @@ document.addEventListener('DOMContentLoaded', function() {
   const themeBtn = document.getElementById('theme-toggle');
   const themeLink = document.getElementById('theme-css');
 
+  // --- Accessibility Report: Default to dark mode, persist with localStorage ---
+  if (themeLink) {
+    let savedTheme = localStorage.getItem('theme');
+    // If no theme saved, default to dark for accessibility reports
+    if (!savedTheme) {
+      savedTheme = 'dark';
+      localStorage.setItem('theme', 'dark');
+    }
+    // Set theme CSS
+    let basePath = themeLink.getAttribute('href').replace(/theme-(light|dark)\.css$/, '');
+    let newTheme = (savedTheme === 'dark') ? 'theme-dark.css' : 'theme-light.css';
+    themeLink.setAttribute('href', basePath + newTheme);
+  }
+
   function updateThemeButton() {
     if (!themeBtn || !themeLink) return;
     const href = themeLink.getAttribute('href');
@@ -19,9 +33,10 @@ document.addEventListener('DOMContentLoaded', function() {
       let basePath = href.replace(/theme-(light|dark)\.css$/, '');
       let newTheme = isLight ? 'theme-dark.css' : 'theme-light.css';
       themeLink.setAttribute('href', basePath + newTheme);
+      // Save user selection
+      localStorage.setItem('theme', isLight ? 'dark' : 'light');
       updateThemeButton();
     });
-
     updateThemeButton();
   }
 

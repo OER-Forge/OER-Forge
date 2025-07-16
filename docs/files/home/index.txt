@@ -1,0 +1,93 @@
+Welcome to the Open Physics Education Network
+
+Open Physics Education Network Logo
+
+openphysicsed.org is a collaborative, open-source project dedicated to building accessible, high-quality, and modern educational resources for physics and computational science. Our mission is to lower barriers to learning by providing free, open, and adaptable materials for students, educators, and lifelong learners everywhere.
+
+What We Offer
+
+Accessible, open resources for physics and computational science
+
+
+Modern, semantic, and screen-reader-friendly design
+
+
+Collaborative development—anyone can contribute
+
+
+Free to use, modify, and distribute
+
+
+Open-source tools, materials, and a wide variety of formats
+
+
+Courses and Materials
+
+We are actively transcribing and deploying resources for:
+
+Introductory Mechanics
+
+
+Introductory Electromagnetism
+
+
+Sophomore-level Classical Mechanics (see Modern Classical Mechanics)
+
+
+Junior-level Electromagnetism
+
+
+Mathematical Methods
+
+
+In the future, we plan to expand to:
+
+Modern Physics
+
+
+Quantum Physics
+
+
+Statistical Mechanics
+
+
+Community Proposed Areas
+
+
+Our Philosophy
+
+The Open Physics Education Network is guided by the following principles:
+
+Openness: All materials are open source and free to use, modify, and distribute under non-commercial licenses.
+
+
+Accessibility: We strive to meet and exceed accessibility standards, ensuring our resources are usable by everyone.
+
+
+Collaboration: We welcome contributions from students, educators, developers, and the broader community.
+
+
+Simplicity: Our sites and materials are intentionally simple and easy to use, modify, and distribute.
+
+
+Get Involved
+
+We welcome your feedback, suggestions, and contributions!
+
+Visit our GitHub repository to get started, or reach out to Danny Caballero for more information.
+
+The easiest way to help is to report an issue or if you are so kind to clean some code, issue a pull request.
+
+GitHub Repo starsGitHub issuesGitHub pull requests
+
+License
+
+The site including written content and the build process are licensed with the Creative Commons Attribution-NonCommercial-ShareAlike 4.0 International License.
+
+GitHub license
+
+Releases
+
+Releases for this repo are limited to changes to  the code that builds the site from markdown. The build system is simpler and less feature rich than other static site generators, but can be used to stand up a similarly simple site.
+
+Releases

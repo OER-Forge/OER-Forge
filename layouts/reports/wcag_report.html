@@ -1,0 +1,56 @@
+{% extends "baseof.html" %}
+
+{% block title %}Accessibility Report: {{ Title }}{% endblock %}
+
+{% block main %}
+  {# The accessibility badge below uses the new wcag-badge, wcag-badge-error, and wcag-badge-success classes. #}
+  <div>
+    {{ badge_html|safe }} Errors: {{ error_count }}
+  </div>
+  
+  <h1 class="report-title">Accessibility Report: {{ page_title }}</h1>
+  <div>
+    <strong>Page URL:</strong> <code>{{ relative_url }}</code><br>
+    <strong>WCAG Level:</strong> {{ wcag_level }}<br>
+    <strong>Errors:</strong> {{ error_count }} |
+    <strong>Warnings:</strong> {{ warning_count }} |
+    <strong>Notices:</strong> {{ notice_count }}
+  </div>
+  <h2>Summary Report</h2>
+  Click on an issue number to jump to the detailed issue card below.
+  <div class="table-wrapper">
+    <table>
+      <tr>
+        <th style="width: 18%;">Issue</th>
+        <th>Message</th>
+      </tr>
+      {% for issue in issues %}
+      <tr>
+        <td><a href="#issue-{{ loop.index }}" aria-label="Jump to details for issue {{ loop.index }}"><b>Issue {{ loop.index }}: {{ issue.type|capitalize }}</b></a></td>
+        <td>{{ issue.message }}</td>
+      </tr>
+      {% endfor %}
+    </table>
+  </div>
+
+  <h1 id="detailed-issues">Detailed Issue Cards</h1>
+  <div class="card-grid" aria-label="Accessibility Issue Details" role="region">
+    {% for issue in issues %}
+    <section class="card" id="issue-{{ loop.index }}" tabindex="0" aria-labelledby="issue-title-{{ loop.index }}" aria-describedby="issue-desc-{{ loop.index }} issue-context-{{ loop.index }} issue-selector-{{ loop.index }} issue-rule-{{ loop.index }}">
+      <h2 id="issue-title-{{ loop.index }}">Issue #{{ loop.index }}: {{ issue.type|capitalize }}</h2>
+      <p id="issue-desc-{{ loop.index }}"><strong>Message:</strong> {{ issue.message }}</p>
+      <p id="issue-context-{{ loop.index }}"><strong>Element:</strong><br>
+        <code style="white-space:pre-line;max-width:100%;display:inline-block;overflow-x:auto;">{{ issue.context|e }}</code>
+      </p>
+      <p id="issue-selector-{{ loop.index }}"><strong>Selector:</strong> <code>{{ issue.selector }}</code></p>
+      <p id="issue-rule-{{ loop.index }}"><strong>Rule:</strong> {{ issue.code }}
+        {{ issue.helpUrl }}
+        {% if issue.helpUrl %}
+          <a href="{{ issue.helpUrl }}" target="_blank" rel="noopener" aria-label="More information about {{ issue.code }} (opens in new tab)">More info</a>
+        {% endif %}
+      </p>
+      <a href="#issue-{{ loop.index }}" class="visually-hidden" aria-label="Link to this issue card">Permalink</a>
+    </section>
+    {% endfor %}
+  </div>
+{% endblock %}

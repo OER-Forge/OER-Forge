@@ -83,6 +83,6 @@ if __name__ == "__main__":
     parser = argparse.ArgumentParser(description="Batch export and copy build to docs.")
     parser.add_argument("--copy", action="store_true", help="Copy build/ to docs/")
     args = parser.parse_args()
-    export_all_docx()
+    export_all()
     if args.copy:
         export_build_to_docs()

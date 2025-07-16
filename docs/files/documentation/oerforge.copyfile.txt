@@ -1,0 +1,125 @@
+oerforge.copyfile — Project File and Asset Copy Utilities
+
+Overview
+
+ provides utilities for copying project content, static assets, and build outputs into deployment directories. It is designed for new users and programmers to automate file preparation for static site hosting (e.g., GitHub Pages).
+
+Copies all content and assets to build/ and docs/
+
+
+Ensures target directories exist
+
+
+Overwrites files to keep outputs up-to-date
+
+
+Creates .nojekyll to prevent Jekyll processing on GitHub Pages
+
+
+Robust logging and error handling
+
+
+Functions
+
+copy_build_to_docs()
+
+Non-destructively copy everything from  to .
+
+Parameters
+
+None
+
+
+Returns
+
+None
+
+
+Notes
+
+Creates  if missing.
+
+
+Copies files over themselves, does not remove files from .
+
+
+Preserves directory structure.
+
+
+ensure_dir(path)
+
+Ensure that a directory exists, creating it if necessary.
+
+Parameters
+
+ (str): Directory path to ensure.
+
+
+Returns
+
+None
+
+
+Notes
+
+Logs directory creation for debugging.
+
+
+create_nojekyll(path)
+
+Create an empty  file at the given path.
+
+Parameters
+
+ (str): Path to  file.
+
+
+Returns
+
+None
+
+
+Notes
+
+Used to prevent GitHub Pages from running Jekyll on the build output.
+
+
+Logs file creation.
+
+
+Constants
+
+: Absolute path to the project root directory.
+
+
+: Path to the build output directory.
+
+
+, : Source and destination for content files.
+
+
+, : Source and destination for CSS assets.
+
+
+, : Source and destination for JS assets.
+
+
+: Path to the  file in build.
+
+
+: Path to the build log file.
+
+
+Logging
+
+All major operations and errors are logged for debugging and auditing. Log files are written to .
+
+Error Handling
+
+Robust error handling is implemented for file and directory operations. All failures are logged with context.
+
+Example Usage
+
+License
+
+See LICENSE in the project root.

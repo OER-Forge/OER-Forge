@@ -1,0 +1,243 @@
+oerforge.verify — Accessibility Verification and Reporting
+
+Overview
+
+ provides tools for automated accessibility checking, badge generation, and reporting for static HTML sites. It integrates with Pa11y for WCAG compliance checks, manages results in a SQLite database, and generates visual badges and detailed reports for each page. This module is designed for new users, educators, and developers seeking robust accessibility workflows in open educational resources.
+
+Automated accessibility checks (WCAG AA/AAA) using Pa11y
+
+
+Badge and report generation for each HTML page
+
+
+Database integration for tracking results
+
+
+Jinja2-based report rendering
+
+
+Robust logging and error handling
+
+
+Functions
+
+load_pa11y_config(yml_path='_content.yml')
+
+Load Pa11y configuration and logo info from YAML and JSON files.
+
+Parameters
+
+ (str): Path to the YAML config file.
+
+
+Returns
+
+: Parsed configuration dictionary.
+
+
+run_pa11y_on_file(html_path, config_path=None, wcag_level='AA')
+
+Run Pa11y accessibility checks on a single HTML file.
+
+Parameters
+
+ (str): Path to the HTML file.
+
+
+ (str, optional): Path to Pa11y config file.
+
+
+ (str): WCAG level ('AA' or 'AAA').
+
+
+Returns
+
+ or : Parsed Pa11y JSON results, or None on error.
+
+
+Notes
+
+Handles errors robustly, logs issues, and attempts to parse output even on failure.
+
+
+get_content_id_for_file(html_path, conn)
+
+Get the content ID for a given HTML file from the database.
+
+Parameters
+
+ (str): Path to the HTML file.
+
+
+ (sqlite3.Connection): Database connection.
+
+
+Returns
+
+ or : Content ID if found, else None.
+
+
+store_accessibility_result(content_id, pa11y_json, badge_html, wcag_level, error_count, warning_count, notice_count, conn=None)
+
+Store the latest accessibility result for a page in the database.
+
+Parameters
+
+ (int): Content ID for the page.
+
+
+ (list[dict]): Pa11y results.
+
+
+ (str): Badge HTML markup.
+
+
+ (str): WCAG level.
+
+
+, ,  (int): Issue counts.
+
+
+ (sqlite3.Connection): Database connection.
+
+
+generate_badge_html(wcag_level, error_count, logo_info, report_link)
+
+Generate badge HTML for a given WCAG level and error count.
+
+Parameters
+
+ (str): WCAG level.
+
+
+ (int): Number of errors.
+
+
+ (dict): Mapping of WCAG levels to badge/logo URLs.
+
+
+ (str): Link to the accessibility report.
+
+
+Returns
+
+: Badge HTML markup.
+
+
+inject_badge_into_html(html_path, badge_html, report_link, logo_info)
+
+Inject the badge/button into the HTML file after .
+
+Parameters
+
+ (str): Path to the HTML file.
+
+
+ (str): Badge HTML markup.
+
+
+ (str): Link to the accessibility report.
+
+
+ (dict): Badge/logo info.
+
+
+generate_nav_menu(context)
+
+Generate top-level navigation menu items from the content database.
+
+Parameters
+
+ (dict): Context dict, should include 'rel_path'.
+
+
+Returns
+
+: List of menu item dicts: {'title': str, 'link': str}
+
+
+generate_wcag_report(html_path, issues, badge_html, config)
+
+Generate a detailed HTML accessibility report for a file using Jinja2 templates.
+
+Parameters
+
+ (str): Path to the HTML file.
+
+
+ (list[dict]): Pa11y issues.
+
+
+ (str): Badge HTML markup.
+
+
+ (dict): Page and site config.
+
+
+Returns
+
+: Path to the generated report file.
+
+
+process_all_html_files(build_dir='build', config_file=None, db_path='db/sqlite.db')
+
+Process all HTML files in the build directory:
+
+Run Pa11y checks
+
+
+Store results in DB
+
+
+Generate badges and reports
+
+
+Inject badges into HTML
+
+
+Copy changed files to docs/
+
+
+Parameters
+
+ (str): Build directory.
+
+
+ (str, optional): Pa11y config file.
+
+
+ (str): Path to SQLite database.
+
+
+copy_to_docs()
+
+Copy all changed files from build/ to docs/.
+
+main()
+
+CLI entry point. Parses arguments, runs checks, stores results, and generates reports as needed.
+
+Logging
+
+All major operations and errors are logged to  for debugging and auditing.
+
+Error Handling
+
+Robust error handling is implemented for subprocess calls, file I/O, database operations, and template rendering. All failures are logged with context.
+
+Example Usage
+
+See Also
+
+Pa11y Documentation
+
+
+WCAG Guidelines
+
+
+Jinja2 Templates
+
+
+License
+
+See LICENSE in the project root.

@@ -1,148 +1,141 @@
 <!DOCTYPE html>
+
 <html lang="en">
 <head>
-  <meta charset="UTF-8">
-  <title>About</title>
-  
-  <link rel="icon" href="static/images/favicon.ico">
-  <link rel="stylesheet" href="../css/theme-dark.css" id="theme-css">
-  <script src="../js/main.js" defer></script>
+<meta charset="utf-8"/>
+<title>About</title>
+<link href="static/images/favicon.ico" rel="icon"/>
+<link href="../css/theme-dark.css" id="theme-css" rel="stylesheet"/>
+<script defer="" src="../js/main.js"></script>
+<!-- Favicons and Mobile Icons -->
+<link href="/static/images/favicon-16x16.png" rel="icon" sizes="16x16" type="image/png"/>
+<link href="/static/images/favicon-32x32.png" rel="icon" sizes="32x32" type="image/png"/>
+<link href="/static/images/favicon.ico" rel="icon" type="image/x-icon"/>
+<link href="/static/images/apple-touch-icon.png" rel="apple-touch-icon" sizes="180x180"/>
+<link href="/static/images/android-chrome-192x192.png" rel="icon" sizes="192x192" type="image/png"/>
+<link href="/static/images/android-chrome-512x512.png" rel="icon" sizes="512x512" type="image/png"/>
+<!-- Web Manifest (optional, for PWA) -->
+<link href="/static/images/site.webmanifest" rel="manifest"/>
+<!-- Open Graph Meta Tags for Sharing -->
+<meta content="OER-Forge: WCAG-Compliant OER Build System" property="og:title"/>
+<meta content="OER-Forge is a suite of tools to help authors create WCAG-compliant Open Educational Resources (OERs)." property="og:description"/>
+<meta content="/static/images/logo.png" property="og:image"/>
+<meta content="https://open-physics-ed-org.github.io/oer-forge" property="og:url"/>
+<!-- Twitter Card Meta Tags -->
+<meta content="summary_large_image" name="twitter:card"/>
+<meta content="OER-Forge: WCAG-Compliant OER Build System" name="twitter:title"/>
+<meta content="OER-Forge is a suite of tools to help authors create WCAG-compliant Open Educational Resources (OERs)." name="twitter:description"/>
+<meta content="/static/images/logo.png" name="twitter:image"/>
 </head>
 <body>
-  <header class="site-header">
-  <div class="header-flex">
-    <img src="../images/logo.png" alt="Site Logo" class="site-logo" />
-    <div class="header-titles">
-      <h1 class="site-title">OER-Forge</h1>
-      <h2 class="site-subtitle"></h2>
-    </div>
-    <!-- Theme toggle button moved to main content container in baseof.html -->
-  </div>
-  <nav class="site-nav" role="navigation" aria-label="Main menu">
-    <ul class="nav-menu">
-      
-        <li><a href="../index.html">Home</a></li>
-      
-        <li><a href="../stuff/index.html">Stuff</a></li>
-      
-        <li><a href="index.html">About</a></li>
-      
-    </ul>
-  </nav>
+<header class="site-header">
+<div class="header-flex">
+<img alt="Site Logo" class="site-logo" src="../images/logo.png"/>
+<div class="header-titles">
+<h1 class="site-title">OER-Forge: Documentation</h1>
+<h2 class="site-subtitle">An open source platform for building and sharing open educational resources.</h2>
+</div>
+<!-- Theme toggle button moved to main content container in baseof.html -->
+</div>
+<nav aria-label="Main menu" class="site-nav" role="navigation">
+<ul class="nav-menu">
+<li><a href="../index.html">Home</a></li>
+<li><a href="../news-roll/index.html">News</a></li>
+<li><a href="../sample-resources/index.html">Example</a></li>
+<li><a href="../documentation/index.html">Docs</a></li>
+<li><a href="index.html">About</a></li>
+</ul>
+</nav>
 </header>
-  <main id="main-content" tabindex="-1">
-    <div class="container">
-      <button id="theme-toggle" aria-label="Switch theme" class="theme-toggle">🌙
+<main id="main-content" tabindex="-1">
+<div class="container">
+<button aria-label="Switch theme" class="theme-toggle" id="theme-toggle">🌙
         <span class="visually-hidden">Toggle dark/light theme</span>
-      </button>
-      
-  <article>
-    
-    <h1>About</h1>
-    
-    <div id="font-controls" class="font-controls" aria-labelledby="font-controls-label">
-      <p id="font-controls-label"><strong>Font Appearance Controls</strong>: Adjust font and spacing for readability. Settings persist as you browse.</p>
-      <fieldset>
-        <legend>Font Family</legend>
-        <label><input type="radio" name="font-family" id="font-family-sans" value="sans-serif" checked> Sans-serif</label>
-        <label><input type="radio" name="font-family" id="font-family-serif" value="serif"> Serif</label>
-        <label><input type="radio" name="font-family" id="font-family-mono" value="monospace"> Monospace</label>
-      </fieldset>
-      <fieldset>
-        <legend>Font Size</legend>
-        <label><input type="radio" name="font-size" id="font-size-small" value="14px"> Small</label>
-        <label><input type="radio" name="font-size" id="font-size-medium" value="17px" checked> Medium</label>
-        <label><input type="radio" name="font-size" id="font-size-large" value="22px"> Large</label>
-      </fieldset>
-      <fieldset>
-        <legend>Letter Spacing</legend>
-        <label><input type="radio" name="letter-spacing" id="letter-spacing-tight" value="0em"> Tight</label>
-        <label><input type="radio" name="letter-spacing" id="letter-spacing-normal" value="0.03em" checked> Normal</label>
-        <label><input type="radio" name="letter-spacing" id="letter-spacing-wide" value="0.12em"> Wide</label>
-      </fieldset>
-      <fieldset>
-        <legend>Paragraph Spacing</legend>
-        <label><input type="radio" name="line-height" id="line-height-short" value="1.2"> Short</label>
-        <label><input type="radio" name="line-height" id="line-height-normal" value="1.7" checked> Normal</label>
-        <label><input type="radio" name="line-height" id="line-height-tall" value="2.2"> Tall</label>
-      </fieldset>
-    </div>
-    
-    <p>This site is maintained by <a href="https://dannycab.github.io/">Danny Caballero</a> and is intended to be a resource for teaching and learning modern classical mechanics. It is dedicated to providing accessible, interactive, and high-quality materials for students and educators. If not for the students I've been privileged to teach and learn from over the years and my colleagues who inspire my teaching this would not have been started.</p>
-<h2>Pull Requests Welcome!</h2>
-<p>We welcome contributions from anyone including students who want to help improve the site and its resources. Whether you're a student, educator, or developer, your input is valuable.</p>
+</button>
+<span id="accessibility-report-placeholder"></span><a aria-label="View Accessibility Report" class="wcag-badge wcag-badge-success" data-accessibility-report-btn="1" href="wcag_report_index.html"><img alt="WCAG WCAG22AAA Conformance Logo" src="https://www.w3.org/WAI/WCAG22/wcag2.2AAA-blue.svg" style="height:2em;vertical-align:middle;"/></a>
+<article>
+<h1>About</h1>
+<div aria-labelledby="font-controls-label" class="font-controls" id="font-controls">
+<p id="font-controls-label"><strong>Font Appearance Controls</strong>: Adjust font and spacing for readability. Settings persist as you browse.</p>
+<fieldset>
+<legend>Font Family</legend>
+<label><input checked="" id="font-family-sans" name="font-family" type="radio" value="sans-serif"/> Sans-serif</label>
+<label><input id="font-family-serif" name="font-family" type="radio" value="serif"/> Serif</label>
+<label><input id="font-family-mono" name="font-family" type="radio" value="monospace"/> Monospace</label>
+</fieldset>
+<fieldset>
+<legend>Font Size</legend>
+<label><input id="font-size-small" name="font-size" type="radio" value="14px"/> Small</label>
+<label><input checked="" id="font-size-medium" name="font-size" type="radio" value="17px"/> Medium</label>
+<label><input id="font-size-large" name="font-size" type="radio" value="22px"/> Large</label>
+</fieldset>
+<fieldset>
+<legend>Letter Spacing</legend>
+<label><input id="letter-spacing-tight" name="letter-spacing" type="radio" value="0em"/> Tight</label>
+<label><input checked="" id="letter-spacing-normal" name="letter-spacing" type="radio" value="0.03em"/> Normal</label>
+<label><input id="letter-spacing-wide" name="letter-spacing" type="radio" value="0.12em"/> Wide</label>
+</fieldset>
+<fieldset>
+<legend>Paragraph Spacing</legend>
+<label><input id="line-height-short" name="line-height" type="radio" value="1.2"/> Short</label>
+<label><input checked="" id="line-height-normal" name="line-height" type="radio" value="1.7"/> Normal</label>
+<label><input id="line-height-tall" name="line-height" type="radio" value="2.2"/> Tall</label>
+</fieldset>
+</div>
+<p>Open Physics Ed is a collaborative, open-source initiative dedicated to creating accessible, high-quality, and modern educational resources for physics and computational science. Our mission is to lower barriers to learning by providing free, open, and adaptable materials for students, educators, and lifelong learners everywhere.</p>
+<h2>Our Mission</h2>
 <ul role="list">
-<li role="listitem"><a href="https://github.com/dannycab/modern-classical-mechanics/issues/new">Create an issue</a></li>
-<li role="listitem"><a href="https://github.com/dannycab/modern-classical-mechanics/pulls">Issue a pull request</a></li>
+<li role="listitem"><strong>Accessibility:</strong> We are committed to making all resources usable by everyone, including those with disabilities, and available in a variety of formats (HTML, PDF, Markdown, LaTeX, Jupyter, and more).</li>
+<li role="listitem"><strong>Openness:</strong> All materials are open source and free to use, modify, and distribute. We believe in challenging the corporate control of educational resources and supporting equitable access for all.</li>
+<li role="listitem"><strong>Collaboration:</strong> Anyone can contribute—students, educators, developers, and the broader community. Pull requests and suggestions are always welcome.</li>
+<li role="listitem"><strong>Simplicity:</strong> Our sites and materials are intentionally simple, plain, and easy to use, modify, and distribute. This ensures broad compatibility and accessibility.</li>
 </ul>
-<p>You don't need a GitHub account to create an issue, but you do need one to issue a pull request.</p>
-<h1>Philosophy</h1>
-<h2>Why Accessible, Open Educational Resources?</h2>
-<p>Our work is motivated by a deep need to challenge the corporate control of educational resources and to make high-quality, accessible materials available to everyone.</p>
-<p>When corporations control access to textbooks, software, and other learning tools, only those who can afford them benefit. This creates unnecessary barriers for students and educators everywhere.</p>
-<p>The <a href="https://educationdata.org/average-cost-of-college-textbooks">rising costs of textbooks</a>, <a href="https://educationdata.org/college-tuition-inflation-rate">increasing tuition</a>, and <a href="https://www.brookings.edu/articles/increasing-the-impact-of-corporate-engagement-in-education-landscape-and-challenges/">corporate influence over educational resources</a> have made it harder than ever for people to get the materials they need. By making resources open and accessible, we hope to lower these barriers and support a more equitable learning environment for all.</p>
-<h2>Why is the site so plain? Why is it so poorly designed? Why is it so simple?</h2>
-<p>The challenge of accessible materials is that they must be available to everyone in a format that is easy to use, modify, and distribute. This includes considerations for those with disabilities, different needs, and varying levels of access to technology.</p>
-<p>So, we have attempted to create a site and a build that are open, simple, and accessible. This also means that the format of the materials is available in many different forms automatically, including HTML, PDF, and Markdown, DOCX, LaTeX, and Jupyter Notebook formats.</p>
-<p>Indeed, even the build process itself is open and accessible, allowing anyone to generate the site and its resources in the format they prefer. The entire site is available in a <a href="https://github.com/dannycab/modern-classical-mechanics">public GitHub repository</a>. It's also hosted there.</p>
-<p><em>A note here:</em> Danny is not a Python developer; he has a full time job as a <a href="https://dannycab.github.io/">physics and computational science professor</a>). The code is gonna be crap.</p>
-<h2>Design Principles</h2>
-<p>We abide the following design principles:</p>
+<h2>Who We Are</h2>
+<p>Open Physics Ed is organized by <a href="https://dannycab.github.io/">Danny Caballero</a>, a professor of physics and computational science at Michigan State University, with contributions from students, colleagues, and the wider open education community. The project is inspired by years of teaching, learning, and collaborating with others who share a passion for open, equitable education.</p>
+<h2>Our Projects</h2>
+<ul role="list">
+<li role="listitem"><strong>Modern Classical Mechanics:</strong> The first major course site in the Open Physics Ed family, providing interactive, accessible resources for teaching and learning classical mechanics. <a href="https://dannycaballero.info/modern-classical-mechanics/">Visit Modern Classical Mechanics</a></li>
+<li role="listitem"><strong>Future Courses:</strong> Open Physics Ed is designed to organize and support efforts across many classes and topics. Modern Classical Mechanics is just the beginning—more courses and resources are coming soon.</li>
+</ul>
+<h2>Philosophy &amp; Design Principles</h2>
 <ol role="list">
-<li role="listitem">Everything is open source and free to use, modify, and distribute.</li>
-<li role="listitem">All materials will follow best guidelines for accessibility, ensuring that they are usable by everyone especially those with disabilities.</li>
-<li role="listitem">Anyone can contribute to the project, whether by suggesting changes, adding new content, or improving existing materials. Pull requests are welcome!</li>
+<li role="listitem"><strong>Everything is open source and free.</strong></li>
+<li role="listitem"><strong>Accessibility is a priority:</strong> We follow best practices and continually improve to meet WCAG and other standards.</li>
+<li role="listitem"><strong>Anyone can contribute:</strong> Suggest changes, add content, or improve materials—your input is valued.</li>
+<li role="listitem"><strong>Simple, semantic, and accessible design:</strong> We use semantic HTML, ARIA roles, and keyboard navigation to ensure usability for all.</li>
 </ol>
-<h1>Accessibility Timeline</h1>
-<h2>Accessibility</h2>
-<p>We intend these resources to be accessible to everyone and available in a variety of formats. This work involves ongoing efforts to ensure that all materials meet accessibility standards and are usable by people with disabilities. That is a work in progress, and we will continue to improve the site and its resources over time. Below is the todo list of our accessibility efforts:</p>
-<h2>Building Accessible Resources</h2>
+<h2>Accessibility Commitments</h2>
 <ul role="list">
-<li role="listitem">[X] Build with open source tools that are readily accessible</li>
-<li role="listitem">[ ] Provide documentation and resources for others to contribute</li>
+<li role="listitem">Ongoing work to ensure all materials are accessible and usable by people with disabilities</li>
+<li role="listitem">Keyboard navigation and screen reader compatibility</li>
+<li role="listitem">High color contrast and readable font sizes</li>
+<li role="listitem">Descriptive alt text and link text</li>
+<li role="listitem">Open build process and documentation for contributors</li>
 </ul>
-<h2>Web Accessibility Standards</h2>
+<h2>How to Contribute</h2>
+<p>We welcome contributions from anyone interested in improving open physics education:</p>
 <ul role="list">
-<li role="listitem">[ ] Ensure all images have appropriate alt text</li>
-<li role="listitem">[ ] Implement ARIA roles and properties correctly</li>
-<li role="listitem">[ ] Use semantic HTML to improve screen reader compatibility</li>
-<li role="listitem">[ ] Ensure all links have descriptive text</li>
-<li role="listitem">[ ] Provide transcripts for all audio and video content</li>
-<li role="listitem">[ ] Build keyboard navigation for all interactive elements</li>
+<li role="listitem">Suggest new content or improvements</li>
+<li role="listitem">Report issues or bugs</li>
+<li role="listitem">Review or submit pull requests</li>
+<li role="listitem">Add new activities, simulations, or resources</li>
+<li role="listitem">Help improve accessibility and design</li>
 </ul>
-<h2>Accessibility Testing</h2>
+<p>You can contribute by creating an issue or pull request on our <a href="https://github.com/open-physics-ed/open-physics-ed-org.github.io">GitHub repository</a>.</p>
+<h2>Contact &amp; Community</h2>
 <ul role="list">
-<li role="listitem">[ ] Ensure color contrast meets WCAG standards</li>
-<li role="listitem">[ ] Test site with screen readers and other assistive technologies</li>
-<li role="listitem">[ ] Ensure all interactive elements are keyboard accessible</li>
+<li role="listitem"><a href="https://github.com/dannycab">Danny Caballero on GitHub</a></li>
+<li role="listitem"><a href="https://dannycaballero.info/modern-classical-mechanics/">Modern Classical Mechanics</a></li>
+<li role="listitem"><a href="mailto:danny@hellmo.space">Email</a></li>
 </ul>
-<h1>Contributions</h1>
-<p>We welcome contributions from anyone including students who want to help improve the site and its resources. Whether you're a student, educator, or developer, your input is valuable. You can help by:</p>
-<ul role="list">
-<li role="listitem">Suggesting new content or improvements to existing materials</li>
-<li role="listitem">Reporting issues or bugs</li>
-<li role="listitem">Reviewing pull requests from others</li>
-<li role="listitem">Adding new activities or simulations</li>
-<li role="listitem">Improving the site's design or functionality</li>
-</ul>
-<p>You can contribute by creating an issue or issuing a pull request on the <a href="https://github.com/dannycab/modern-classical-mechanics">GitHub repository</a>.</p>
-<h2>Contributors</h2>
-<p>Over the years, the following people have contributed to this project and its resources:</p>
-<ul role="list">
-<li role="listitem">Morten Hjorth-Jensen (MSU/UiO)</li>
-<li role="listitem">Rachel Henderson (MSU)</li>
-<li role="listitem">Vashti Sawtelle (MSU)</li>
-<li role="listitem">Steve Pollock (CU-Boulder)</li>
-<li role="listitem">Alia Valentine (MSU)</li>
-</ul>
+<hr/>
+<p>Open Physics Ed is open source and always evolving. Join us in building a more accessible, equitable future for physics education.</p>
 <script src="https://cdn.jsdelivr.net/npm/mathjax@3/es5/tex-mml-chtml.js"></script>
-  </article>
-
-    </div>
-  </main>
-  <footer>
+</article>
+</div>
+</main>
+<footer>
   Made with tons of ☕️  and lots of ❤️ for students and educators everywhere. | Built with <a href="https://github.com/OER-Forge/">OER Forge</a>
-
 </footer>
 </body>
 </html>

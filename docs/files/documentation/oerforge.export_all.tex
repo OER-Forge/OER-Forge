@@ -1,0 +1,118 @@
+\section{oerforge.export\_all --- Export All Content and
+Assets}\label{oerforge.export_all-export-all-content-and-assets}
+
+\subsection{Overview}\label{overview}
+
+\texttt{oerforge.export\_all} provides utilities for exporting all site
+content, assets, and resources from the OERForge project for deployment,
+backup, or external use. It is designed to help new users and
+programmers automate the process of collecting and packaging all
+generated files, static assets, and documentation in a consistent
+manner.
+
+\begin{itemize}
+\tightlist
+\item
+  \textbf{Exports all generated HTML, assets, and documentation}
+\item
+  \textbf{Supports copying to external directories or archives}
+\item
+  \textbf{Ensures directory structure and file integrity}
+\item
+  \textbf{Integrates with build and deployment workflows}
+\item
+  \textbf{Robust logging and error handling}
+\end{itemize}
+
+\begin{center}\rule{0.5\linewidth}{0.5pt}\end{center}
+
+\subsection{Functions}\label{functions}
+
+\subsubsection{export\_all\_content(output\_dir=`export',
+include\_assets=True,
+include\_docs=True)}\label{export_all_contentoutput_direxport-include_assetstrue-include_docstrue}
+
+Export all site content, assets, and documentation to a target
+directory.
+
+\textbf{Parameters} - \texttt{output\_dir} (str): Target directory for
+export (default: `export'). - \texttt{include\_assets} (bool): Whether
+to include static assets (CSS, JS, images). - \texttt{include\_docs}
+(bool): Whether to include documentation files.
+
+\textbf{Returns} - \texttt{None}
+
+\textbf{Notes} - Creates target directories if they do not exist. -
+Overwrites files in the export directory each time it is called. - Logs
+all operations and errors for auditing.
+
+\begin{center}\rule{0.5\linewidth}{0.5pt}\end{center}
+
+\subsubsection{copy\_directory(src, dst)}\label{copy_directorysrc-dst}
+
+Recursively copy a directory and its contents to a target location.
+
+\textbf{Parameters} - \texttt{src} (str): Source directory path. -
+\texttt{dst} (str): Destination directory path.
+
+\textbf{Returns} - \texttt{None}
+
+\textbf{Notes} - Creates destination directory if missing. - Overwrites
+files in the destination.
+
+\begin{center}\rule{0.5\linewidth}{0.5pt}\end{center}
+
+\subsubsection{export\_database(db\_path,
+output\_dir)}\label{export_databasedb_path-output_dir}
+
+Export the SQLite database file to the export directory.
+
+\textbf{Parameters} - \texttt{db\_path} (str): Path to the SQLite
+database file. - \texttt{output\_dir} (str): Target directory for
+export.
+
+\textbf{Returns} - \texttt{None}
+
+\begin{center}\rule{0.5\linewidth}{0.5pt}\end{center}
+
+\subsubsection{export\_reports(reports\_dir,
+output\_dir)}\label{export_reportsreports_dir-output_dir}
+
+Export all accessibility and build reports to the export directory.
+
+\textbf{Parameters} - \texttt{reports\_dir} (str): Source directory for
+reports. - \texttt{output\_dir} (str): Target directory for export.
+
+\textbf{Returns} - \texttt{None}
+
+\begin{center}\rule{0.5\linewidth}{0.5pt}\end{center}
+
+\subsubsection{main()}\label{main}
+
+CLI entry point. Parses arguments and runs export operations as needed.
+
+\begin{center}\rule{0.5\linewidth}{0.5pt}\end{center}
+
+\subsection{Logging}\label{logging}
+
+All major operations and errors are logged for debugging and auditing.
+
+\subsection{Error Handling}\label{error-handling}
+
+Robust error handling is implemented for file I/O and directory
+operations. All failures are logged with context.
+
+\subsection{Example Usage}\label{example-usage}
+
+\begin{Shaded}
+\begin{Highlighting}[]
+\ImportTok{from}\NormalTok{ oerforge }\ImportTok{import}\NormalTok{ export\_all}
+\NormalTok{export\_all.export\_all\_content(output\_dir}\OperatorTok{=}\StringTok{\textquotesingle{}export\textquotesingle{}}\NormalTok{, include\_assets}\OperatorTok{=}\VariableTok{True}\NormalTok{, include\_docs}\OperatorTok{=}\VariableTok{True}\NormalTok{)}
+\end{Highlighting}
+\end{Shaded}
+
+\begin{center}\rule{0.5\linewidth}{0.5pt}\end{center}
+
+\subsection{License}\label{license}
+
+See LICENSE in the project root.

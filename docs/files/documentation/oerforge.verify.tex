@@ -1,0 +1,208 @@
+\section{oerforge.verify --- Accessibility Verification and
+Reporting}\label{oerforge.verify-accessibility-verification-and-reporting}
+
+\subsection{Overview}\label{overview}
+
+\texttt{oerforge.verify} provides tools for automated accessibility
+checking, badge generation, and reporting for static HTML sites. It
+integrates with \href{https://pa11y.org/}{Pa11y} for WCAG compliance
+checks, manages results in a SQLite database, and generates visual
+badges and detailed reports for each page. This module is designed for
+new users, educators, and developers seeking robust accessibility
+workflows in open educational resources.
+
+\begin{itemize}
+\tightlist
+\item
+  \textbf{Automated accessibility checks (WCAG AA/AAA) using Pa11y}
+\item
+  \textbf{Badge and report generation for each HTML page}
+\item
+  \textbf{Database integration for tracking results}
+\item
+  \textbf{Jinja2-based report rendering}
+\item
+  \textbf{Robust logging and error handling}
+\end{itemize}
+
+\begin{center}\rule{0.5\linewidth}{0.5pt}\end{center}
+
+\subsection{Functions}\label{functions}
+
+\subsubsection{load\_pa11y\_config(yml\_path='\_content.yml')}\label{load_pa11y_configyml_path_content.yml}
+
+Load Pa11y configuration and logo info from YAML and JSON files.
+
+\textbf{Parameters} - \texttt{yml\_path} (str): Path to the YAML config
+file.
+
+\textbf{Returns} - \texttt{dict}: Parsed configuration dictionary.
+
+\begin{center}\rule{0.5\linewidth}{0.5pt}\end{center}
+
+\subsubsection{run\_pa11y\_on\_file(html\_path, config\_path=None,
+wcag\_level=`AA')}\label{run_pa11y_on_filehtml_path-config_pathnone-wcag_levelaa}
+
+Run Pa11y accessibility checks on a single HTML file.
+
+\textbf{Parameters} - \texttt{html\_path} (str): Path to the HTML file.
+- \texttt{config\_path} (str, optional): Path to Pa11y config file. -
+\texttt{wcag\_level} (str): WCAG level (`AA' or `AAA').
+
+\textbf{Returns} - \texttt{list{[}dict{]}} or \texttt{None}: Parsed
+Pa11y JSON results, or None on error.
+
+\textbf{Notes} - Handles errors robustly, logs issues, and attempts to
+parse output even on failure.
+
+\begin{center}\rule{0.5\linewidth}{0.5pt}\end{center}
+
+\subsubsection{get\_content\_id\_for\_file(html\_path,
+conn)}\label{get_content_id_for_filehtml_path-conn}
+
+Get the content ID for a given HTML file from the database.
+
+\textbf{Parameters} - \texttt{html\_path} (str): Path to the HTML file.
+- \texttt{conn} (sqlite3.Connection): Database connection.
+
+\textbf{Returns} - \texttt{int} or \texttt{None}: Content ID if found,
+else None.
+
+\begin{center}\rule{0.5\linewidth}{0.5pt}\end{center}
+
+\subsubsection{store\_accessibility\_result(content\_id, pa11y\_json,
+badge\_html, wcag\_level, error\_count, warning\_count, notice\_count,
+conn=None)}\label{store_accessibility_resultcontent_id-pa11y_json-badge_html-wcag_level-error_count-warning_count-notice_count-connnone}
+
+Store the latest accessibility result for a page in the database.
+
+\textbf{Parameters} - \texttt{content\_id} (int): Content ID for the
+page. - \texttt{pa11y\_json} (list{[}dict{]}): Pa11y results. -
+\texttt{badge\_html} (str): Badge HTML markup. - \texttt{wcag\_level}
+(str): WCAG level. - \texttt{error\_count}, \texttt{warning\_count},
+\texttt{notice\_count} (int): Issue counts. - \texttt{conn}
+(sqlite3.Connection): Database connection.
+
+\begin{center}\rule{0.5\linewidth}{0.5pt}\end{center}
+
+\subsubsection{generate\_badge\_html(wcag\_level, error\_count,
+logo\_info,
+report\_link)}\label{generate_badge_htmlwcag_level-error_count-logo_info-report_link}
+
+Generate badge HTML for a given WCAG level and error count.
+
+\textbf{Parameters} - \texttt{wcag\_level} (str): WCAG level. -
+\texttt{error\_count} (int): Number of errors. - \texttt{logo\_info}
+(dict): Mapping of WCAG levels to badge/logo URLs. -
+\texttt{report\_link} (str): Link to the accessibility report.
+
+\textbf{Returns} - \texttt{str}: Badge HTML markup.
+
+\begin{center}\rule{0.5\linewidth}{0.5pt}\end{center}
+
+\subsubsection{inject\_badge\_into\_html(html\_path, badge\_html,
+report\_link,
+logo\_info)}\label{inject_badge_into_htmlhtml_path-badge_html-report_link-logo_info}
+
+Inject the badge/button into the HTML file after
+\texttt{\textless{}main\textgreater{}}.
+
+\textbf{Parameters} - \texttt{html\_path} (str): Path to the HTML file.
+- \texttt{badge\_html} (str): Badge HTML markup. - \texttt{report\_link}
+(str): Link to the accessibility report. - \texttt{logo\_info} (dict):
+Badge/logo info.
+
+\begin{center}\rule{0.5\linewidth}{0.5pt}\end{center}
+
+\subsubsection{generate\_nav\_menu(context)}\label{generate_nav_menucontext}
+
+Generate top-level navigation menu items from the content database.
+
+\textbf{Parameters} - \texttt{context} (dict): Context dict, should
+include `rel\_path'.
+
+\textbf{Returns} - \texttt{list{[}dict{]}}: List of menu item dicts:
+\{`title': str, `link': str\}
+
+\begin{center}\rule{0.5\linewidth}{0.5pt}\end{center}
+
+\subsubsection{generate\_wcag\_report(html\_path, issues, badge\_html,
+config)}\label{generate_wcag_reporthtml_path-issues-badge_html-config}
+
+Generate a detailed HTML accessibility report for a file using Jinja2
+templates.
+
+\textbf{Parameters} - \texttt{html\_path} (str): Path to the HTML file.
+- \texttt{issues} (list{[}dict{]}): Pa11y issues. - \texttt{badge\_html}
+(str): Badge HTML markup. - \texttt{config} (dict): Page and site
+config.
+
+\textbf{Returns} - \texttt{str}: Path to the generated report file.
+
+\begin{center}\rule{0.5\linewidth}{0.5pt}\end{center}
+
+\subsubsection{process\_all\_html\_files(build\_dir=`build',
+config\_file=None,
+db\_path=`db/sqlite.db')}\label{process_all_html_filesbuild_dirbuild-config_filenone-db_pathdbsqlite.db}
+
+Process all HTML files in the build directory: - Run Pa11y checks -
+Store results in DB - Generate badges and reports - Inject badges into
+HTML - Copy changed files to docs/
+
+\textbf{Parameters} - \texttt{build\_dir} (str): Build directory. -
+\texttt{config\_file} (str, optional): Pa11y config file. -
+\texttt{db\_path} (str): Path to SQLite database.
+
+\begin{center}\rule{0.5\linewidth}{0.5pt}\end{center}
+
+\subsubsection{copy\_to\_docs()}\label{copy_to_docs}
+
+Copy all changed files from build/ to docs/.
+
+\begin{center}\rule{0.5\linewidth}{0.5pt}\end{center}
+
+\subsubsection{main()}\label{main}
+
+CLI entry point. Parses arguments, runs checks, stores results, and
+generates reports as needed.
+
+\begin{center}\rule{0.5\linewidth}{0.5pt}\end{center}
+
+\subsection{Logging}\label{logging}
+
+All major operations and errors are logged to \texttt{log/pa11y.log} for
+debugging and auditing.
+
+\subsection{Error Handling}\label{error-handling}
+
+Robust error handling is implemented for subprocess calls, file I/O,
+database operations, and template rendering. All failures are logged
+with context.
+
+\subsection{Example Usage}\label{example-usage}
+
+\begin{Shaded}
+\begin{Highlighting}[]
+\ImportTok{from}\NormalTok{ oerforge }\ImportTok{import}\NormalTok{ verify}
+\NormalTok{verify.process\_all\_html\_files()}
+\end{Highlighting}
+\end{Shaded}
+
+\subsection{See Also}\label{see-also}
+
+\begin{itemize}
+\tightlist
+\item
+  \href{https://pa11y.org/}{Pa11y Documentation}
+\item
+  \href{https://www.w3.org/WAI/standards-guidelines/wcag/}{WCAG
+  Guidelines}
+\item
+  \href{https://jinja.palletsprojects.com/}{Jinja2 Templates}
+\end{itemize}
+
+\begin{center}\rule{0.5\linewidth}{0.5pt}\end{center}
+
+\subsection{License}\label{license}
+
+See LICENSE in the project root.

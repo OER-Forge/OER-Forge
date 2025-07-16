@@ -1,0 +1,50 @@
+Activities
+
+Welcome to the activities page! Here you'll find interactive and hands-on exercises to deepen your understanding of modern classical mechanics.
+
+Sample Activity: Pendulum Lab
+
+Objective: Explore the motion of a simple pendulum and measure its period.
+
+
+Materials: String, weight, stopwatch, ruler.
+
+
+Instructions:
+
+Set up a pendulum of known length.
+
+
+Displace it by a small angle and release.
+
+
+Measure the time for 10 oscillations.
+
+
+Calculate the period and compare with theory.
+
+
+
+Tip: Try different lengths and plot period vs. length!
+
+Sample Activity: Energy Skate Park (PhET)
+
+Objective: Investigate conservation of energy using a virtual skate park.
+
+
+Link: PhET Energy Skate Park
+
+
+Instructions:
+
+Open the simulation and build a track.
+
+
+Observe kinetic and potential energy as the skater moves.
+
+
+Experiment with friction and track shapes.
+
+
+
+Add your own activities in  using markdown!

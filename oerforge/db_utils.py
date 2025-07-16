@@ -90,6 +90,21 @@ def initialize_database():
 
     # Create tables
     cursor.execute("""
+        CREATE TABLE IF NOT EXISTS accessibility_results (
+            id INTEGER PRIMARY KEY AUTOINCREMENT,
+            content_id INTEGER NOT NULL,
+            pa11y_json TEXT,
+            badge_html TEXT,
+            wcag_level TEXT,
+            error_count INTEGER,
+            warning_count INTEGER,
+            notice_count INTEGER,
+            checked_at TEXT,
+            FOREIGN KEY(content_id) REFERENCES content(id)
+        )
+    """)
+    db_log("Created table: accessibility_results")
+    cursor.execute("""
         CREATE TABLE IF NOT EXISTS files (
             id INTEGER PRIMARY KEY AUTOINCREMENT,
             filename TEXT,
@@ -171,13 +186,14 @@ def initialize_database():
 
     # Default conversion rules: source_format -> [target_formats]
     default_conversion_matrix = {
-        '.md':     ['.md', '.marp', '.tex', '.pdf', '.docx', '.ppt', '.jupyter'],
-        '.marp':   ['.md', '.marp', '.pdf', '.docx', '.ppt'],
-        '.tex':    ['.md', '.tex', '.pdf', '.docx'],
-        '.ipynb':  ['.md', '.tex', '.pdf', '.docx', '.jupyter', '.ipynb'],
+        '.md':     ['.txt','.md', '.marp', '.tex', '.pdf', '.docx', '.ppt', '.jupyter'],
+        '.marp':   ['.txt','.md', '.marp', '.pdf', '.docx', '.ppt'],
+        '.tex':    ['.txt','.md', '.tex', '.pdf', '.docx'],
+        '.ipynb':  ['.txt','.md', '.tex', '.pdf', '.docx', '.jupyter', '.ipynb'],
         '.jupyter':['.md', '.tex', '.pdf', '.docx', '.jupyter', '.ipynb'],
-        '.docx':   ['.md', '.tex', '.pdf', '.docx'],
-        '.ppt':    ['.ppt'],
+        '.docx':   ['.txt','.md', '.tex', '.pdf', '.docx'],
+        '.ppt':    ['.txt','.ppt'],
+        '.txt':    ['.txt','.md','.tex','.docx','.pdf']
     }
     # Check if conversion_capabilities is empty, then insert defaults
     cursor.execute("SELECT COUNT(*) FROM conversion_capabilities")

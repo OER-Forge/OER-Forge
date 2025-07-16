@@ -1,0 +1,141 @@
+<!DOCTYPE html>
+
+<html lang="en">
+<head>
+<meta charset="utf-8"/>
+<title>build.py - OER-Forge Orchestrator</title>
+<link href="static/images/favicon.ico" rel="icon"/>
+<link href="../css/theme-dark.css" id="theme-css" rel="stylesheet"/>
+<script defer="" src="../js/main.js"></script>
+<!-- Favicons and Mobile Icons -->
+<link href="/static/images/favicon-16x16.png" rel="icon" sizes="16x16" type="image/png"/>
+<link href="/static/images/favicon-32x32.png" rel="icon" sizes="32x32" type="image/png"/>
+<link href="/static/images/favicon.ico" rel="icon" type="image/x-icon"/>
+<link href="/static/images/apple-touch-icon.png" rel="apple-touch-icon" sizes="180x180"/>
+<link href="/static/images/android-chrome-192x192.png" rel="icon" sizes="192x192" type="image/png"/>
+<link href="/static/images/android-chrome-512x512.png" rel="icon" sizes="512x512" type="image/png"/>
+<!-- Web Manifest (optional, for PWA) -->
+<link href="/static/images/site.webmanifest" rel="manifest"/>
+<!-- Open Graph Meta Tags for Sharing -->
+<meta content="OER-Forge: WCAG-Compliant OER Build System" property="og:title"/>
+<meta content="OER-Forge is a suite of tools to help authors create WCAG-compliant Open Educational Resources (OERs)." property="og:description"/>
+<meta content="/static/images/logo.png" property="og:image"/>
+<meta content="https://open-physics-ed-org.github.io/oer-forge" property="og:url"/>
+<!-- Twitter Card Meta Tags -->
+<meta content="summary_large_image" name="twitter:card"/>
+<meta content="OER-Forge: WCAG-Compliant OER Build System" name="twitter:title"/>
+<meta content="OER-Forge is a suite of tools to help authors create WCAG-compliant Open Educational Resources (OERs)." name="twitter:description"/>
+<meta content="/static/images/logo.png" name="twitter:image"/>
+</head>
+<body>
+<header class="site-header">
+<div class="header-flex">
+<img alt="Site Logo" class="site-logo" src="../images/logo.png"/>
+<div class="header-titles">
+<h1 class="site-title">OER-Forge: Documentation</h1>
+<h2 class="site-subtitle">An open source platform for building and sharing open educational resources.</h2>
+</div>
+<!-- Theme toggle button moved to main content container in baseof.html -->
+</div>
+<nav aria-label="Main menu" class="site-nav" role="navigation">
+<ul class="nav-menu">
+<li><a href="../index.html">Home</a></li>
+<li><a href="../news-roll/index.html">News</a></li>
+<li><a href="../sample-resources/index.html">Example</a></li>
+<li><a href="index.html">Docs</a></li>
+<li><a href="../about/index.html">About</a></li>
+</ul>
+</nav>
+</header>
+<main id="main-content" tabindex="-1">
+<div class="container">
+<button aria-label="Switch theme" class="theme-toggle" id="theme-toggle">🌙
+        <span class="visually-hidden">Toggle dark/light theme</span>
+</button>
+<span id="accessibility-report-placeholder"></span><a aria-label="View Accessibility Report" class="wcag-badge wcag-badge-error" data-accessibility-report-btn="1" href="wcag_report_build.html"><img alt="WCAG WCAG22AAA Conformance Logo" src="https://www.w3.org/WAI/WCAG22/wcag2.2AAA-blue.svg" style="height:2em;vertical-align:middle;"/></a>
+<article>
+<nav aria-label="Download options" class="download-nav" role="navigation">
+<a aria-label="Download as PDF" class="download-btn theme-download-pdf" href="../files/documentation/build.pdf" role="button">
+          PDF
+        </a>
+<a aria-label="Download as Word" class="download-btn theme-download-docx" href="../files/documentation/build.docx" role="button">
+          Word
+        </a>
+<a aria-label="Download as LaTeX" class="download-btn theme-download-tex" href="../files/documentation/build.tex" role="button">
+          LaTeX
+        </a>
+<a aria-label="Download as Markdown" class="download-btn theme-download-md" href="../files/documentation/build.md" role="button">
+          Markdown
+        </a>
+<a aria-label="Download as Plain Text" class="download-btn theme-download-txt" href="../files/documentation/build.txt" role="button">
+          Plain Text
+        </a>
+</nav>
+<h1>build.py - OER-Forge Orchestrator</h1>
+<h2>Overview</h2>
+<p><code>build.py</code> is the main workflow orchestrator for the OERForge static site generator. It coordinates the entire build process, including database initialization, content scanning, conversion, HTML generation, exporting, and deployment preparation. This script is designed for new users and programmers to provide a clear, step-by-step build pipeline for open educational resources.</p>
+<ul role="list">
+<li role="listitem"><strong>Initializes the content database</strong></li>
+<li role="listitem"><strong>Scans the table of contents and populates the database</strong></li>
+<li role="listitem"><strong>Converts all source content to output formats</strong></li>
+<li role="listitem"><strong>Exports all content and assets to the build directory</strong></li>
+<li role="listitem"><strong>Builds HTML pages and section indexes</strong></li>
+<li role="listitem"><strong>Copies build outputs to docs/ for publishing</strong></li>
+<li role="listitem"><strong>Logs all major steps and errors</strong></li>
+</ul>
+<hr/>
+<h2>Functions</h2>
+<h3>run()</h3>
+<p>Runs the complete OERForge build workflow.</p>
+<p><strong>Parameters</strong></p>
+<ul role="list">
+<li role="listitem">None</li>
+</ul>
+<p><strong>Returns</strong></p>
+<ul role="list">
+<li role="listitem">None</li>
+</ul>
+<p><strong>Workflow Steps</strong></p>
+<ol role="list">
+<li role="listitem">Initializes the SQLite database for content and assets.</li>
+<li role="listitem">Scans the table of contents (<code>_content.yml</code>) and populates the database.</li>
+<li role="listitem">Converts all source content (Markdown, Jupyter, DOCX) to output formats.</li>
+<li role="listitem">Exports all content and assets to the build directory.</li>
+<li role="listitem">Builds HTML pages and section indexes using templates.</li>
+<li role="listitem">Copies the build output to <code>docs/</code> for publishing (e.g., GitHub Pages).</li>
+<li role="listitem">Logs all steps and errors to the build log.</li>
+</ol>
+<hr/>
+<h2>Constants</h2>
+<ul role="list">
+<li role="listitem"><code>BUILD_DIR</code>: Path to the build output directory.</li>
+<li role="listitem"><code>FILES_DIR</code>: Subdirectory for files in build.</li>
+<li role="listitem"><code>PROJECT_ROOT</code>: Absolute path to the project root.</li>
+<li role="listitem"><code>BUILD_FILES_DIR</code>: Path to files in build.</li>
+<li role="listitem"><code>BUILD_HTML_DIR</code>: Path to HTML output in build.</li>
+</ul>
+<hr/>
+<h2>Logging</h2>
+<p>All major operations and errors are logged for debugging and auditing. The build log can be found in the <code>log/</code> directory.</p>
+<h2>Error Handling</h2>
+<p>Robust error handling is implemented in each step of the workflow modules. All failures are logged with context.</p>
+<h2>Example Usage</h2>
+<pre><code class="language-python"># Run the build workflow from the command line
+python build.py
+
+# Or import and run from another script
+from build import run
+run()
+</code></pre>
+<hr/>
+<h2>License</h2>
+<p>See LICENSE in the project root.</p>
+<script src="https://cdn.jsdelivr.net/npm/mathjax@3/es5/tex-mml-chtml.js"></script>
+</article>
+</div>
+</main>
+<footer>
+  Made with tons of ☕️  and lots of ❤️ for students and educators everywhere. | Built with <a href="https://github.com/OER-Forge/">OER Forge</a>
+</footer>
+</body>
+</html>

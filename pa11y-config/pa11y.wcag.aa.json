@@ -1,0 +1,12 @@
+{
+  "standard": "WCAG2AA",
+  "timeout": 30000,
+  "screenCapture": false,
+  "chromeLaunchConfig": {
+    "args": ["--no-sandbox"]
+  },
+  "actions": [],
+  "defaults": {
+    "timeout": 30000
+  }
+}

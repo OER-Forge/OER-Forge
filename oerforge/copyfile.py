@@ -34,7 +34,6 @@ Usage:
 import os
 import shutil
 import logging
-from oerforge.logging_utils import setup_logging
 
 PROJECT_ROOT = os.path.dirname(os.path.dirname(os.path.abspath(__file__)))
 BUILD_DIR = os.path.join(PROJECT_ROOT, 'build')
@@ -46,19 +45,6 @@ JS_SRC = os.path.join(PROJECT_ROOT, 'static', 'js')
 JS_DST = os.path.join(BUILD_DIR, 'js')
 NOJEKYLL_PATH = os.path.join(BUILD_DIR, '.nojekyll')
 LOG_PATH = os.path.join(PROJECT_ROOT, 'log/build.log')
-
-
-# def copytree_overwrite(src, dst):
-#     """
-#     Recursively copy src directory to dst, overwriting existing files.
-#     """
-#     logging.debug(f"Copying from {src} to {dst}")
-#     if os.path.exists(dst):
-#         logging.debug(f"Removing existing directory: {dst}")
-#         shutil.rmtree(dst)
-#     shutil.copytree(src, dst)
-#     logging.info(f"Copied {src} to {dst}")
-
 
 def ensure_dir(path):
     """
@@ -76,41 +62,15 @@ def create_nojekyll(path):
     with open(path, 'w') as f:
         f.write('')
     logging.info(f"Created .nojekyll at {path}")
-
-
-# def copy_project_files(debug: bool = False):
-#     """
-#     Copy project content and static assets to build directories.
-#     If debug is True, log detailed actions to projectroot/loh.
-#     """
-#     setup_logging()
-#     logging.info("Starting copy_project_files")
-#     # Remove build directory if it exists (destructive)
-#     if os.path.exists(BUILD_DIR):
-#         logging.debug(f"Removing entire build directory: {BUILD_DIR}")
-#         shutil.rmtree(BUILD_DIR)
-#     ensure_dir(BUILD_DIR)
-#     copytree_overwrite(CONTENT_SRC, CONTENT_DST)
-#     copytree_overwrite(CSS_SRC, CSS_DST)
-#     copytree_overwrite(JS_SRC, JS_DST)
-#     # Copy images directory
-#     IMAGES_SRC = os.path.join(PROJECT_ROOT, 'static', 'images')
-#     IMAGES_DST = os.path.join(BUILD_DIR, 'images')
-#     if os.path.exists(IMAGES_SRC):
-#         copytree_overwrite(IMAGES_SRC, IMAGES_DST)
-#     else:
-#         logging.warning(f"Images source directory not found: {IMAGES_SRC}")
-#     create_nojekyll(NOJEKYLL_PATH)
-#     logging.info("Finished copy_project_files")
-
-# def copy_build_to_docs():
-#     """
-#     Copy everything from build/ to docs/, including .nojekyll
-#     """
-#     DOCS_DIR = os.path.join(PROJECT_ROOT, 'docs')
-#     logging.info(f"Copying all build/ contents to docs/: {BUILD_DIR} -> {DOCS_DIR}")
-#     if os.path.exists(DOCS_DIR):
-#         logging.debug(f"Removing existing docs directory: {DOCS_DIR}")
-#         shutil.rmtree(DOCS_DIR)
-#     shutil.copytree(BUILD_DIR, DOCS_DIR)
-#     logging.info(f"Copied build/ to docs/")
+    
+def copy_build_to_docs():
+    """
+    Copy everything from build/ to docs/, including .nojekyll
+    """
+    DOCS_DIR = os.path.join(PROJECT_ROOT, 'docs')
+    logging.info(f"Copying all build/ contents to docs/: {BUILD_DIR} -> {DOCS_DIR}")
+    if os.path.exists(DOCS_DIR):
+        logging.debug(f"Removing existing docs directory: {DOCS_DIR}")
+        shutil.rmtree(DOCS_DIR)
+    shutil.copytree(BUILD_DIR, DOCS_DIR)
+    logging.info(f"Copied build/ to docs/")

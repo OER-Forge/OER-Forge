@@ -7,17 +7,37 @@
   <link rel="icon" href="{{ site.favicon }}">
   <link rel="stylesheet" href="{{ css_path }}" id="theme-css">
   <script src="{{ js_path }}" defer></script>
+  <!-- Favicons and Mobile Icons -->
+<link rel="icon" type="image/png" sizes="16x16" href="/static/images/favicon-16x16.png">
+<link rel="icon" type="image/png" sizes="32x32" href="/static/images/favicon-32x32.png">
+<link rel="icon" type="image/x-icon" href="/static/images/favicon.ico">
+<link rel="apple-touch-icon" sizes="180x180" href="/static/images/apple-touch-icon.png">
+<link rel="icon" type="image/png" sizes="192x192" href="/static/images/android-chrome-192x192.png">
+<link rel="icon" type="image/png" sizes="512x512" href="/static/images/android-chrome-512x512.png">
+  <!-- Web Manifest (optional, for PWA) -->
+  <link rel="manifest" href="/static/images/site.webmanifest">
+  <!-- Open Graph Meta Tags for Sharing -->
+  <meta property="og:title" content="OER-Forge: WCAG-Compliant OER Build System">
+  <meta property="og:description" content="OER-Forge is a suite of tools to help authors create WCAG-compliant Open Educational Resources (OERs).">
+  <meta property="og:image" content="/static/images/logo.png">
+  <meta property="og:url" content="https://open-physics-ed-org.github.io/oer-forge">
+  <!-- Twitter Card Meta Tags -->
+  <meta name="twitter:card" content="summary_large_image">
+  <meta name="twitter:title" content="OER-Forge: WCAG-Compliant OER Build System">
+  <meta name="twitter:description" content="OER-Forge is a suite of tools to help authors create WCAG-compliant Open Educational Resources (OERs).">
+  <meta name="twitter:image" content="/static/images/logo.png">
 </head>
 <body>
-  {% include 'partials/header.html' %}
+  {% include 'header.html' %}
   <main id="main-content" tabindex="-1">
     <div class="container">
       <button id="theme-toggle" aria-label="Switch theme" class="theme-toggle">🌙
         <span class="visually-hidden">Toggle dark/light theme</span>
       </button>
+      <span id="accessibility-report-placeholder"></span>
       {% block main %}{% endblock %}
     </div>
   </main>
-  {% include 'partials/footer.html' %}
+  {% include 'footer.html' %}
 </body>
 </html>

@@ -19,6 +19,10 @@ Description: Bright, accessible palette for daylight viewing.
   --color-btn: #005a9e;
   --color-btn-hover: #003366;
   --color-btn-text: #ffffff;
+}
+
+body.dark {
+  --color-btn-text: #000;
   --jp-cell-editor-background: var(--color-card) !important;
   --jp-cell-editor-active-background: var(--color-card) !important;
   --jp-layout-color0: var(--color-card) !important;
@@ -343,15 +347,10 @@ nav {
 /* ===========================
   7. Cards & Card Grid
   =========================== */
+/* For accessibility report: full-width, left-justified cards */
 .card-grid {
-  display: flex;
-  flex-wrap: wrap;
-  gap: 2em;
-  justify-content: center;
+  display: block;
   margin: 2em 0;
-  background: none;
-  border: none;
-  box-shadow: none;
 }
 .card {
   background: var(--color-card) !important;
@@ -359,12 +358,11 @@ nav {
   border-radius: 16px;
   box-shadow: 0 2px 16px rgba(0,0,0,0.04);
   padding: 2em 2em 1.5em 2em;
-  min-width: 220px;
-  max-width: 320px;
-  flex: 1 1 220px;
-  text-align: center;
-  margin: 0;
-  border: 1px solid var(--color-card);
+  max-width: 100%;
+  min-width: 0;
+  text-align: left;
+  margin: 0 0 2em 0;
+  border: 1px solid #e0e0e0;
   transition: box-shadow 0.2s, border 0.2s, background 0.2s;
 }
 .card:focus, .card:hover {
@@ -472,10 +470,13 @@ body.dark .wip-banner {
   10. Download Buttons
   =========================== */
 
-.download-btn,
-.theme-btn {
-  color: #fff !important; /* dark text for light backgrounds */
+/* Accessibility badge colors: fixed for all themes */
+.badge-error {
+  background: #c00 !important;
+  color: #fff !important;
+  border: 2px solid #c00 !important;
 }
+
 
 .chapter-downloads {
   margin-bottom: 2em;
@@ -503,6 +504,12 @@ body.dark .wip-banner {
   outline: none;
   line-height: 1.2;
   letter-spacing: 0.01em;
+  color: var(--color-btn-text) !important;
+}
+/* Download button text color in dark mode: always dark for contrast */
+body.dark .download-btn,
+html.dark .download-btn {
+  color: #181a20 !important;
 }
 .download-btn:focus {
   outline: 3px solid var(--color-btn-hover);
@@ -512,7 +519,7 @@ body.dark .wip-banner {
 .download-btn:hover, .download-btn:focus {
   background: var(--color-btn-hover) !important;
   border-color: var(--color-btn-hover) !important;
-  color: var(--color-btn-text) !important;
+  color: #fff !important;
   text-decoration: none;
   box-shadow: 0 4px 16px rgba(0,0,0,0.16);
 }
@@ -601,15 +608,34 @@ body.dark .markdown-body * {
 /* ===========================
   13. Images
   =========================== */
-/*
-body.dark .markdown-body img,
-body.dark .card img,
-body.dark img.content-img {
-  background: #fff !important;
-  border: 1px solid #333;
-  border-radius: 4px;
+/* WCAG Accessibility Badge Button */
+.wcag-badge {
+  display: inline-block;
+  margin: 0.25em 0.5em 0.25em 0;
+  padding: 0.6em 1.5em;
+  font-size: 1.1em;
+  font-weight: 700;
+  border-radius: 0.6em;
+  text-decoration: none;
+  box-shadow: 0 2px 8px rgba(0,0,0,0.10);
+  transition: background 0.2s, color 0.2s, box-shadow 0.2s, border 0.2s;
+  cursor: pointer;
+  outline: none;
+  line-height: 1.2;
+  letter-spacing: 0.01em;
+  border: 2px solid transparent;
 }
-*/
+.wcag-badge-error {
+  background: #c00 !important;
+  color: #fff !important;
+  border-color: #c00 !important;
+}
+.wcag-badge-success {
+  background: #090 !important;
+  color: #fff !important;
+  border-color: #090 !important;
+}
+
 .markdown-body img,
 .card img,
 img.content-img {

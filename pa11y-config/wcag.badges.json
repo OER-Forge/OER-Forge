@@ -1,0 +1,11 @@
+{
+  "WCAG2A": "https://www.w3.org/WAI/wcag2A-blue-v.svg",
+  "WCAG2AA": "https://www.w3.org/WAI/wcag2AA-blue-v.svg",
+  "WCAG2AAA": "https://www.w3.org/WAI/wcag2AAA-blue-v.svg",
+  "WCAG21A": "https://www.w3.org/WAI/WCAG21/wcag2.1A-blue-v.svg",
+  "WCAG21AA": "https://www.w3.org/WAI/WCAG21/wcag2.1AA-blue-v.svg",
+  "WCAG21AAA": "https://www.w3.org/WAI/WCAG21/wcag2.1AAA-blue-v.svg",
+  "WCAG22A": "https://www.w3.org/WAI/WCAG22/wcag2.2A-blue.svg",
+  "WCAG22AA": "https://www.w3.org/WAI/WCAG22/wcag2.2AA-blue.svg",
+  "WCAG22AAA": "https://www.w3.org/WAI/WCAG22/wcag2.2AAA-blue.svg"
+}
