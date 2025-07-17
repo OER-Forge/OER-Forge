@@ -5,15 +5,10 @@ document.addEventListener('DOMContentLoaded', function() {
 
   // --- Accessibility Report: Default to dark mode, persist with localStorage ---
   if (themeLink) {
-    let savedTheme = localStorage.getItem('theme');
-    // If no theme saved, default to dark for accessibility reports
-    if (!savedTheme) {
-      savedTheme = 'dark';
-      localStorage.setItem('theme', 'dark');
-    }
-    // Set theme CSS
-    let basePath = themeLink.getAttribute('href').replace(/theme-(light|dark)\.css$/, '');
-    let newTheme = (savedTheme === 'dark') ? 'theme-dark.css' : 'theme-light.css';
+    let savedTheme = localStorage.getItem('theme') || 'dark';
+    localStorage.setItem('theme', savedTheme);
+    const basePath = themeLink.getAttribute('href').replace(/theme-(light|dark)\.css$/, '');
+    const newTheme = (savedTheme === 'dark') ? 'theme-dark.css' : 'theme-light.css';
     themeLink.setAttribute('href', basePath + newTheme);
   }
 
@@ -29,88 +24,50 @@ document.addEventListener('DOMContentLoaded', function() {
     themeBtn.addEventListener('click', function() {
       const href = themeLink.getAttribute('href');
       const isLight = href && href.includes('light');
-      // Compute correct relative path for theme CSS
-      let basePath = href.replace(/theme-(light|dark)\.css$/, '');
-      let newTheme = isLight ? 'theme-dark.css' : 'theme-light.css';
+      const basePath = href.replace(/theme-(light|dark)\.css$/, '');
+      const newTheme = isLight ? 'theme-dark.css' : 'theme-light.css';
       themeLink.setAttribute('href', basePath + newTheme);
-      // Save user selection
       localStorage.setItem('theme', isLight ? 'dark' : 'light');
       updateThemeButton();
     });
     updateThemeButton();
   }
 
-// Apply saved font settings on load
-['font-family', 'font-size', 'letter-spacing', 'line-height'].forEach(function(setting) {
-  const value = localStorage.getItem(setting);
-  if (value) {
+  // --- Font Appearance Controls ---
+  function applyFontSetting(setting, value) {
     if (setting === 'font-family') {
       document.body.style.fontFamily = value;
-      const container = document.querySelector('.container');
-      if (container) container.style.fontFamily = value;
-      const markdownBody = document.querySelector('.markdown-body');
-      if (markdownBody) markdownBody.style.fontFamily = value;
-      // Set radio checked
-      const radio = document.querySelector(`input[name="font-family"][value="${value}"]`);
-      if (radio) radio.checked = true;
+      document.querySelectorAll('.container, .markdown-body').forEach(el => el.style.fontFamily = value);
     } else {
       document.documentElement.style.setProperty('--' + setting, value);
-      // Set radio checked
-      const radio = document.querySelector(`input[name="${setting}"][value="${value}"]`);
-      if (radio) radio.checked = true;
     }
+    // Set radio checked
+    const radio = document.querySelector(`input[name="${setting}"][value="${value}"]`);
+    if (radio) radio.checked = true;
   }
-});
 
-  // --- Font Appearance Controls ---
+  ['font-family', 'font-size', 'letter-spacing', 'line-height'].forEach(function(setting) {
+    const value = localStorage.getItem(setting);
+    if (value) applyFontSetting(setting, value);
+  });
+
   document.querySelectorAll('.font-controls input[type=radio]').forEach(function(radio) {
     radio.addEventListener('change', function(e) {
       localStorage.setItem(e.target.name, e.target.value);
-      if (e.target.name === 'font-family') {
-        document.body.style.fontFamily = e.target.value;
-        const container = document.querySelector('.container');
-        if (container) container.style.fontFamily = e.target.value;
-        const markdownBody = document.querySelector('.markdown-body');
-        if (markdownBody) markdownBody.style.fontFamily = e.target.value;
-      } else {
-        document.documentElement.style.setProperty('--' + e.target.name, e.target.value);
-      }
+      applyFontSetting(e.target.name, e.target.value);
     });
   });
+
+  // --- Font controls only on homepage ---
+  const fontControls = document.getElementById('font-controls');
+  if (fontControls) {
+    ['font-family', 'font-size', 'letter-spacing', 'line-height'].forEach(function(setting) {
+      document.querySelectorAll(`input[name="${setting}"]`).forEach(function(radio) {
+        radio.addEventListener('change', function(e) {
+          applyFontSetting(setting, e.target.value);
+          localStorage.setItem(setting, e.target.value);
+        });
+      });
+    });
+  }
 });
-// Font controls only on homepage
-const fontControls = document.getElementById('font-controls');
-if (fontControls) {
-  document.querySelectorAll('input[name="font-family"]').forEach(function(radio) {
-    radio.addEventListener('change', function(e) {
-      const value = e.target.value;
-      document.body.style.fontFamily = value;
-      const container = document.querySelector('.container');
-      if (container) container.style.fontFamily = value;
-      const markdownBody = document.querySelector('.markdown-body');
-      if (markdownBody) markdownBody.style.fontFamily = value;
-      localStorage.setItem('font-family', value);
-    });
-  });
-  document.querySelectorAll('input[name="font-size"]').forEach(function(radio) {
-    radio.addEventListener('change', function(e) {
-      const value = e.target.value;
-      document.documentElement.style.setProperty('--font-size', value);
-      localStorage.setItem('font-size', value);
-    });
-  });
-  document.querySelectorAll('input[name="letter-spacing"]').forEach(function(radio) {
-    radio.addEventListener('change', function(e) {
-      const value = e.target.value;
-      document.documentElement.style.setProperty('--letter-spacing', value);
-      localStorage.setItem('letter-spacing', value);
-    });
-  });
-  document.querySelectorAll('input[name="line-height"]').forEach(function(radio) {
-    radio.addEventListener('change', function(e) {
-      const value = e.target.value;
-      document.documentElement.style.setProperty('--line-height', value);
-      localStorage.setItem('line-height', value);
-    });
-  });
-}

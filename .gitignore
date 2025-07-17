@@ -1,140 +1,67 @@
-#------------------------------------------------------------------------------
-# Emacs Editor Files
-#------------------------------------------------------------------------------
-*~                      # Backup files
-\#*\#                   # Autosave files
-*.elc                   # Compiled Emacs Lisp files
-auto-save-list          # Autosave list
-tramp                   # TRAMP connection files
-.\#*                    # Lock files
-.org-id-locations       # Org mode ID locations
-*_archive               # Org mode archive files
-*_flymake.*             # Flymake temporary files
-/eshell/history         # Eshell history
-/eshell/lastdir         # Eshell last directory
-/elpa/                  # Emacs package manager directory
-*.rel                   # Release files
-/auto/                  # Auto-generated files
-.cask/                  # Cask package manager directory
-dist/                   # Distribution directory
-flycheck_*.el           # Flycheck temp files
-/server/                # Emacs server files
-.projectile             # Projectile project management
-.dir-locals.el          # Directory local variables
-/network-security.data  # Network security data
+# .gitignore for Python, HTML, CSS, JS projects
+# Exclude OS-specific files and common build/output files
 
-#------------------------------------------------------------------------------
-# Jupyter Notebooks
-#------------------------------------------------------------------------------
-.ipynb_checkpoints          # Jupyter notebook checkpoint files
-*/.ipynb_checkpoints/*      # Checkpoints in any subdirectory
+## Errant files
+debug_sections.txt
 
-#------------------------------------------------------------------------------
-# Python Files and Build Artifacts
-#------------------------------------------------------------------------------
-__pycache__/                # Python bytecode cache
-*.py[cod]                   # Compiled Python files (.pyc, .pyo, .pyd)
-*$py.class                  # Jython compiled class files
-*.so                        # Shared object files
-.Python                     # Python environment marker
-.eggs/                      # Python egg packages
-*.egg-info/                 # Egg metadata
-.installed.cfg              # Installed configuration
-*.egg                       # Egg files
-MANIFEST                    # Manifest file
-*.manifest                  # Manifest files
-*.spec                      # Spec files
-pip-log.txt                 # pip log file
-pip-delete-this-directory.txt# pip delete marker
-htmlcov/                    # Coverage HTML output
-.tox/                       # tox environments
-.nox/                       # nox environments
-.coverage                   # Coverage data file
-.coverage.*                 # Coverage data files
-.cache                      # Cache files
-nosetests.xml               # Nose test output
-coverage.xml                # Coverage XML output
-*.cover                     # Coverage files
-*.py,cover                  # Coverage files
-.hypothesis/                # Hypothesis testing cache
-.pytest_cache/              # pytest cache
-cover/                      # Coverage directory
-*.mo                        # Compiled gettext files
-*.pot                       # Gettext template files
-*.log                       # Log files
-local_settings.py            # Local settings
-
-instance/                   # Flask instance folder
-.webassets-cache            # Webassets cache
-.scrapy                     # Scrapy project files
-docs/_build/                # Sphinx build directory
-.pybuilder/                 # PyBuilder build directory
-target/                     # Target directory
-.pdm.toml                   # PDM configuration
-__pypackages__/             # PEP582 local packages
-celerybeat-schedule         # Celery beat schedule
-celerybeat.pid              # Celery beat PID file
-*.sage.py                   # SageMath generated Python files
-.env                        # Environment files
-.venv                       # Virtual environment
-env/                        # Virtual environment
-venv/                       # Virtual environment
-ENV/                        # Virtual environment
-env.bak/                    # Backup environment
-venv.bak/                   # Backup virtual environment
-.spyderproject              # Spyder IDE project files
-.spyproject                 # Spyder IDE project files
-.ropeproject                # Rope IDE project files
-/site                       # Site directory
-.mypy_cache/                # mypy type checker cache
-.dmypy.json                 # mypy daemon json
-dmypy.json                  # mypy daemon json
-.pyre/                      # Pyre type checker cache
-.pytype/                    # pytype type checker cache
-cython_debug/               # cython debug files
-poetry.toml                 # Poetry configuration
-.ruff_cache/                # Ruff linter cache
-pyrightconfig.json          # Pyright configuration
-
-#------------------------------------------------------------------------------
-# Vim Editor Files
-#------------------------------------------------------------------------------
-[._]*.s[a-v][a-z]           # Swap files
-!*.svg                      # Exclude SVG files from above pattern
-[._]*.sw[a-p]               # Swap files
-[._]s[a-rt-v][a-z]          # Swap files
-[._]ss[a-gi-z]              # Swap files
-[._]sw[a-p]                 # Swap files
-Session.vim                 # Session files
-Sessionx.vim                # Session files
-.netrwhist                  # netrw history
-tags                        # Tag files
-[._]*.un~                   # Undo files
-
-#------------------------------------------------------------------------------
-# Visual Studio Code
-#------------------------------------------------------------------------------
-.vscode/*                   # VSCode settings (ignore all)
-!.vscode/settings.json      # Except settings.json
-!.vscode/tasks.json         # Except tasks.json
-!.vscode/launch.json        # Except launch.json
-!.vscode/extensions.json    # Except extensions.json
-!.vscode/*.code-snippets    # Except code snippets
-.history/                   # VSCode history extension
-*.vsix                      # VSCode extension packages
-.history                    # VSCode history extension
-.ionide                     # Ionide plugin files
-
-#------------------------------------------------------------------------------
-# End of .gitignore
-#------------------------------------------------------------------------------
-
-#------------------------------------------------------------------------------
-# Ignore these files/folders
-#------------------------------------------------------------------------------
-build/
+## OER-Forge specific
 db/
 log/
-documentation/oerdocs/__pycache__/
-oerforge/__pycache__/
-oerforge_admin/__pycache__/
+*.db
+*.sqlite3
+*.sqlite
+
+
+# Python
+__pycache__/
+*.py[cod]
+*.pyo
+*.pyd
+*.pyc
+*.env
+*.venv
+env/
+venv/
+*.egg-info/
+dist/
+build/
+*.log
+
+# Node.js / JS
+node_modules/
+npm-debug.log*
+yarn-debug.log*
+yarn-error.log*
+dist/
+build/
+*.map
+
+# HTML/CSS
+*.sass-cache/
+*.css.map
+
+# OS-specific
+# macOS
+.DS_Store
+.AppleDouble
+.LSOverride
+
+# Windows
+Thumbs.db
+ehthumbs.db
+Desktop.ini
+
+# Linux
+*~
+.cache/
+.Trash-*
+
+# IDEs/editors
+.vscode/
+.idea/
+*.swp
+*.swo
+
+# Misc
+*.bak
+*.tmp

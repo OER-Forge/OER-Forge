@@ -507,6 +507,7 @@ def build_all_markdown_files():
                 'site': site,
                 'footer_text': footer_text,
                 'output_file': 'index.html',
+                'rel_path': 'index.html',
             }
             context = add_asset_paths(context, rel_path)
             html_output = render_page(context, 'single.html')

@@ -1,78 +1,106 @@
 <!DOCTYPE html>
-
 <html lang="en">
 <head>
-<meta charset="utf-8"/>
-<title>Introduction</title>
-<link href="static/images/favicon.ico" rel="icon"/>
-<link href="../css/theme-dark.css" id="theme-css" rel="stylesheet"/>
-<script defer="" src="../js/main.js"></script>
-<!-- Favicons and Mobile Icons -->
-<link href="/static/images/favicon-16x16.png" rel="icon" sizes="16x16" type="image/png"/>
-<link href="/static/images/favicon-32x32.png" rel="icon" sizes="32x32" type="image/png"/>
-<link href="/static/images/favicon.ico" rel="icon" type="image/x-icon"/>
-<link href="/static/images/apple-touch-icon.png" rel="apple-touch-icon" sizes="180x180"/>
-<link href="/static/images/android-chrome-192x192.png" rel="icon" sizes="192x192" type="image/png"/>
-<link href="/static/images/android-chrome-512x512.png" rel="icon" sizes="512x512" type="image/png"/>
-<!-- Web Manifest (optional, for PWA) -->
-<link href="/static/images/site.webmanifest" rel="manifest"/>
-<!-- Open Graph Meta Tags for Sharing -->
-<meta content="OER-Forge: WCAG-Compliant OER Build System" property="og:title"/>
-<meta content="OER-Forge is a suite of tools to help authors create WCAG-compliant Open Educational Resources (OERs)." property="og:description"/>
-<meta content="/static/images/logo.png" property="og:image"/>
-<meta content="https://open-physics-ed-org.github.io/oer-forge" property="og:url"/>
-<!-- Twitter Card Meta Tags -->
-<meta content="summary_large_image" name="twitter:card"/>
-<meta content="OER-Forge: WCAG-Compliant OER Build System" name="twitter:title"/>
-<meta content="OER-Forge is a suite of tools to help authors create WCAG-compliant Open Educational Resources (OERs)." name="twitter:description"/>
-<meta content="/static/images/logo.png" name="twitter:image"/>
+  <meta charset="UTF-8">
+  <title>Introduction</title>
+  
+  <link rel="icon" href="static/images/favicon.ico">
+  <link rel="stylesheet" href="../css/theme-dark.css" id="theme-css">
+  <script src="../js/main.js" defer></script>
+  <!-- Favicons and Mobile Icons -->
+<link rel="icon" type="image/png" sizes="16x16" href="/static/images/favicon-16x16.png">
+<link rel="icon" type="image/png" sizes="32x32" href="/static/images/favicon-32x32.png">
+<link rel="icon" type="image/x-icon" href="/static/images/favicon.ico">
+<link rel="apple-touch-icon" sizes="180x180" href="/static/images/apple-touch-icon.png">
+<link rel="icon" type="image/png" sizes="192x192" href="/static/images/android-chrome-192x192.png">
+<link rel="icon" type="image/png" sizes="512x512" href="/static/images/android-chrome-512x512.png">
+  <!-- Web Manifest (optional, for PWA) -->
+  <link rel="manifest" href="/static/images/site.webmanifest">
+  <!-- Open Graph Meta Tags for Sharing -->
+  <meta property="og:title" content="OER-Forge: WCAG-Compliant OER Build System">
+  <meta property="og:description" content="OER-Forge is a suite of tools to help authors create WCAG-compliant Open Educational Resources (OERs).">
+  <meta property="og:image" content="/static/images/logo.png">
+  <meta property="og:url" content="https://open-physics-ed-org.github.io/oer-forge">
+  <!-- Twitter Card Meta Tags -->
+  <meta name="twitter:card" content="summary_large_image">
+  <meta name="twitter:title" content="OER-Forge: WCAG-Compliant OER Build System">
+  <meta name="twitter:description" content="OER-Forge is a suite of tools to help authors create WCAG-compliant Open Educational Resources (OERs).">
+  <meta name="twitter:image" content="/static/images/logo.png">
 </head>
 <body>
-<header class="site-header">
-<div class="header-flex">
-<img alt="Site Logo" class="site-logo" src="../images/logo.png"/>
-<div class="header-titles">
-<h1 class="site-title">OER-Forge: Documentation</h1>
-<h2 class="site-subtitle">An open source platform for building and sharing open educational resources.</h2>
-</div>
-<!-- Theme toggle button moved to main content container in baseof.html -->
-</div>
-<nav aria-label="Main menu" class="site-nav" role="navigation">
-<ul class="nav-menu">
-<li><a href="../index.html">Home</a></li>
-<li><a href="../news-roll/index.html">News</a></li>
-<li><a href="index.html">Example</a></li>
-<li><a href="../documentation/index.html">Docs</a></li>
-<li><a href="../about/index.html">About</a></li>
-</ul>
-</nav>
+  <header class="site-header">
+  <div class="header-flex">
+    <img src="../images/logo.png" alt="Site Logo" class="site-logo" />
+    <div class="header-titles">
+      <h1 class="site-title">OER-Forge 🛠️</h1>
+      <h2 class="site-subtitle">An open source Python library for building and sharing open educational resources.</h2>
+    </div>
+    <!-- Theme toggle button moved to main content container in baseof.html -->
+  </div>
+  <nav class="site-nav" role="navigation" aria-label="Main menu">
+    <ul class="nav-menu">
+      
+        <li><a href="../index.html">Home</a></li>
+      
+        <li><a href="../news-roll/index.html">News</a></li>
+      
+        <li><a href="index.html">Example</a></li>
+      
+        <li><a href="../about/index.html">About</a></li>
+      
+    </ul>
+  </nav>
 </header>
-<main id="main-content" tabindex="-1">
-<div class="container">
-<button aria-label="Switch theme" class="theme-toggle" id="theme-toggle">🌙
+  <main id="main-content" tabindex="-1">
+    <div class="container">
+      <button id="theme-toggle" aria-label="Switch theme" class="theme-toggle">🌙
         <span class="visually-hidden">Toggle dark/light theme</span>
-</button>
-<span id="accessibility-report-placeholder"></span><a aria-label="View Accessibility Report" class="wcag-badge wcag-badge-error" data-accessibility-report-btn="1" href="wcag_report_welcome.html"><img alt="WCAG WCAG22AAA Conformance Logo" src="https://www.w3.org/WAI/WCAG22/wcag2.2AAA-blue.svg" style="height:2em;vertical-align:middle;"/></a>
-<article>
-<nav aria-label="Download options" class="download-nav" role="navigation">
-<a aria-label="Download as PDF" class="download-btn theme-download-pdf" href="../files/sample-resources/welcome.pdf" role="button">
+      </button>
+      <span id="accessibility-report-placeholder"></span>
+      
+  <article>
+    
+    <nav class="download-nav" role="navigation" aria-label="Download options">
+      
+        <a href="../files/sample-resources/welcome.pdf"
+           class="download-btn theme-download-pdf"
+           role="button"
+           aria-label="Download as PDF">
           PDF
         </a>
-<a aria-label="Download as Word" class="download-btn theme-download-docx" href="../files/sample-resources/welcome.docx" role="button">
+      
+        <a href="../files/sample-resources/welcome.docx"
+           class="download-btn theme-download-docx"
+           role="button"
+           aria-label="Download as Word">
           Word
         </a>
-<a aria-label="Download as LaTeX" class="download-btn theme-download-tex" href="../files/sample-resources/welcome.tex" role="button">
+      
+        <a href="../files/sample-resources/welcome.tex"
+           class="download-btn theme-download-tex"
+           role="button"
+           aria-label="Download as LaTeX">
           LaTeX
         </a>
-<a aria-label="Download as Markdown" class="download-btn theme-download-md" href="../files/sample-resources/welcome.md" role="button">
+      
+        <a href="../files/sample-resources/welcome.md"
+           class="download-btn theme-download-md"
+           role="button"
+           aria-label="Download as Markdown">
           Markdown
         </a>
-<a aria-label="Download as Plain Text" class="download-btn theme-download-txt" href="../files/sample-resources/welcome.txt" role="button">
+      
+        <a href="../files/sample-resources/welcome.txt"
+           class="download-btn theme-download-txt"
+           role="button"
+           aria-label="Download as Plain Text">
           Plain Text
         </a>
-</nav>
-<h1>Introduction</h1>
-<p>Modern Classical Mechanics attempts to be a modern, accessible, and interactive suite of open educational resources for teaching and learning in classical mechanics with a focus on project-based learning and computational approaches.</p>
+      
+    </nav>
+    
+    <h1>Introduction</h1>
+    <p>Modern Classical Mechanics attempts to be a modern, accessible, and interactive suite of open educational resources for teaching and learning in classical mechanics with a focus on project-based learning and computational approaches.</p>
 <p>This site is meant to serve three main purposes:</p>
 <ol role="list">
 <li role="listitem"><strong>As a book-like resource</strong> for students and educators, providing examples and explanations of classical mechanics concepts in a clear, accessible format. Here, the modern nature refers to using computing and project-based approaches to enhance understanding, rather than traditional lecture formats.</li>
@@ -87,15 +115,19 @@
 </ul>
 <h2>How to Contribute</h2>
 <p>We welcome contributions from anyone including students who want to help improve the site and its resources. The best way is to <a href="https://github.com/dannycab/modern-classical-mechanics/issues">create an issue</a> or <a href="https://github.com/dannycab/modern-classical-mechanics/pulls">issue a pull request</a> on the <a href="https://github.com/dannycab/modern-classical-mechanics">GitHub repository</a>.</p>
-<p><a href="https://github.com/dannycab/modern-classical-mechanics/issues"><img alt="GitHub issues" src="https://img.shields.io/github/issues/dannycab/modern-classical-mechanics"/></a>
-<a href="https://github.com/dannycab/modern-classical-mechanics/pulls"><img alt="GitHub pull requests" src="https://img.shields.io/github/issues-pr/dannycab/modern-classical-mechanics"/></a></p>
+<p><a href="https://github.com/dannycab/modern-classical-mechanics/issues"><img src="https://img.shields.io/github/issues/dannycab/modern-classical-mechanics" alt="GitHub issues"></a>
+<a href="https://github.com/dannycab/modern-classical-mechanics/pulls"><img src="https://img.shields.io/github/issues-pr/dannycab/modern-classical-mechanics" alt="GitHub pull requests"></a></p>
 <p>You can also contact <a href="https://dannycab.github.io/">Danny Caballero</a> directly if you have questions or suggestions.</p>
 <script src="https://cdn.jsdelivr.net/npm/mathjax@3/es5/tex-mml-chtml.js"></script>
-</article>
-</div>
-</main>
-<footer>
+    <!-- Only show font controls on the homepage -->
+    
+  </article>
+
+    </div>
+  </main>
+  <footer>
   Made with tons of ☕️  and lots of ❤️ for students and educators everywhere. | Built with <a href="https://github.com/OER-Forge/">OER Forge</a>
+
 </footer>
 </body>
 </html>

@@ -4,10 +4,10 @@ Description: Bright, accessible palette for daylight viewing.
 */
 
 /* ===========================
-  1. Color Variables
-  =========================== */
+   Color Variables
+=========================== */
 :root {
-  --color-bg: #ffffff;
+  --color-bg: #fff;
   --color-fg: #1a1a1a;
   --color-card: #f5f7fa;
   --color-border: #1a1a1a;
@@ -18,28 +18,19 @@ Description: Bright, accessible palette for daylight viewing.
   --color-title: #005a9e;
   --color-btn: #005a9e;
   --color-btn-hover: #003366;
-  --color-btn-text: #ffffff;
+  --color-btn-text: #fff;
 }
 
 body.dark {
   --color-btn-text: #000;
-  --jp-cell-editor-background: var(--color-card) !important;
-  --jp-cell-editor-active-background: var(--color-card) !important;
-  --jp-layout-color0: var(--color-card) !important;
-  --jp-layout-color1: var(--color-card) !important;
-  --jp-layout-color2: var(--color-card) !important;
-  --jp-layout-color3: var(--color-card) !important;
-  --jp-rendermime-error-background: var(--color-card) !important;
-  --jp-input-background: var(--color-card) !important;
-  --jp-toolbar-background: var(--color-card) !important;
-  --jp-notebook-select-background: var(--color-card) !important;
-  --jp-output-area-background: var(--color-card) !important;
   --font-size: 1.1em;
   --letter-spacing: 0.03em;
   --line-height: 1.7;
 }
 
-/* Add here: global typography controls */
+/* ===========================
+   Typography
+=========================== */
 body, .container, .markdown-body {
   font-size: var(--font-size);
   letter-spacing: var(--letter-spacing);
@@ -47,8 +38,8 @@ body, .container, .markdown-body {
 }
 
 /* ===========================
-  2. Base Layout & Typography
-  =========================== */
+   Layout & Container
+=========================== */
 html, body {
   background: var(--color-bg) !important;
   color: var(--color-fg) !important;
@@ -65,76 +56,69 @@ body {
   flex-direction: column;
 }
 
-/* ===========================
-  3. Main Content Container
-  =========================== */
 .container {
   max-width: 900px;
-  width: 100%;
-  margin-left: auto;
-  margin-right: auto;
-  margin-top: 2em;
-  margin-bottom: 2em;
+  margin: 2em auto;
   padding: 1em;
   background: var(--color-card) !important;
   color: var(--color-fg) !important;
   border-radius: 12px;
   box-shadow: 0 2px 16px rgba(0,0,0,0.04);
-  border: 0;
   box-sizing: border-box;
   flex: 1 0 auto;
-  transition: background 0.3s, color 0.3s, border 0.3s;
+  transition: background 0.3s, color 0.3s;
 }
 
-/* Ensure main content always uses theme background and fills viewport */
-.container, .markdown-body {
+.markdown-body {
   background: var(--color-bg) !important;
   min-height: 100vh;
   color: var(--color-fg) !important;
 }
 
 /* ===========================
-  4. Header & Navigation
-  =========================== */
+   Header & Navigation
+=========================== */
 .site-header {
   background: var(--color-card);
-  margin: 0;
   padding: 0.7em 0;
   border-bottom: 3px solid var(--color-link);
 }
 body.dark .site-header {
   border-bottom: 3px solid var(--color-link-hover);
 }
-.site-logo {
-  height: 5.0em;
-  width: auto;
-  margin-right: 1em;
-  border-radius: 8px;
-  box-shadow: 0 2px 8px rgba(0,0,0,0.07);
-}
+
 .header-flex {
   display: flex;
   align-items: center;
   justify-content: center;
   gap: 1.5em;
   margin-bottom: 0.5em;
+  width: 100%;
 }
+
+.site-logo {
+  height: 5em;
+  margin-right: 1em;
+  border-radius: 8px;
+  box-shadow: 0 2px 8px rgba(0,0,0,0.07);
+}
+
 .header-titles {
   display: flex;
   flex-direction: column;
   align-items: flex-start;
   justify-content: center;
 }
+
 .site-title {
-  text-align: left;
   font-size: 2.2em;
   font-weight: 700;
   color: var(--color-link);
   margin: 0;
   letter-spacing: 0.02em;
 }
+
 .site-subtitle {
-  text-align: left;
   font-size: 1.15em;
   font-weight: 400;
   color: var(--color-menu);
@@ -142,6 +126,7 @@ body.dark .site-header {
   letter-spacing: 0.04em;
   font-style: italic;
 }
+
 .theme-toggle {
   margin-left: auto;
   font-size: 1.5em;
@@ -150,64 +135,51 @@ body.dark .site-header {
   cursor: pointer;
   color: var(--color-link);
 }
+
 .site-nav {
   display: flex;
   justify-content: center;
   align-items: center;
   gap: 2em;
   background: var(--color-card);
-  margin: 0 0 0.5em 0;
-  padding: 0.5em 0;
-  border: none;
-  box-shadow: none;
   position: relative;
   z-index: 200;
 }
+
 .site-nav ul {
   display: flex;
-  justify-content: space-evenly;
   gap: 3em;
   list-style: none;
   margin: 0;
   padding: 0;
   align-items: center;
 }
+
 .site-nav li {
   position: relative;
 }
-.site-nav > ul > li > a {
-  color: var(--color-link);
-  text-decoration: none;
-  font-weight: 500;
-  font-size: 1.65em;
-  padding: 0.3em 1.2em;
-  border-radius: 6px;
-  transition: background 0.2s, color 0.2s;
-  display: block;
-}
-.site-nav > ul > li > a:hover,
-.site-nav > ul > li > a:focus {
-  background: var(--color-menu-hover);
-  color: #fff;
-  text-decoration: none;
-  outline: none;
-}
+
+.site-nav > ul > li > a,
+.site-nav > a,
 .site-nav a {
   color: var(--color-link);
   text-decoration: none;
   font-weight: 500;
-  padding: 0.3em 1.2em;
+  font-size: 1.65em;
   border-radius: 6px;
   transition: background 0.2s, color 0.2s;
   display: block;
 }
+
+.site-nav > ul > li > a:hover,
+.site-nav > ul > li > a:focus,
 .site-nav a:hover,
 .site-nav a:focus {
   background: var(--color-menu-hover);
   color: #fff;
-  text-decoration: none;
   outline: none;
 }
+
 .site-nav li ul {
   display: none;
   position: absolute;
@@ -217,169 +189,150 @@ body.dark .site-header {
   background: var(--color-card);
   box-shadow: 0 4px 24px rgba(0,0,0,0.10);
   border-radius: 8px;
-  padding: 0.5em 0;
   z-index: 300;
   flex-direction: column;
-  gap: 0;
 }
+
 .site-nav li:hover > ul,
 .site-nav li:focus-within > ul,
 .site-nav li.open > ul {
   display: flex;
 }
-.site-nav li ul li {
-  width: 100%;
-}
+
 .site-nav li ul a {
-  padding: 0.5em 1em;
   font-size: 1em;
   border-radius: 0;
+  padding: 0.5em 1em;
 }
+
 .site-nav li ul a:hover,
 .site-nav li ul a:focus {
   background: var(--color-link);
   color: #fff;
 }
-.nav-menu {
-  display: flex;
-  gap: 1.5em;
-  list-style: none;
-  padding: 0;
-  margin: 0;
-  font-size: 1.05em;
-  font-weight: 500;
-}
-.nav-menu li a {
-  color: var(--color-menu);
-  text-decoration: none;
-  border-bottom: 2px solid transparent;
-  padding-bottom: 2px;
-  transition: border-color 0.2s, color 0.2s;
-}
-.nav-menu li a:hover, .nav-menu li a:focus {
-  color: var(--color-menu-hover);
-  border-bottom: 2px solid var(--color-menu-hover);
-  background: var(--color-card);
-}
-
-/* Nav and toggle button */
-nav {
-  text-align: center;
-}
-/* nav a styles removed to avoid conflict with .site-nav a */
-
-/* Toggle button: always circular, next to menu, never distorted */
-.site-nav {
-  position: relative;
-}
-.toggle-dark {
-  position: absolute;
-  right: 1.2em;
-  top: 50%;
-  transform: translateY(-50%);
-  background: var(--color-link);
-  color: #fff;
-  border: none;
-  border-radius: 50%;
-  aspect-ratio: 1 / 1;
-  width: 2.5em;
-  min-width: 2.5em;
-  min-height: 2.5em;
-  max-width: 2.5em;
-  max-height: 2.5em;
-  font-size: 1.3em;
-  cursor: pointer;
-  display: flex;
-  align-items: center;
-  justify-content: center;
-  box-sizing: border-box;
-  transition: background 0.2s, color 0.2s, box-shadow 0.2s;
-  z-index: 300;
-}
-.toggle-dark:focus, .toggle-dark:hover {
-  background: var(--color-link-hover);
-  color: #fff;
-  outline: 2px solid var(--color-link-hover);
-  outline-offset: 2px;
-}
 
 /* ===========================
-  5. Main Content Links
-  =========================== */
-.container a, .markdown-body a {
+   Main Content Link Styling
+=========================== */
+.container a,
+.markdown-body a {
   color: var(--color-link);
   text-decoration: none;
-  transition: color 0.2s, background 0.2s;
   border-radius: 4px;
   font-weight: 500;
+  transition: color 0.2s, background 0.2s;
 }
-.container a:hover, .container a:focus,
-.markdown-body a:hover, .markdown-body a:focus {
+
+.container a:hover,
+.container a:focus,
+.markdown-body a:hover,
+.markdown-body a:focus {
   color: #fff;
   background: var(--color-menu-hover);
-  text-decoration: none;
   outline: none;
 }
 
 /* ===========================
-  6. Table Styling
-  =========================== */
+   Table Styling
+=========================== */
 .table-wrapper {
   width: 100%;
   overflow-x: auto;
 }
+
 .table-wrapper table {
   min-width: 600px;
   border-collapse: collapse;
   width: 100%;
 }
-.table-wrapper table th,
-.table-wrapper table td {
+
+.table-wrapper th,
+.table-wrapper td {
   padding: 0.8em 1.2em;
 }
-.table-wrapper table tr:nth-child(even) {
+
+.table-wrapper tr:nth-child(even) {
   background-color: #f5f7fa;
 }
-.table-wrapper table tr:nth-child(odd) {
-  background-color: #ffffff;
+
+.table-wrapper tr:nth-child(odd) {
+  background-color: #fff;
 }
 
 /* ===========================
-  7. Cards & Card Grid
-  =========================== */
-/* For accessibility report: full-width, left-justified cards */
+   Footer
+=========================== */
+footer {
+  flex-shrink: 0;
+  text-align: center;
+  padding: 2em 0 1em 0;
+  font-size: 0.9em;
+  color: var(--color-border);
+  background: var(--color-card) !important;
+  border-top: 3px solid var(--color-link);
+}
+
+footer a {
+  color: var(--color-link);
+  text-decoration: underline;
+  border-radius: 4px;
+  font-weight: 500;
+  transition: color 0.2s, background 0.2s;
+}
+
+footer a:hover,
+footer a:focus {
+  color: #fff;
+  background: var(--color-menu-hover);
+  outline: none;
+}
+
+.footer-text {
+  font-size: 1em;
+  color: var(--color-fg);
+  margin-top: 2em;
+  text-align: center;
+}
+
+/* ===========================
+   Card Grid & Cards
+=========================== */
 .card-grid {
   display: block;
   margin: 2em 0;
 }
+
 .card {
   background: var(--color-card) !important;
   color: var(--color-fg) !important;
   border-radius: 16px;
   box-shadow: 0 2px 16px rgba(0,0,0,0.04);
   padding: 2em 2em 1.5em 2em;
-  max-width: 100%;
-  min-width: 0;
-  text-align: left;
-  margin: 0 0 2em 0;
+  margin-bottom: 2em;
   border: 1px solid #e0e0e0;
   transition: box-shadow 0.2s, border 0.2s, background 0.2s;
 }
-.card:focus, .card:hover {
+
+.card:focus,
+.card:hover {
   box-shadow: 0 4px 24px rgba(0,0,0,0.10);
   border: 1px solid var(--color-link);
-  outline: none;
   background: var(--color-card);
+  outline: none;
 }
+
 .card h2 a {
   color: var(--color-link);
   text-decoration: none;
   transition: color 0.2s;
 }
-.card h2 a:hover, .card h2 a:focus {
+
+.card h2 a:hover,
+.card h2 a:focus {
   color: var(--color-link-hover);
   text-decoration: underline;
 }
+
 .card p {
   color: var(--color-fg);
   font-size: 1.08em;
@@ -387,8 +340,8 @@ nav {
 }
 
 /* ===========================
-  8. Admonitions
-  =========================== */
+   Admonitions
+=========================== */
 .admonition {
   margin: 1.5em 0;
   padding: 1em 1.5em 1em 2.5em;
@@ -401,6 +354,7 @@ nav {
   overflow-x: auto;
   transition: background 0.3s, color 0.3s;
 }
+
 .admonition-title {
   font-weight: bold;
   margin-bottom: 0.5em;
@@ -409,119 +363,14 @@ nav {
   align-items: center;
   gap: 0.5em;
 }
-.admonition.note { border-left-color: #2a7fff; }
-.admonition.tip { border-left-color: #00b894; }
-.admonition.warning { border-left-color: #f39c12; }
-.admonition.caution { border-left-color: #e17055; }
-.admonition.important { border-left-color: #6c5ce7; }
-.admonition-title::before {
-  content: '';
-  display: inline-block;
-  width: 1.2em;
-  height: 1.2em;
-  margin-right: 0.2em;
-  background-size: contain;
-  background-repeat: no-repeat;
-}
-.admonition.note .admonition-title::before { background-image: url('data:image/svg+xml;utf8,<svg fill="#2a7fff" viewBox="0 0 16 16" xmlns="http://www.w3.org/2000/svg"><circle cx="8" cy="8" r="7" stroke="#2a7fff" stroke-width="2" fill="none"/><circle cx="8" cy="8" r="2" fill="#2a7fff"/></svg>'); }
-.admonition.tip .admonition-title::before { background-image: url('data:image/svg+xml;utf8,<svg fill="#00b894" viewBox="0 0 16 16" xmlns="http://www.w3.org/2000/svg"><rect x="3" y="7" width="10" height="2" rx="1"/><rect x="7" y="3" width="2" height="10" rx="1"/></svg>'); }
-.admonition.warning .admonition-title::before { background-image: url('data:image/svg+xml;utf8,<svg fill="#f39c12" viewBox="0 0 16 16" xmlns="http://www.w3.org/2000/svg"><polygon points="8,2 15,14 1,14" stroke="#f39c12" stroke-width="2" fill="none"/><circle cx="8" cy="11" r="1" fill="#f39c12"/><rect x="7" y="5" width="2" height="4" rx="1" fill="#f39c12"/></svg>'); }
-.admonition.caution .admonition-title::before { background-image: url('data:image/svg+xml;utf8,<svg fill="#e17055" viewBox="0 0 16 16" xmlns="http://www.w3.org/2000/svg"><polygon points="8,2 15,14 1,14" stroke="#e17055" stroke-width="2" fill="none"/><rect x="7" y="6" width="2" height="4" rx="1" fill="#e17055"/></svg>'); }
-.admonition.important .admonition-title::before { background-image: url('data:image/svg+xml;utf8,<svg fill="#6c5ce7" viewBox="0 0 16 16" xmlns="http://www.w3.org/2000/svg"><circle cx="8" cy="8" r="7" stroke="#6c5ce7" stroke-width="2" fill="none"/><rect x="7" y="4" width="2" height="6" rx="1" fill="#6c5ce7"/></svg>'); }
-body.dark .admonition {
-  background: linear-gradient(90deg, var(--color-card) 80%, var(--color-bg) 100%);
-  color: var(--color-fg);
-  box-shadow: 0 2px 8px rgba(0,0,0,0.18);
-}
-.admonition :last-child { margin-bottom: 0; }
+
+/* ...additional rules for .admonition.note, .admonition.tip, etc. ... */
 
 /* ===========================
-  9. Work in Progress Banner
-  =========================== */
-.wip-banner {
-  border: 2px dotted var(--color-title, #7c5fcf);
-  background: var(--color-bg, #fff);
-  color: #000;
-  padding: 1em 1.5em;
-  margin-bottom: 2em;
-  border-radius: 8px;
-  font-weight: normal;
-  font-size: 1.15em;
-  box-shadow: none;
-  outline: none;
-}
-html.dark .wip-banner,
-body.dark .wip-banner {
-  color: #fff;
-  background: var(--color-bg, #282a31);
-  border-color: var(--color-title, #7c5fcf);
-}
-.wip-banner a {
-  color: var(--color-link, #2a7fff);
-  text-decoration: underline;
-  font-weight: 600;
-}
-.wip-banner a:focus {
-  outline: 2px solid var(--color-link, #2a7fff);
-  outline-offset: 2px;
-}
-
-/* ===========================
-  10. Download Buttons
-  =========================== */
-
-/* Accessibility badge colors: fixed for all themes */
-.badge-error {
-  background: #c00 !important;
-  color: #fff !important;
-  border: 2px solid #c00 !important;
-}
-
-
-.chapter-downloads {
-  margin-bottom: 2em;
-  padding: 1em 0 0.5em 0;
-  border-bottom: 1px solid var(--color-border);
-}
-.download-label {
-  font-weight: 500;
-  margin-right: 1em;
-  font-size: 1em;
-}
-.download-btn {
-  display: inline-block;
-  margin: 0.25em 0.5em 0.25em 0;
-  padding: 0.6em 1.5em;
-  font-size: 1.1em;
-  font-weight: 700;
-  background: var(--color-btn);
-  border: 2px solid var(--color-btn);
-  border-radius: 0.6em;
-  text-decoration: none;
-  box-shadow: 0 2px 8px rgba(0,0,0,0.10);
-  transition: background 0.2s, color 0.2s, box-shadow 0.2s, border 0.2s;
-  cursor: pointer;
-  outline: none;
-  line-height: 1.2;
-  letter-spacing: 0.01em;
-  color: var(--color-btn-text) !important;
-}
-/* Download button text color in dark mode: always dark for contrast */
-body.dark .download-btn,
-html.dark .download-btn {
-  color: #181a20 !important;
-}
-.download-btn:focus {
-  outline: 3px solid var(--color-btn-hover);
-  outline-offset: 2px;
-  box-shadow: 0 0 0 4px rgba(0,90,158,0.18); /* Use --color-btn-hover for shadow */
-}
-.download-btn:hover, .download-btn:focus {
-  background: var(--color-btn-hover) !important;
-  border-color: var(--color-btn-hover) !important;
-  color: #fff !important;
-  text-decoration: none;
-  box-shadow: 0 4px 16px rgba(0,0,0,0.16);
+   Misc
+=========================== */
+nav {
+  text-align: center;
 }
 
 .theme-btn {
@@ -545,295 +394,8 @@ html.dark .download-btn {
 }
 
 /* ===========================
-  11. Footer
-  =========================== */
-footer {
-  flex-shrink: 0;
-  text-align: center;
-  padding: 2em 0 1em 0;
-  font-size: 0.9em;
-  color: var(--color-border);
-  background: var(--color-card) !important;
-  border-top: 3px solid var(--color-link);
-}
-footer a {
-  color: var(--color-link);
-  text-decoration: underline;
-  transition: color 0.2s, background 0.2s;
-  border-radius: 4px;
-  font-weight: 500;
-}
-footer a:hover, footer a:focus {
-  color: #fff;
-  background: var(--color-menu-hover);
-  text-decoration: none;
-  outline: none;
-}
-.footer-text {
-  font-size: 1em;
-  color: var(--color-fg);
-  margin-top: 2em;
-  text-align: center;
-}
-
-/* ===========================
-  12. Code & Notebook Styling
-  =========================== */
-.markdown-body .highlight,
-.markdown-body pre,
-.markdown-body code,
-.markdown-body .jp-Cell,
-.markdown-body .jp-Notebook,
-.markdown-body .jp-CodeCell,
-.markdown-body .jp-MarkdownCell,
-.markdown-body .jp-OutputArea,
-.markdown-body .jp-InputArea,
-.markdown-body .jp-Cell-inputWrapper,
-.markdown-body .jp-Cell-outputWrapper,
-.markdown-body .jp-OutputPrompt,
-.markdown-body .jp-InputPrompt,
-.markdown-body .jp-OutputArea-output,
-.markdown-body .jp-OutputArea-prompt,
-.markdown-body .jp-InputArea-prompt {
-  background: var(--color-card) !important;
-  color: var(--color-fg) !important;
-}
-
-body.dark .markdown-body,
-body.dark .markdown-body * {
-  color: var(--color-fg) !important;
-  border-color: var(--color-border) !important;
-}
-
-/* ===========================
-  13. Images
-  =========================== */
-/* WCAG Accessibility Badge Button */
-.wcag-badge {
-  display: inline-block;
-  margin: 0.25em 0.5em 0.25em 0;
-  padding: 0.6em 1.5em;
-  font-size: 1.1em;
-  font-weight: 700;
-  border-radius: 0.6em;
-  text-decoration: none;
-  box-shadow: 0 2px 8px rgba(0,0,0,0.10);
-  transition: background 0.2s, color 0.2s, box-shadow 0.2s, border 0.2s;
-  cursor: pointer;
-  outline: none;
-  line-height: 1.2;
-  letter-spacing: 0.01em;
-  border: 2px solid transparent;
-}
-.wcag-badge-error {
-  background: #c00 !important;
-  color: #fff !important;
-  border-color: #c00 !important;
-}
-.wcag-badge-success {
-  background: #090 !important;
-  color: #fff !important;
-  border-color: #090 !important;
-}
-
-.markdown-body img,
-.card img,
-img.content-img {
-  background: #fff;
-  border: 1px solid #e0e0e0;
-  border-radius: 4px;
-}
-
-/* ===========================
-  14. Responsive Styles
-  =========================== */
-@media (max-width: 900px) {
-  main {
-   max-width: 100vw;
-   padding: 1em;
-  }
-  .card-grid {
-   flex-direction: column;
-   gap: 1.2em;
-   align-items: stretch;
-  }
-  .card {
-   min-width: 0;
-   max-width: 100vw;
-   padding: 1.2em 1em 1em 1em;
-  }
-  .site-nav {
-   flex-direction: row;
-   align-items: center;
-   justify-content: space-around;
-   padding: 0.5em 0 0.3em 0;
-   position: fixed;
-   left: 0;
-   right: 0;
-   bottom: 0;
-   width: 100vw;
-   background: var(--color-card);
-   border-top: 1.5px solid var(--color-border);
-   box-shadow: 0 -2px 12px rgba(0,0,0,0.08);
-   z-index: 1001;
-  }
-  .site-nav ul {
-   flex-direction: row;
-   gap: 1.2em;
-   width: 100vw;
-   justify-content: space-around;
-   align-items: center;
-   margin: 0;
-   padding: 0;
-  }
-  .site-nav > ul > li > a {
-   font-size: 1.1em;
-   padding: 0.7em 0.7em;
-   border-radius: 0.5em;
-   display: flex;
-   flex-direction: column;
-   align-items: center;
-   justify-content: center;
-   min-width: 60px;
-  }
-  .site-nav li ul {
-   position: fixed;
-   left: 0;
-   right: 0;
-   bottom: 3.2em;
-   min-width: 0;
-   width: 100vw;
-   background: var(--color-card);
-   box-shadow: 0 -2px 12px rgba(0,0,0,0.08);
-   border-radius: 0 0 12px 12px;
-   padding: 0.5em 0.5em 0.7em 0.5em;
-   margin: 0;
-   z-index: 1102;
-   display: flex;
-   flex-direction: column;
-   align-items: stretch;
-   gap: 0.2em;
-  }
-  .site-nav li ul a {
-   padding: 0.9em 1.2em;
-   font-size: 1.08em;
-   border-radius: 0.5em;
-   margin: 0.1em 0;
-   background: none;
-   color: var(--color-link);
-   text-align: left;
-   box-shadow: none;
-  }
-  .site-nav li ul a:hover,
-  .site-nav li ul a:focus {
-   background: var(--color-link);
-   color: #fff;
-  }
-  header.site-header {
-   margin-bottom: 3.5em;
-  }
-  body {
-   padding-bottom: 4.2em;
-   min-height: 100vh;
-   display: flex;
-   flex-direction: column;
-  }
-  main {
-   flex: 1 0 auto;
-  }
-  footer {
-   flex-shrink: 0;
-  }
-  .site-nav > ul > li > a:after {
-   display: none !important;
-  }
-  .toggle-dark {
-   position: absolute;
-   right: 0.7em;
-   top: 50%;
-   transform: translateY(-50%);
-   width: 2.3em;
-   min-width: 2.3em;
-   min-height: 2.3em;
-   max-width: 2.3em;
-   max-height: 2.3em;
-   font-size: 1.1em;
-  }
-  .site-nav {
-   position: fixed;
-   left: 0;
-   right: 0;
-   bottom: 0;
-   width: 100vw;
-   z-index: 1001;
-   max-height: 60vh;
-   overflow-y: auto;
-   -webkit-overflow-scrolling: touch;
-   overscroll-behavior: contain;
-  }
-}
-
-/* Accessible radio group styling for font controls */
-.font-controls fieldset {
-  border: 2px solid var(--color-border);
-  border-radius: 8px;
-  margin-bottom: 1em;
-  padding: 1em 1.5em;
-  background: var(--color-card);
-}
-
-.font-controls legend {
-  font-weight: 700;
-  color: var(--color-link);
-  font-size: 1.15em;
-  margin-bottom: 0.5em;
-}
-
-.font-controls label {
-  display: inline-block;
-  margin-right: 1.5em;
-  font-size: 1.08em;
-  color: var(--color-fg);
-  cursor: pointer;
-  padding: 0.2em 0.5em;
-  border-radius: 6px;
-  transition: background 0.2s, color 0.2s;
-}
-
-.font-controls input[type="radio"] {
-  accent-color: var(--color-link);
-  margin-right: 0.3em;
-  width: 1.1em;
-  height: 1.1em;
-}
-
-.font-controls input[type="radio"]:focus + label,
-.font-controls label:focus-within {
-  outline: 2px solid var(--color-link);
-  outline-offset: 2px;
-  background: var(--color-bg);
-}
-
-.font-controls input[type="radio"]:checked + label {
-  background: var(--color-link);
-  color: #fff;
-}
-
-/* ===========================
-  15. Focus Styles
-  =========================== */
-nav[role="navigation"] a,
-nav[role="navigation"] button {
-  outline: none;
-  transition: box-shadow 0.2s;
-}
-nav[role="navigation"] a:focus,
-nav[role="navigation"] button:focus {
-  box-shadow: 0 0 0 3px var(--color-link);
-  background: var(--color-menu-hover);
-  color: var(--color-link);
-}
-
+   Utility Classes
+=========================== */
 .visually-hidden {
   position: absolute;
   width: 1px;

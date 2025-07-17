@@ -14,7 +14,9 @@
     </nav>
     {% endif %}
     <h1>{{ Title }}</h1>
-    {% if output_file == 'index.html' %}
+    {{ Content | safe }}
+    <!-- Only show font controls on the homepage -->
+    {% if output_file == 'index.html' and rel_path == 'index.html' %}
     <div id="font-controls" class="font-controls" aria-labelledby="font-controls-label">
       <p id="font-controls-label"><strong>Font Appearance Controls</strong>: Adjust font and spacing for readability. Settings persist as you browse.</p>
       <fieldset>
@@ -43,6 +45,5 @@
       </fieldset>
     </div>
     {% endif %}
-    {{ Content | safe }}
   </article>
 {% endblock %}

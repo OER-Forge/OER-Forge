@@ -1,39 +1,10 @@
-# Welcome to the Open Physics Education Network
+# OER-Forge 🛠️
 
-![Open Physics Education Network Logo](./images/logo.png)
+[OER-Forge](https://oer-forge.github.io/oer-forge) is a suite of tools to help authors create WCAG-compliant Open Educational Resources (OERs). 
 
-[openphysicsed.org](https://open-physics-ed-org.github.io/) is a collaborative, open-source project dedicated to building accessible, high-quality, and modern educational resources for physics and computational science. Our mission is to lower barriers to learning by providing free, open, and adaptable materials for students, educators, and lifelong learners everywhere.
+*The project is under active development.*
 
-## What We Offer
-- **Accessible, open resources** for physics and computational science
-- **Modern, semantic, and screen-reader-friendly design**
-- **Collaborative development**—anyone can contribute
-- **Free to use, modify, and distribute**
-- **Open-source tools, materials, and a wide variety of formats**
-
-## Courses and Materials
-We are actively transcribing and deploying resources for:
-
-- **Introductory Mechanics** 
-- **Introductory Electromagnetism**
-- **Sophomore-level Classical Mechanics** (see [Modern Classical Mechanics](https://open-physics-ed-org.github.io/modern-classical-mechanics/))
-- **Junior-level Electromagnetism**
-- **Mathematical Methods**
-
-In the future, we plan to expand to:
-
-- **Modern Physics**
-- **Quantum Physics**
-- **Statistical Mechanics**
-- **Community Proposed Areas**
-
-## Our Philosophy
-
-The Open Physics Education Network is guided by the following principles:
-1. **Openness:** All materials are open source and free to use, modify, and distribute under non-commercial licenses.
-2. **Accessibility:** We strive to meet and exceed accessibility standards, ensuring our resources are usable by everyone.
-3. **Collaboration:** We welcome contributions from students, educators, developers, and the broader community.
-4. **Simplicity:** Our sites and materials are intentionally simple and easy to use, modify, and distribute.
+Here you can find the source code, documentation, and examples of OERs created with OER-Forge.
 
 ## Get Involved
 
