@@ -1,0 +1,25 @@
+# OER Forge v0.1 – Dang Ol’ Database, Man
+
+We’re proud to announce the first official release of OER Forge, now running on pure SQL power. This is a full rebuild of the build process, and every part of the codebase has been refactored to use the new database-driven architecture. Like Boomhauer’s wisdom, it’s fast, reliable, and just a little bit mysterious.
+
+## Highlights
+- **SQL Database Build System:** The entire static site generator now uses a robust SQLite database for content, navigation, and section indices. No more fragile TOC parsing—just clean, queryable data.
+- **Refactored Codebase:** All major scripts (`make.py`, `scan.py`, `db_utils.py`, and more) have been rewritten for maintainability, extensibility, and testability. Clean Code and SOLID principles throughout.
+- **Robust Navigation:** Section indices and menus are now generated from the database, supporting deep hierarchies and future expansion. Top-level and descendant navigation is handled with ease.
+- **Accessible Templates:** Jinja2 templates have been updated for accessibility, semantic HTML, and keyboard navigation. WCAG compliance is a priority.
+- **Open Contribution Workflow:** Project management, documentation, and GitHub issues are all streamlined for community involvement. Anyone can contribute, dang ol’ pull request, man.
+
+## What’s Next?
+- More courses and resources coming soon
+- Improved accessibility features
+- Performance and build optimizations
+- Community-driven enhancements
+
+## How to Get Involved
+- File issues, suggest features, or submit pull requests on GitHub
+- Reach out on Bluesky [@oerforge.org](https://bsky.app/profile/oerforge.org)
+- Email us at hello@oerforge.org
+
+---
+
+Yup, SQL’ll fix it. Thanks for being part of the OER Forge community!

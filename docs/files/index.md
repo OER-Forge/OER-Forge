@@ -47,17 +47,22 @@ OER-Forge is an open source Python toolkit for building, organizing, and publish
 ## Get Involved
 
 We welcome your feedback, suggestions, and contributions!
-- [GitHub Issues](https://github.com/OER-Forge/OER-Forge/issues)
-- [Good first issues](https://github.com/OER-Forge/OER-Forge/labels/good%20first%20issue)
+
+- [GitHub Issues](https://github.com/OER-Forge/OER-Forge/issues) 
 - [Help wanted](https://github.com/OER-Forge/OER-Forge/labels/help%20wanted)
 
-**Report a bug:** [File an issue](https://github.com/OER-Forge/OER-Forge/issues/new?labels=bug)
-**Request a feature:** [File an enhancement](https://github.com/OER-Forge/OER-Forge/issues/new?labels=enhancement)
-**Ask a question:** [Open a question](https://github.com/OER-Forge/OER-Forge/issues/new?labels=question)
+- **Report a bug:** [File an issue](https://github.com/OER-Forge/OER-Forge/issues/new?labels=bug)
+- **Request a feature:** [File an enhancement](https://github.com/OER-Forge/OER-Forge/issues/new?labels=enhancement)
+-**Ask a question:** [Open a question](https://github.com/OER-Forge/OER-Forge/issues/new?labels=question)
 
 ## License
 
-Content and code are licensed under [CC BY-NC-SA 4.0](https://creativecommons.org/licenses/by-nc-sa/4.0/).
+Content and code are licensed under CC BY-NC-SA 4.0.
 
 
+---
+![License](https://img.shields.io/badge/license-CC%20BY--NC--SA%204.0-lightgrey.svg)
+![GitHub Issues](https://img.shields.io/github/issues/OER-Forge/OER-Forge)
+![Pull Requests](https://img.shields.io/github/issues-pr/OER-Forge/OER-Forge)
+![GitHub Releases](https://img.shields.io/github/v/release/OER-Forge/OER-Forge)
 

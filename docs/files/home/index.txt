@@ -65,14 +65,17 @@ We welcome your feedback, suggestions, and contributions!
 GitHub Issues
 
 
-Good first issues
-
-
 Help wanted
 
 
-Report a bug: File an issueRequest a feature: File an enhancementAsk a question: Open a question
+Report a bug: File an issue
+
+
+Request a feature: File an enhancement-Ask a question: Open a question
+
 
 License
 
 Content and code are licensed under CC BY-NC-SA 4.0.
+
+LicenseGitHub IssuesPull RequestsGitHub Releases
