@@ -1,21 +1,3 @@
-def copy_build_to_docs_safe():
-    """
-    Non-destructively copy everything from build/ to docs/.
-    Creates docs/ if missing, copies files over themselves, does not remove docs/.
-    """
-    DOCS_DIR = os.path.join(PROJECT_ROOT, 'docs')
-    BUILD_DIR = os.path.join(PROJECT_ROOT, 'build')
-    if not os.path.exists(DOCS_DIR):
-        os.makedirs(DOCS_DIR)
-    for root, dirs, files in os.walk(BUILD_DIR):
-        rel_path = os.path.relpath(root, BUILD_DIR)
-        target_dir = os.path.join(DOCS_DIR, rel_path) if rel_path != '.' else DOCS_DIR
-        if not os.path.exists(target_dir):
-            os.makedirs(target_dir)
-        for file in files:
-            src_file = os.path.join(root, file)
-            dst_file = os.path.join(target_dir, file)
-            shutil.copy2(src_file, dst_file)
 """
 Module to copy project content and static assets into build directories for deployment.
 
@@ -35,7 +17,21 @@ import os
 import shutil
 import logging
 
-PROJECT_ROOT = os.path.dirname(os.path.dirname(os.path.abspath(__file__)))
+__all__ = [
+    "copy_to_build",
+    "copy_build_to_docs_safe",
+    "ensure_dir",
+    "create_nojekyll",
+    "copy_build_to_docs"
+]
+
+def get_project_root():
+    """
+    Get the project root directory, compatible with both import and direct execution.
+    """
+    return os.path.dirname(os.path.dirname(os.path.abspath(__file__)))
+
+PROJECT_ROOT = get_project_root()
 BUILD_DIR = os.path.join(PROJECT_ROOT, 'build')
 CONTENT_SRC = os.path.join(PROJECT_ROOT, 'content')
 CONTENT_DST = os.path.join(BUILD_DIR, 'files')
@@ -74,3 +70,57 @@ def copy_build_to_docs():
         shutil.rmtree(DOCS_DIR)
     shutil.copytree(BUILD_DIR, DOCS_DIR)
     logging.info(f"Copied build/ to docs/")
+def copy_to_build(src_path, dst_dir=None):
+    """
+    Copy any source file to the build/files directory (or specified dst_dir).
+    Returns the destination path.
+    """
+    if dst_dir is None:
+        dst_dir = CONTENT_DST
+    ensure_dir(dst_dir)
+    filename = os.path.basename(src_path)
+    dst_path = os.path.join(dst_dir, filename)
+    shutil.copy2(src_path, dst_path)
+    logging.info(f"Copied {src_path} to {dst_path}")
+    return dst_path
+def copy_build_to_docs_safe():
+    """
+    Non-destructively copy everything from build/ to docs/.
+    Creates docs/ if missing, copies files over themselves, does not remove docs/.
+    """
+    DOCS_DIR = os.path.join(PROJECT_ROOT, 'docs')
+    BUILD_DIR = os.path.join(PROJECT_ROOT, 'build')
+    if not os.path.exists(DOCS_DIR):
+        os.makedirs(DOCS_DIR)
+    for root, dirs, files in os.walk(BUILD_DIR):
+        rel_path = os.path.relpath(root, BUILD_DIR)
+        target_dir = os.path.join(DOCS_DIR, rel_path) if rel_path != '.' else DOCS_DIR
+        if not os.path.exists(target_dir):
+            os.makedirs(target_dir)
+        for file in files:
+            src_file = os.path.join(root, file)
+            dst_file = os.path.join(target_dir, file)
+            shutil.copy2(src_file, dst_file)
+            
+if __name__ == "__main__":
+    import argparse
+
+    parser = argparse.ArgumentParser(description="Copy project files and assets for deployment.")
+    parser.add_argument("--copy-to-build", metavar="SRC_PATH", help="Copy a file to build/files/")
+    parser.add_argument("--copy-build-to-docs", action="store_true", help="Copy build/ to docs/ (destructive)")
+    parser.add_argument("--copy-build-to-docs-safe", action="store_true", help="Copy build/ to docs/ (non-destructive)")
+    parser.add_argument("--create-nojekyll", action="store_true", help="Create .nojekyll in build/")
+    args = parser.parse_args()
+
+    if args.copy_to_build:
+        result = copy_to_build(args.copy_to_build)
+        print(f"Copied to: {result}")
+    if args.copy_build_to_docs:
+        copy_build_to_docs()
+        print("Copied build/ to docs/ (destructive)")
+    if args.copy_build_to_docs_safe:
+        copy_build_to_docs_safe()
+        print("Copied build/ to docs/ (non-destructive)")
+    if args.create_nojekyll:
+        create_nojekyll(NOJEKYLL_PATH)
+        print(f"Created .nojekyll at {NOJEKYLL_PATH}")

@@ -2,10 +2,11 @@
 {% block main %}
   <article>
     {% if downloads %}
-  <div class="download-buttons">
+  <div class="download-buttons" role="region" aria-label="Download options">
     <h3>Download this page:</h3>
+    <p>Select a file format to download:</p>
     {% for file in downloads %}
-      <a href="{{ file.url }}" class="download-btn" download>
+      <a href="{{ file.url }}" class="download-btn" role="button" aria-label="Download as {{ file.extension|upper }}" download>
         {{ file.extension|upper }}
       </a>
     {% endfor %}

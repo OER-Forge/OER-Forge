@@ -1,3 +1,31 @@
+/* Accessible Download Button Styles (WCAG AAA) */
+.download-buttons {
+  margin: 1.5em 0;
+  display: flex;
+  flex-wrap: wrap;
+  gap: 1em;
+  align-items: center;
+}
+.download-btn {
+  display: inline-block;
+  padding: 0.6em 1.2em;
+  font-size: 1em;
+  font-weight: 600;
+  color: var(--color-btn-text, #ffffff);
+  background-color: var(--color-btn, #2a7fff);
+  border: 2px solid var(--color-border, #bfc7d5);
+  border-radius: 0.4em;
+  text-decoration: none;
+  transition: background 0.2s, color 0.2s, border 0.2s;
+  box-shadow: 0 2px 6px rgba(0,0,0,0.08);
+  cursor: pointer;
+}
+.download-btn:focus, .download-btn:hover {
+  background-color: var(--color-btn-hover, #ffea00);
+  color: #222;
+  outline: 2px solid var(--color-btn-hover, #ffea00);
+  outline-offset: 2px;
+}
 /*
 Theme: Dark Theme (WCAG AAA)
 Description: Accessible palette for low-light viewing.

@@ -1,3 +1,31 @@
+/* Accessible Download Button Styles (WCAG AAA) */
+.download-buttons {
+  margin: 1.5em 0;
+  display: flex;
+  flex-wrap: wrap;
+  gap: 1em;
+  align-items: center;
+}
+.download-btn {
+  display: inline-block;
+  padding: 0.6em 1.2em;
+  font-size: 1em;
+  font-weight: 600;
+  color: #000;
+  background-color: var(#f5f7fa, #f5f7fa);
+  border: 2px solid var(--color-border, #222);
+  border-radius: 0.4em;
+  text-decoration: none;
+  /* transition: background 0.2s, color 0.2s, border 0.2s;
+  box-shadow: 0 2px 6px rgba(0,0,0,0.08); */
+  cursor: pointer;
+}
+.download-btn:focus, .download-btn:hover {
+  background-color: var(--color-btn-hover, #003366);
+  color: #fff;
+  outline: 2px solid var(--color-btn-hover, #003366);
+  outline-offset: 2px;
+}
 /*
 Theme: Light Theme (light)
 Description: Bright, accessible palette for daylight viewing.
