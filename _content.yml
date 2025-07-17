@@ -24,6 +24,7 @@ toc:
   - title: "Sample"
     menu: true
     slug: sample-resources
+    file: sample/_index.md
     children:
       - title: "Introduction to Newton's Laws"
         file: sample/newton.md
@@ -31,23 +32,6 @@ toc:
       - title: "Activities"
         file: sample/activities.md
         menu: false
-  # - title: "News"
-  #   menu: true
-  #   slug: news-roll
-  #   children:
-  #     - title: "Launching the Open Physics Education Network: A New Home for Open Physics Course Materials"
-  #       file: news/2025-07-08-launching-open-physics-ed-org.md
-  #       menu: false
-  # - title: "Example"
-  #   menu: true
-  #   slug: sample-resources
-  #   children:
-  #     - title: "Introduction"
-  #       file: sample/welcome.md
-  #       menu: false
-  #     - title: "Activities"
-  #       file: sample/activities.md
-  #       menu: false
   - title: "About"
     menu: true
     file: about.md

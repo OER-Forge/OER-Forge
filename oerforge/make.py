@@ -31,7 +31,20 @@ from oerforge.copyfile import copy_db_images_to_build, copy_static_assets_to_bui
 # --- Configurable Environment ---
 DEBUG_MODE = os.environ.get("DEBUG", "0") == "1"
 LOG_LEVEL = os.environ.get("LOG_LEVEL", "INFO").upper()
-logging.basicConfig(level=getattr(logging, LOG_LEVEL, logging.INFO))
+LOG_PATH = os.path.join(os.path.dirname(os.path.dirname(os.path.abspath(__file__))), 'log', 'build.log')
+# Force DEBUG logging if DEBUG_MODE is enabled
+if DEBUG_MODE:
+    log_level = logging.DEBUG
+else:
+    log_level = getattr(logging, LOG_LEVEL, logging.INFO)
+logging.basicConfig(
+    level=log_level,
+    format='%(asctime)s %(levelname)s %(message)s',
+    handlers=[
+        logging.FileHandler(LOG_PATH, mode='a', encoding='utf-8'),
+        logging.StreamHandler()
+    ]
+)
 
 BUILD_DIR = 'build'
 FILES_DIR = 'files'
@@ -75,9 +88,14 @@ def load_yaml_config(config_path: str) -> dict:
         with open(config_path, 'r', encoding='utf-8') as f:
             config = yaml.safe_load(f)
         logging.info(f"Loaded YAML config from {config_path}")
+        if DEBUG_MODE:
+            logging.debug(f"[MAKE] YAML config loaded: {config}")
         return config
     except Exception as e:
         logging.error(f"Failed to load YAML config: {e}")
+        if DEBUG_MODE:
+            import traceback
+            logging.error(traceback.format_exc())
         return {}
 
 def ensure_output_dir(md_path):
@@ -86,6 +104,8 @@ def ensure_output_dir(md_path):
     output_dir = os.path.join(BUILD_HTML_DIR, os.path.dirname(rel_path))
     if not os.path.exists(output_dir):
         os.makedirs(output_dir, exist_ok=True)
+        if DEBUG_MODE:
+            logging.debug(f"[MAKE] Created output directory: {output_dir}")
 
 def setup_template_env():
     """Set up Jinja2 template environment."""
@@ -191,7 +211,22 @@ def convert_markdown_to_html(md_path: str) -> str:
     md.add_render_rule('image', custom_image_renderer)
     with open(md_path, 'r', encoding='utf-8') as f:
         md_text = f.read()
-    html_body = md.render(md_text)
+
+    def rewrite_md_links(tokens, target_ext='.html'):
+        for token in tokens:
+            if token.type == 'inline' and token.children:
+                for child in token.children:
+                    if child.type == 'link_open' and child.attrs:
+                        href = child.attrGet('href')
+                        if href and href.endswith('.md') and not href.startswith('http'):
+                            child.attrSet('href', href[:-3] + target_ext)
+            if token.children:
+                rewrite_md_links(token.children, target_ext)
+        return tokens
+
+    tokens = md.parse(md_text)
+    tokens = rewrite_md_links(tokens)
+    html_body = md.renderer.render(tokens, md.options, {})
     html_body = html_body.replace('<table>', '<table role="table">')
     html_body = html_body.replace('<th>', '<th role="columnheader">')
     html_body = html_body.replace('<td>', '<td role="cell">')
@@ -236,7 +271,22 @@ def convert_markdown_to_html_text(md_text: str, referenced_page: str, rel_path: 
     md.use(texmath_plugin)
     md.add_render_rule('image', custom_image_renderer)
     env = {'referenced_page': referenced_page, 'rel_path': rel_path}
-    html_body = md.render(md_text, env=env)
+
+    def rewrite_md_links(tokens, target_ext='.html'):
+        for token in tokens:
+            if token.type == 'inline' and token.children:
+                for child in token.children:
+                    if child.type == 'link_open' and child.attrs:
+                        href = child.attrGet('href')
+                        if href and href.endswith('.md') and not href.startswith('http'):
+                            child.attrSet('href', href[:-3] + target_ext)
+            if token.children:
+                rewrite_md_links(token.children, target_ext)
+        return tokens
+
+    tokens = md.parse(md_text, env=env)
+    tokens = rewrite_md_links(tokens)
+    html_body = md.renderer.render(tokens, md.options, env)
     html_body = html_body.replace('<table>', '<table role="table">')
     html_body = html_body.replace('<th>', '<th role="columnheader">')
     html_body = html_body.replace('<td>', '<td role="cell">')
@@ -279,6 +329,8 @@ def build_all_markdown_files():
     toc = config.get('toc', [])
     footer_text = config.get('footer', {}).get('text', '')
     db_path = os.path.join(PROJECT_ROOT, 'db', 'sqlite.db')
+    if DEBUG_MODE:
+        logging.debug(f"[MAKE] build_all_markdown_files: site={site}, toc={toc}, footer={footer_text}")
     with sqlite3.connect(db_path) as conn:
         cursor = conn.cursor()
         cursor.execute("SELECT source_path, output_path, title, mime_type FROM content")
@@ -313,190 +365,109 @@ def build_all_markdown_files():
             if DEBUG_MODE:
                 import traceback
                 logging.error(traceback.format_exc())
-    for source_path, output_path, db_title, mime_type in records:
-        if not source_path or not output_path:
-            logging.info(f"Skipping record with missing source_path or output_path: title={db_title}, source_path={source_path}, output_path={output_path}")
-            continue
-        ext = os.path.splitext(source_path)[1].lower()
-        if ext == '.md' or (mime_type and 'markdown' in mime_type.lower()):
-            try:
-                with open(source_path, 'r', encoding='utf-8') as f:
-                    md_text = f.read()
-            except Exception as e:
-                logging.error(f"Failed to read markdown file {source_path}: {e}")
-                if DEBUG_MODE:
-                    import traceback
-                    logging.error(traceback.format_exc())
-                continue
-            title, body_text = extract_title_and_body(md_text, db_title or "Untitled")
-            # Always set output_path_final and rel_path before rendering
-            md_basename = os.path.splitext(os.path.basename(source_path))[0]
-            parent_dir = os.path.basename(os.path.dirname(source_path))
-            # --- Section index logic ---
-            if md_basename == '_index':
-                # Section index: output to section/index.html
-                output_dir = os.path.join(BUILD_HTML_DIR, parent_dir)
-                os.makedirs(output_dir, exist_ok=True)
-                output_path_final = os.path.join(output_dir, 'index.html')
-                rel_path = os.path.relpath(output_path_final, BUILD_HTML_DIR)
-                output_file = 'index.html'
-            else:
-                # Top-level page: output to about.html (or filename.html) at root
-                output_path_final = os.path.join(BUILD_HTML_DIR, f"{md_basename}.html")
-                os.makedirs(BUILD_HTML_DIR, exist_ok=True)
-                rel_path = os.path.relpath(output_path_final, BUILD_HTML_DIR)
-                output_file = f"{md_basename}.html"
-            html_body = convert_markdown_to_html_text(body_text, source_path, rel_path)
-            top_menu = generate_nav_menu({'rel_path': rel_path, 'toc': toc}) or []
-            # --- Copy source file to build/files/ and insert DB record for download ---
-            try:
-                from oerforge.copyfile import copy_to_build
-                copied_md_path = copy_to_build(source_path)
-                # Insert record for markdown file if not already present
-                files_exist = db_utils.get_records(
-                    'files',
-                    where_clause="referenced_page=? AND extension='.md'",
-                    params=(source_path,),
-                    db_path=db_path
-                )
-                if not files_exist:
-                    db_utils.insert_records(
-                        'files',
-                        [{
-                            'filename': os.path.basename(copied_md_path),
-                            'extension': '.md',
-                            'mime_type': 'text/markdown',
-                            'url': copied_md_path,
-                            'referenced_page': source_path,
-                            'relative_path': copied_md_path
-                        }],
-                        db_path=db_path
-                    )
-            except Exception as e:
-                logging.error(f"Failed to copy markdown or insert DB record for {source_path}: {e}")
-            # --- Query converted files for download buttons ---
-            downloads = []
-            try:
-                file_records = db_utils.get_records(
-                    'files',
-                    where_clause="referenced_page=?",
-                    params=(source_path,),
-                    db_path=db_path
-                )
-                for file_rec in file_records:
-                    file_rel_path = os.path.relpath(file_rec['url'], os.path.dirname(output_path_final))
-                    downloads.append({
-                        'filename': file_rec['filename'],
-                        'extension': file_rec['extension'],
-                        'mime_type': file_rec['mime_type'],
-                        'url': file_rel_path
-                    })
-            except Exception as e:
-                logging.error(f"Failed to query downloads for {source_path}: {e}")
-            context = {
-                'Title': title,
-                'Content': html_body,
-                'toc': toc,
-                'top_menu': top_menu,
-                'site': site,
-                'footer_text': footer_text,
-                'output_file': output_file,
-                'rel_path': rel_path,
-                'downloads': downloads,
-            }
-            context = add_asset_paths(context, rel_path)
-            try:
-                html_output = render_page(context, 'single.html')
-            except Exception as render_err:
-                logging.error(f"[ERROR] Template rendering failed for {source_path}: {render_err}")
-                if DEBUG_MODE:
-                    import traceback
-                    logging.error(traceback.format_exc())
-                html_output = None
-            if html_output:
-                try:
-                    with open(output_path_final, 'w', encoding='utf-8') as f:
-                        f.write(html_output)
-                except Exception as e:
-                    logging.error(f"Failed to write HTML file {output_path_final}: {e}")
-                    if DEBUG_MODE:
-                        import traceback
-                        logging.error(traceback.format_exc())
-    # --- Section Index Generation (DB-driven) ---
-    def find_section_in_toc(section_slug, toc):
-        """Find section in toc by slug."""
+    def walk_toc_for_files(toc, parent_dir=None):
+        """
+        Yield (source_path, output_path, title, rel_path) for each file in toc tree.
+        Only build files explicitly listed in toc. No auto-generated section indices or navigation.
+        """
         for item in toc:
-            if item.get('slug') == section_slug:
-                return item
-        return None
-
-    def build_section_index_toc(section_slug, parent_dir, toc):
-        """
-        Build index.html for a section using toc hierarchy.
-        """
-        section_dir = os.path.join(BUILD_HTML_DIR, parent_dir)
-        index_html_path = os.path.join(section_dir, 'index.html')
-        if os.path.exists(index_html_path):
-            return
-        os.makedirs(section_dir, exist_ok=True)
-        # Find section in toc
-        section_item = find_section_in_toc(section_slug, toc)
-        section_title = section_item.get('title', section_slug) if section_item else section_slug
-        children_list = []
-        if section_item and 'children' in section_item:
-            for child in section_item['children']:
-                child_title = child.get('title', 'Untitled')
-                # Compute link for child
-                if 'file' in child:
-                    md_basename = os.path.splitext(os.path.basename(child['file']))[0]
-                    if md_basename == '_index':
-                        child_link = os.path.join(parent_dir, md_basename, 'index.html')
-                    else:
-                        child_link = os.path.join(parent_dir, f"{md_basename}.html")
-                elif 'slug' in child:
-                    child_link = os.path.join(parent_dir, child['slug'], 'index.html')
+            slug = item.get('slug', parent_dir)
+            if DEBUG_MODE:
+                logging.debug(f"[MAKE] walk_toc_for_files: item={item}, parent_dir={parent_dir}")
+            # Only yield if 'file' is present
+            if item.get('file'):
+                src_path = os.path.join(PROJECT_ROOT, 'content', item['file'])
+                md_basename = os.path.splitext(os.path.basename(item['file']))[0]
+                if not slug and md_basename == 'index':
+                    out_path = os.path.join(BUILD_HTML_DIR, 'index.html')
+                    rel_path = 'index.html'
+                    if DEBUG_MODE:
+                        logging.debug(f"[MAKE] Output path for homepage: {out_path}")
+                elif md_basename == '_index' and slug:
+                    out_path = os.path.join(BUILD_HTML_DIR, slug, 'index.html')
+                    rel_path = os.path.join(slug, 'index.html')
+                    if DEBUG_MODE:
+                        logging.debug(f"[MAKE] Output path for section index: {src_path} -> {out_path}")
+                elif slug:
+                    out_path = os.path.join(BUILD_HTML_DIR, slug, f"{md_basename}.html")
+                    rel_path = os.path.join(slug, f"{md_basename}.html")
+                    if DEBUG_MODE:
+                        logging.debug(f"[MAKE] Output path for file: {src_path} -> {out_path}")
                 else:
-                    child_link = 'index.html'
-                children_list.append({
-                    'link': child_link,
-                    'title': child_title,
-                    'description': child.get('description', ''),
-                    'level': child.get('level', 0)
-                })
-        rel_path = os.path.relpath(index_html_path, BUILD_HTML_DIR)
-        config_path = os.path.join(PROJECT_ROOT, '_content.yml')
-        config = load_yaml_config(config_path)
-        site = config.get('site', {})
-        toc = config.get('toc', [])
-        footer_text = config.get('footer', {}).get('text', '')
+                    out_path = os.path.join(BUILD_HTML_DIR, f"{md_basename}.html")
+                    rel_path = f"{md_basename}.html"
+                    if DEBUG_MODE:
+                        logging.debug(f"[MAKE] Output path (default): {src_path} -> {out_path}")
+                yield (src_path, out_path, item.get('title', md_basename), rel_path)
+            # Recurse into children if present and is a list
+            children = item.get('children')
+            if isinstance(children, list) and children:
+                if DEBUG_MODE:
+                    logging.debug(f"[MAKE] Recursing into children for slug={slug}")
+                yield from walk_toc_for_files(children, parent_dir=slug)
+
+    # Build only files listed in toc, no auto-generated section indices or child navigation
+    for src_path, out_path, title, rel_path in walk_toc_for_files(toc):
+        if DEBUG_MODE:
+            logging.debug(f"[MAKE] Building file: src={src_path}, out={out_path}, title={title}, rel_path={rel_path}")
+        if not os.path.exists(src_path):
+            logging.warning(f"Source markdown not found: {src_path}")
+            continue
+        try:
+            with open(src_path, 'r', encoding='utf-8') as f:
+                md_text = f.read()
+        except Exception as e:
+            logging.error(f"Failed to read markdown file {src_path}: {e}")
+            if DEBUG_MODE:
+                import traceback
+                logging.error(traceback.format_exc())
+            continue
+        page_title, body_text = extract_title_and_body(md_text, title or "Untitled")
+        html_body = convert_markdown_to_html_text(body_text, src_path, rel_path)
         top_menu = generate_nav_menu({'rel_path': rel_path, 'toc': toc}) or []
+        # Always set source_path to the relative markdown file path used for build
+        md_basename = os.path.splitext(os.path.basename(src_path))[0]
+        mime_type = 'section' if md_basename == '_index' else 'text/markdown'
+        rel_source_path = os.path.relpath(src_path, PROJECT_ROOT)
+        rel_output_path = os.path.relpath(out_path, PROJECT_ROOT)
+        record = {
+            'source_path': rel_source_path,
+            'output_path': rel_output_path,
+            'title': page_title,
+            'mime_type': mime_type,
+        }
+        db_utils.insert_records('content', [record], db_path=db_path)
         context = {
-            'Title': section_title,
-            'Children': children_list,
+            'Title': page_title,
+            'Content': html_body,
+            'toc': toc,
             'top_menu': top_menu,
             'site': site,
             'footer_text': footer_text,
-            'output_file': 'index.html',
+            'output_file': os.path.basename(out_path),
             'rel_path': rel_path,
             'downloads': [],
         }
         context = add_asset_paths(context, rel_path)
         try:
-            html_output = render_page(context, 'section.html')
-        except Exception:
+            html_output = render_page(context, 'single.html')
+        except Exception as render_err:
+            logging.error(f"[ERROR] Template rendering failed for {src_path}: {render_err}")
+            if DEBUG_MODE:
+                import traceback
+                logging.error(traceback.format_exc())
             html_output = None
         if html_output:
-            with open(index_html_path, 'w', encoding='utf-8') as f:
-                f.write(html_output)
-        else:
-            with open(index_html_path, 'w', encoding='utf-8') as f:
-                f.write(f'<h1>{section_title}</h1><p>No content found in this section.</p>')
-        logging.info(f"[AUTO] Generated section index: {index_html_path}")
-
-    # Build section indices for all top-level sections in toc
-    for item in toc:
-        if item.get('menu', False) and 'slug' in item:
-            build_section_index_toc(item['slug'], item['slug'], toc)
+            # Ensure output directory exists before writing
+            os.makedirs(os.path.dirname(out_path), exist_ok=True)
+            try:
+                with open(out_path, 'w', encoding='utf-8') as f:
+                    f.write(html_output)
+            except Exception as e:
+                logging.error(f"Failed to write HTML file {out_path}: {e}")
+                if DEBUG_MODE:
+                    import traceback
+                    logging.error(traceback.format_exc())
     copy_static_assets_to_build()
     copy_db_images_to_build()
     logging.info("[AUTO] All markdown files built.")
