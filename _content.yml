@@ -21,6 +21,16 @@ toc:
   - title: "Home"
     menu: true
     file: index.md
+  - title: "Sample"
+    menu: true
+    slug: sample-resources
+    children:
+      - title: "Introduction to Newton's Laws"
+        file: sample/newton.md
+        menu: false
+      - title: "Activities"
+        file: sample/activities.md
+        menu: false
   # - title: "News"
   #   menu: true
   #   slug: news-roll

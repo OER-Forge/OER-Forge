@@ -110,26 +110,54 @@ def generate_nav_menu(context: dict) -> list:
     Generate top-level navigation menu items from content table using relative_link and menu_context.
     Returns a list of menu item dicts: [{"title": ..., "link": ...}, ...]
     """
-    db_path = os.path.join(PROJECT_ROOT, 'db', 'sqlite.db')
-    with sqlite3.connect(db_path) as conn:
-        cursor = conn.cursor()
-        # Use parent_slug IS NULL for top-level navigation items
-        sql = "SELECT title, relative_link FROM content WHERE menu_context='main' AND parent_slug IS NULL ORDER BY \"order\";"
-        cursor.execute(sql)
-        rows = cursor.fetchall()
+    # Use toc from context or config for navigation
+    toc = context.get('toc')
+    if toc is None:
+        config_path = os.path.join(PROJECT_ROOT, '_content.yml')
+        config = load_yaml_config(config_path)
+        toc = config.get('toc', [])
+
     rel_path = context.get('rel_path', '')
-    menu_items = []
-    for title, relative_link in rows:
-        target = 'index.html' if title and title.lower() == 'home' else relative_link
-        current_dir = os.path.dirname(rel_path) if rel_path else ''
-        is_section_index = rel_path.endswith('index.html') and current_dir and rel_path != 'index.html'
-        if rel_path:
-            if is_section_index:
-                link = "index.html" if target == rel_path or os.path.normpath(target) == os.path.normpath(rel_path) else "../" + target
+
+    def compute_menu_link(item, rel_path):
+        """
+        Compute menu link for a toc item, handling top-level and section index cases.
+        """
+        # Home page
+        if item.get('file', '') == 'index.md':
+            target = 'index.html'
+        elif 'file' in item:
+            md_basename = os.path.splitext(os.path.basename(item['file']))[0]
+            # Section index
+            if md_basename == '_index':
+                parent_dir = item.get('slug', md_basename)
+                target = os.path.join(parent_dir, 'index.html')
             else:
-                link = os.path.relpath(target, current_dir) if not os.path.isabs(target) else target
+                target = f"{md_basename}.html"
+        elif 'slug' in item:
+            target = os.path.join(item['slug'], 'index.html')
         else:
-            link = target
+            target = 'index.html'
+
+        if not rel_path:
+            return target
+        current_dir = os.path.dirname(rel_path)
+        is_section_index = rel_path.endswith('index.html') and current_dir and rel_path != 'index.html'
+        if is_section_index:
+            if os.path.normpath(target) == os.path.normpath(rel_path):
+                return 'index.html'
+            if not os.path.dirname(target):
+                return f"../{target}"
+            return os.path.relpath(target, current_dir)
+        else:
+            return os.path.relpath(target, current_dir) if not os.path.isabs(target) else target
+
+    menu_items = []
+    for item in toc:
+        if not item.get('menu', False):
+            continue
+        title = item.get('title', 'Untitled')
+        link = compute_menu_link(item, rel_path)
         menu_items.append({'title': title, 'link': link})
     return menu_items
 
@@ -395,49 +423,46 @@ def build_all_markdown_files():
                         import traceback
                         logging.error(traceback.format_exc())
     # --- Section Index Generation (DB-driven) ---
-    from oerforge.db_utils import get_top_level_sections, get_children_for_section, get_section_by_slug
+    def find_section_in_toc(section_slug, toc):
+        """Find section in toc by slug."""
+        for item in toc:
+            if item.get('slug') == section_slug:
+                return item
+        return None
 
-    def build_section_index_db(section_slug, parent_dir):
+    def build_section_index_toc(section_slug, parent_dir, toc):
         """
-        Build index.html for a section using DB-driven hierarchy.
-        Uses new db_utils utilities for clarity and extensibility.
+        Build index.html for a section using toc hierarchy.
         """
         section_dir = os.path.join(BUILD_HTML_DIR, parent_dir)
         index_html_path = os.path.join(section_dir, 'index.html')
         if os.path.exists(index_html_path):
             return
         os.makedirs(section_dir, exist_ok=True)
-        # Query children from DB
-        children = get_children_for_section(section_slug, db_path=db_path)
+        # Find section in toc
+        section_item = find_section_in_toc(section_slug, toc)
+        section_title = section_item.get('title', section_slug) if section_item else section_slug
         children_list = []
-        for child in children:
-            child_slug = child.get('slug')
-            child_title = child.get('title', child_slug)
-            child_output = child.get('output_path')
-            is_section_index = child.get('is_section_index', 0)
-            if child_slug:
-                if is_section_index:
-                    child_index = os.path.join(child_slug, 'index.html')
-                    children_list.append({
-                        'link': child_index,
-                        'title': child_title,
-                        'description': child.get('description', ''),
-                        'level': child.get('level', 0)
-                    })
-                    next_parent_dir = os.path.join(parent_dir, child_slug) if parent_dir else child_slug
-                    build_section_index_db(child_slug, next_parent_dir)
-                elif child_output:
-                    child_rel = os.path.relpath(child_output, section_dir)
-                    children_list.append({
-                        'link': child_rel,
-                        'title': child_title,
-                        'description': child.get('description', ''),
-                        'level': child.get('level', 0)
-                    })
-        # Query section record for title
-        section_record = get_section_by_slug(section_slug, db_path=db_path)
-        section_title = section_record.get('title', section_slug) if section_record else section_slug
-        # Always populate top_menu and site context for navigation and completeness
+        if section_item and 'children' in section_item:
+            for child in section_item['children']:
+                child_title = child.get('title', 'Untitled')
+                # Compute link for child
+                if 'file' in child:
+                    md_basename = os.path.splitext(os.path.basename(child['file']))[0]
+                    if md_basename == '_index':
+                        child_link = os.path.join(parent_dir, md_basename, 'index.html')
+                    else:
+                        child_link = os.path.join(parent_dir, f"{md_basename}.html")
+                elif 'slug' in child:
+                    child_link = os.path.join(parent_dir, child['slug'], 'index.html')
+                else:
+                    child_link = 'index.html'
+                children_list.append({
+                    'link': child_link,
+                    'title': child_title,
+                    'description': child.get('description', ''),
+                    'level': child.get('level', 0)
+                })
         rel_path = os.path.relpath(index_html_path, BUILD_HTML_DIR)
         config_path = os.path.join(PROJECT_ROOT, '_content.yml')
         config = load_yaml_config(config_path)
@@ -468,12 +493,10 @@ def build_all_markdown_files():
                 f.write(f'<h1>{section_title}</h1><p>No content found in this section.</p>')
         logging.info(f"[AUTO] Generated section index: {index_html_path}")
 
-    # Build section indices for all top-level sections in DB
-    top_sections = get_top_level_sections(db_path=db_path)
-    for section in top_sections:
-        section_slug = section.get('slug')
-        if section_slug:
-            build_section_index_db(section_slug, section_slug)
+    # Build section indices for all top-level sections in toc
+    for item in toc:
+        if item.get('menu', False) and 'slug' in item:
+            build_section_index_toc(item['slug'], item['slug'], toc)
     copy_static_assets_to_build()
     copy_db_images_to_build()
     logging.info("[AUTO] All markdown files built.")

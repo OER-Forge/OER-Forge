@@ -7,11 +7,5 @@
     </div>
     <!-- Theme toggle button moved to main content container in baseof.html -->
   </div>
-  <nav class="site-nav" role="navigation" aria-label="Main menu">
-    <ul class="nav-menu">
-      {% for item in top_menu %}
-        <li><a href="{{ item.link }}">{{ item.title }}</a></li>
-      {% endfor %}
-    </ul>
-  </nav>
+  {% include 'nav_menu.html' %}
 </header>

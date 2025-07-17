@@ -13,6 +13,7 @@
 {% endif %}
     <h1>{{ Title }}</h1>
     {{ Content | safe }}
+    {# Top-level navigation is now handled by header.html partial #}
     <!-- Only show font controls on the homepage -->
     {% if output_file == 'index.html' and rel_path == 'index.html' %}
     <div id="font-controls" class="font-controls" aria-labelledby="font-controls-label">

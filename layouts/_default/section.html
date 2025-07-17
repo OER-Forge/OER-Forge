@@ -22,15 +22,7 @@
       </label>
     </div>
     {% endif %}
-    {% if top_menu and top_menu|length > 0 %}
-    <nav class="section-nav" role="navigation" aria-label="Section navigation">
-      <ul class="nav-menu">
-        {% for item in top_menu %}
-          <li><a href="{{ item.link }}">{{ item.title }}</a></li>
-        {% endfor %}
-      </ul>
-    </nav>
-    {% endif %}
+    {# Top-level navigation is now handled by header.html partial #}
     <h2>Contents</h2>
     {% if Children and Children|length > 0 %}
     <ul class="section-children">

@@ -1,0 +1,8 @@
+{# layouts/partials/nav_menu.html #}
+<nav class="site-nav" role="navigation" aria-label="Main menu">
+  <ul class="nav-menu">
+    {% for item in top_menu %}
+      <li><a href="{{ item.link }}">{{ item.title }}</a></li>
+    {% endfor %}
+  </ul>
+</nav>
