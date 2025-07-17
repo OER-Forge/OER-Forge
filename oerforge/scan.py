@@ -25,6 +25,7 @@ from oerforge.db_utils import (
     pretty_print_table,
     get_descendants_for_parent
 )
+from bs4 import BeautifulSoup
 
 # --- Configurable Environment ---
 DEBUG_MODE = os.environ.get("DEBUG", "0") == "1"
@@ -256,6 +257,58 @@ def scan_toc_and_populate_db(config_path):
             raise
     rel_file_paths = [os.path.relpath(p, project_root) for p in file_paths if os.path.exists(p)]
     contents = batch_read_files(rel_file_paths)
+    
+    # --- Asset Extraction: Register images in DB ---
+    def extract_and_register_images(content_path, content_text, db_path):
+        # Find Markdown images: ![alt](path)
+        md_image_paths = re.findall(r'!\[.*?\]\((.*?)\)', content_text)
+        # Find HTML images using BeautifulSoup
+        soup = BeautifulSoup(content_text, "html.parser")
+        html_image_paths = [img['src'] for img in soup.find_all('img') if img.has_attr('src')]
+        image_paths = md_image_paths + html_image_paths
+        
+        for img in image_paths:
+            filename = os.path.basename(img)
+            is_remote = img.startswith('http://') or img.startswith('https://')
+            if is_remote:
+                abs_img_path = img
+            else:
+                # Resolve relative to the Markdown file's directory
+                base_dir = os.path.dirname(os.path.join(project_root, content_path))
+                abs_img_path = os.path.abspath(os.path.join(base_dir, img))
+            logging.info(f"[ASSET] Checking image: {img} (resolved as {abs_img_path}) in {content_path}")
+            if not is_remote and not os.path.exists(abs_img_path):
+                logging.warning(f"[ASSET] Local image not found: {img} (resolved as {abs_img_path}) in {content_path}")
+            records = get_records('files', where_clause="filename=? AND is_image=1", params=(filename,), db_path=db_path)
+            if not records:
+                insert_records('files', [{
+                    'filename': filename,
+                    'extension': os.path.splitext(filename)[1],
+                    'mime_type': 'image/png',  # TODO: detect type
+                    'is_image': 1,
+                    'is_remote': int(is_remote),
+                    'url': img if is_remote else None,
+                    'referenced_page': content_path,
+                    'relative_path': img,
+                    'absolute_path': abs_img_path
+                }], db_path=db_path)
+                logging.info(f"[ASSET] Registered {'remote' if is_remote else 'local'} image: {filename} for {content_path}")
+            else:
+                # Update remote image URL if changed
+                if is_remote and records[0].get('url') != img:
+                    conn = get_db_connection(db_path)
+                    cursor = conn.cursor()
+                    cursor.execute("UPDATE files SET url=?, referenced_page=? WHERE id=?", (img, content_path, records[0]['id']))
+                    conn.commit()
+                    conn.close()
+                    logging.info(f"[ASSET] Updated remote image URL: {filename} for {content_path}")
+                else:
+                    logging.info(f"[ASSET] Image already registered: {filename}")
+            
+    # Run extraction for all scanned content
+    for content_path, content_text in contents.items():
+        if content_text:
+            extract_and_register_images(content_path, content_text, db_path=os.path.join(project_root, 'db', 'sqlite.db'))
     # Asset extraction would also use db_utils for inserts/links
     # ...existing asset extraction logic...
     conn.close()

@@ -16,6 +16,11 @@ Usage:
 import os
 import shutil
 import logging
+from oerforge import db_utils
+
+BUILD_DIR = 'build'
+PROJECT_ROOT = os.path.dirname(os.path.dirname(os.path.abspath(__file__)))
+BUILD_HTML_DIR = os.path.join(PROJECT_ROOT, BUILD_DIR)
 
 __all__ = [
     "copy_to_build",
@@ -101,7 +106,49 @@ def copy_build_to_docs_safe():
             src_file = os.path.join(root, file)
             dst_file = os.path.join(target_dir, file)
             shutil.copy2(src_file, dst_file)
-            
+
+def copy_static_assets_to_build(asset_types=None):
+    """
+    Copy static assets (CSS, JS, images) from static/ to build/.
+    Extensible for new asset types.
+    """
+    if asset_types is None:
+        asset_types = ['css', 'js', 'images']
+    for asset in asset_types:
+        src = os.path.join(PROJECT_ROOT, 'static', asset)
+        dst = os.path.join(BUILD_HTML_DIR, asset)
+        if os.path.exists(dst):
+            shutil.rmtree(dst)
+        if os.path.exists(src):
+            shutil.copytree(src, dst)
+            logging.info(f"Copied {src} to {dst}")
+        else:
+            logging.warning(f"Source directory not found: {src}")
+    logging.info("[ASSET] Static assets copied to build/.")
+
+def copy_db_images_to_build():
+    """
+    Copy all images referenced in the DB from their source location to build/images/.
+    Only copies images where is_image=1 and is_remote=0.
+    """
+    db_path = os.path.join(PROJECT_ROOT, 'db', 'sqlite.db')
+    image_records = db_utils.get_records(
+        'files',
+        where_clause="is_image=1 AND is_remote=0",
+        db_path=db_path
+    )
+    images_dir = os.path.join(BUILD_HTML_DIR, 'images')
+    os.makedirs(images_dir, exist_ok=True)
+    for rec in image_records:
+        src = rec.get('absolute_path') or rec.get('relative_path')
+        if src and os.path.exists(src):
+            dst = os.path.join(images_dir, os.path.basename(src))
+            if not os.path.exists(dst):
+                shutil.copy2(src, dst)
+                logging.info(f"[DB-IMG] Copied image {src} to {dst}")
+        else:
+            logging.warning(f"[DB-IMG] Image not found for copying: {src}")
+           
 if __name__ == "__main__":
     import argparse
 

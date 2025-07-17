@@ -18,12 +18,15 @@ import yaml
 import re
 import sqlite3
 import shutil
+import base64
+from PIL import Image
 from jinja2 import Environment, FileSystemLoader, select_autoescape
 from markdown_it import MarkdownIt
 from mdit_py_plugins.footnote import footnote_plugin
 from mdit_py_plugins.texmath import texmath_plugin
 import html
 from oerforge import db_utils
+from oerforge.copyfile import copy_db_images_to_build, copy_static_assets_to_build
 
 # --- Configurable Environment ---
 DEBUG_MODE = os.environ.get("DEBUG", "0") == "1"
@@ -40,25 +43,6 @@ BUILD_FILES_DIR = os.path.join(PROJECT_ROOT, BUILD_DIR, FILES_DIR)
 BUILD_HTML_DIR = os.path.join(PROJECT_ROOT, BUILD_DIR)
 LOG_PATH = os.path.join(PROJECT_ROOT, LOG_DIR, LOG_FILENAME)
 LAYOUTS_DIR = os.path.join(PROJECT_ROOT, 'layouts')
-
-def copy_static_assets_to_build(asset_types=None):
-    """
-    Copy static assets (CSS, JS, images) from static/ to build/.
-    Extensible for new asset types.
-    """
-    if asset_types is None:
-        asset_types = ['css', 'js', 'images']
-    for asset in asset_types:
-        src = os.path.join(PROJECT_ROOT, 'static', asset)
-        dst = os.path.join(BUILD_HTML_DIR, asset)
-        if os.path.exists(dst):
-            shutil.rmtree(dst)
-        if os.path.exists(src):
-            shutil.copytree(src, dst)
-            logging.info(f"Copied {src} to {dst}")
-        else:
-            logging.warning(f"Source directory not found: {src}")
-    logging.info("[ASSET] Static assets copied to build/.")
 
 def extract_title_and_body(md_text, default_title="Untitled"):
     """
@@ -156,11 +140,23 @@ def convert_markdown_to_html(md_path: str) -> str:
     def custom_image_renderer(self, tokens, idx, options, env):
         token = tokens[idx]
         src = token.attrs.get('src', '')
-        if not (src.startswith('http') or src.startswith('/') or src.startswith('images/')):
-            filename = os.path.basename(src)
-            src = f'images/{filename}'
-        alt = html.escape(token.content)
-        return f'<img src="{src}" alt="{alt}">'
+        alt = html.escape(token.content) or "Image"
+        db_path = os.path.join(PROJECT_ROOT, 'db', 'sqlite.db')
+        referenced_page = env.get('referenced_page', '')
+        filename = os.path.basename(src)
+        image_record = db_utils.get_image_record(referenced_page, filename, db_path=db_path)
+        if image_record:
+            # Always use build/images/<filename>
+            image_build_path = os.path.join('images', filename)
+            # Compute relative path from current HTML file
+            rel_path = env.get('rel_path', 'index.html')
+            image_src = os.path.relpath(image_build_path, os.path.dirname(rel_path))
+            
+            return f'<img src="{image_src}" alt="{alt}">'
+        else:
+            logging.warning(f"Missing image in DB: {src} (referenced from {referenced_page})")
+            return f'<span class="missing-image">{alt} [Image not found]</span>'
+    
     md = MarkdownIt("commonmark", {"html": True, "linkify": True, "typographer": True})
     md.use(footnote_plugin)
     md.use(texmath_plugin)
@@ -181,23 +177,38 @@ def convert_markdown_to_html(md_path: str) -> str:
     html_body += mathjax_script
     return html_body
 
-def convert_markdown_to_html_text(md_text: str) -> str:
+def convert_markdown_to_html_text(md_text: str, referenced_page: str, rel_path: str) -> str:
     """
-    Convert markdown text to HTML using markdown-it-py, rewriting local image paths.
+    Convert markdown text to HTML using markdown-it-py, rewriting image paths using DB records.
+    Args:
+        md_text: Markdown content as a string.
+        referenced_page: Source markdown file path (for DB lookup).
+        rel_path: Relative path of output HTML file (for correct image linking).
+    Returns:
+        HTML string with images embedded using DB-driven paths.
     """
     def custom_image_renderer(self, tokens, idx, options, env):
         token = tokens[idx]
         src = token.attrs.get('src', '')
-        if not (src.startswith('http') or src.startswith('/') or src.startswith('images/')):
-            filename = os.path.basename(src)
-            src = f'images/{filename}'
-        alt = html.escape(token.content)
-        return f'<img src="{src}" alt="{alt}">'
+        alt = html.escape(token.content) or "Image"
+        db_path = os.path.join(PROJECT_ROOT, 'db', 'sqlite.db')
+        filename = os.path.basename(src)
+        referenced_page_val = env.get('referenced_page', '')
+        rel_path_val = env.get('rel_path', 'index.html')
+        image_record = db_utils.get_image_record(referenced_page_val, filename, db_path=db_path)
+        if image_record:
+            image_build_path = os.path.join('images', filename)
+            image_src = os.path.relpath(image_build_path, os.path.dirname(rel_path_val))
+            return f'<img src="{image_src}" alt="{alt}">'
+        else:
+            logging.warning(f"Missing image in DB: {src} (referenced from {referenced_page_val})")
+            return f'<span class="missing-image">{alt} [Image not found]</span>'
     md = MarkdownIt("commonmark", {"html": True, "linkify": True, "typographer": True})
     md.use(footnote_plugin)
     md.use(texmath_plugin)
     md.add_render_rule('image', custom_image_renderer)
-    html_body = md.render(md_text)
+    env = {'referenced_page': referenced_page, 'rel_path': rel_path}
+    html_body = md.render(md_text, env=env)
     html_body = html_body.replace('<table>', '<table role="table">')
     html_body = html_body.replace('<th>', '<th role="columnheader">')
     html_body = html_body.replace('<td>', '<td role="cell">')
@@ -251,8 +262,8 @@ def build_all_markdown_files():
             with open(homepage_md, 'r', encoding='utf-8') as f:
                 md_text = f.read()
             title, body_text = extract_title_and_body(md_text, "Home")
-            html_body = convert_markdown_to_html_text(body_text)
             rel_path = 'index.html'
+            html_body = convert_markdown_to_html_text(body_text, homepage_md, rel_path)
             top_menu = generate_nav_menu({'rel_path': rel_path, 'toc': toc}) or []
             context = {
                 'Title': title,
@@ -290,31 +301,24 @@ def build_all_markdown_files():
                     logging.error(traceback.format_exc())
                 continue
             title, body_text = extract_title_and_body(md_text, db_title or "Untitled")
-            html_body = convert_markdown_to_html_text(body_text)
+            # Always set output_path_final and rel_path before rendering
             md_basename = os.path.splitext(os.path.basename(source_path))[0]
             parent_dir = os.path.basename(os.path.dirname(source_path))
-            if md_basename == parent_dir:
+            # --- Section index logic ---
+            if md_basename == '_index':
+                # Section index: output to section/index.html
                 output_dir = os.path.join(BUILD_HTML_DIR, parent_dir)
-                try:
-                    os.makedirs(output_dir, exist_ok=True)
-                except Exception as dir_err:
-                    logging.error(f"[ERROR] Failed to create output directory {output_dir}: {dir_err}")
-                    if not DEBUG_MODE:
-                        raise
+                os.makedirs(output_dir, exist_ok=True)
                 output_path_final = os.path.join(output_dir, 'index.html')
                 rel_path = os.path.relpath(output_path_final, BUILD_HTML_DIR)
                 output_file = 'index.html'
             else:
-                output_path_final = output_path
-                out_dir = os.path.dirname(output_path_final)
-                try:
-                    os.makedirs(out_dir, exist_ok=True)
-                except Exception as dir_err:
-                    logging.error(f"[ERROR] Failed to create output directory {out_dir}: {dir_err}")
-                    if not DEBUG_MODE:
-                        raise
+                # Top-level page: output to about.html (or filename.html) at root
+                output_path_final = os.path.join(BUILD_HTML_DIR, f"{md_basename}.html")
+                os.makedirs(BUILD_HTML_DIR, exist_ok=True)
                 rel_path = os.path.relpath(output_path_final, BUILD_HTML_DIR)
-                output_file = os.path.basename(output_path_final)
+                output_file = f"{md_basename}.html"
+            html_body = convert_markdown_to_html_text(body_text, source_path, rel_path)
             top_menu = generate_nav_menu({'rel_path': rel_path, 'toc': toc}) or []
             # --- Copy source file to build/files/ and insert DB record for download ---
             try:
@@ -471,8 +475,13 @@ def build_all_markdown_files():
         if section_slug:
             build_section_index_db(section_slug, section_slug)
     copy_static_assets_to_build()
+    copy_db_images_to_build()
     logging.info("[AUTO] All markdown files built.")
-    
+
+#=================
+
+
+ 
 if __name__ == "__main__":
     import sys
     config_file = "_content.yml"

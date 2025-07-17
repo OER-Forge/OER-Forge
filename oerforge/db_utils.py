@@ -1,3 +1,21 @@
+# --- Image DB Helper ---
+def get_image_record(referenced_page, filename, db_path):
+    """
+    Query the files table for an image matching referenced_page and filename.
+    Returns a dict or None.
+    """
+    import sqlite3
+    with sqlite3.connect(db_path) as conn:
+        cursor = conn.cursor()
+        cursor.execute(
+            "SELECT * FROM files WHERE referenced_page=? AND filename=?",
+            (referenced_page, filename)
+        )
+        row = cursor.fetchone()
+        if row:
+            columns = [desc[0] for desc in cursor.description]
+            return dict(zip(columns, row))
+        return None
 """
 OERForge Database Utilities
 ==========================
@@ -251,6 +269,13 @@ def get_descendants_for_parent(parent_output_path, db_path):
     ]
 
 # --- Section Index & Navigation Utilities ---
+
+def get_remote_images(db_path=None):
+    """
+    Fetch all remote images from the files table.
+    Returns list of dicts.
+    """
+    return get_records('files', where_clause="is_image=1 AND is_remote=1", db_path=db_path)
 def get_top_level_sections(db_path=None):
     """
     Fetch all top-level section indices (parent_slug IS NULL and is_section_index=1).
@@ -480,6 +505,13 @@ if __name__ == "__main__":
     if len(sys.argv) > 1 and sys.argv[1] == "init":
         initialize_database()
         print("Database initialized.")
+    elif len(sys.argv) > 1 and sys.argv[1] == "show-remote-images":
+        db_path = None
+        if len(sys.argv) > 2:
+            db_path = sys.argv[2]
+        print("Remote images in the database:")
+        for img in get_remote_images(db_path=db_path):
+            print(img)
     elif len(sys.argv) > 1:
         test_output_path = sys.argv[1]
         print(f"Available conversions for {test_output_path}:")

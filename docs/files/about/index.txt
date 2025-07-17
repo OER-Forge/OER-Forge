@@ -1,13 +1,21 @@
 About OER-Forge
 
+Jump to Font Controls
+
 OER-Forge is an open-source project dedicated to building accessible, high-quality, and modern educational resources for physics and computational science. Our mission is to empower educators, students, and lifelong learners by providing free, adaptable, and open materials—while supporting a transparent, collaborative, and sustainable approach to educational publishing.
+
+Below is a plot of the rising cost of textbooks over time. It shows a 2.8 times the rate of inflation increase in textbooks costs. And it shows a nearly 1400% increase in real dollars over the time time.
+
+Full disclosure. This plot is from My eLearning World, which advocates for eLearning solutions. But the costs of those are still borne by students. Both textbooks and eLearning solutions are often behind paywalls, expensive, and not accessible to all students.
+
+This is where Open Educational Resources (OERs) come in. OERs are free, openly licensed educational materials that can be used, adapted, and shared by anyone. They provide an alternative to traditional textbooks and eLearning solutions, making education more affordable and accessible.
 
 Our Mission
 
 Accessibility: We design all resources to be usable by everyone, including people with disabilities, and available in multiple formats (HTML, PDF, Markdown, LaTeX, Jupyter, and more).
 
 
-Openness: Everything is open source and free to use, modify, and share. We challenge the corporate control of educational content and promote equitable access for all.
+Openness: Everything is open source and free to use, modify, and share for non-commercial use. We challenge the corporate control of educational content and promote equitable access for all.
 
 
 Collaboration: OER-Forge is a community effort—anyone can contribute, whether you're an educator, student, developer, or enthusiast. Pull requests, suggestions, and feedback are always welcome.
@@ -21,7 +29,7 @@ Transparency: The build process, content, and code are open and documented for c
 
 Who We Are
 
-OER-Forge is being developed by Danny Caballero, professor of physics and computational science at Michigan State University, with contributions from students, colleagues, and the wider open education community. The project is inspired by years of teaching, learning, and collaborating with others who share a passion for open, equitable education.
+OER-Forge is being developed by Danny Caballero, professor of physics and computational science at Michigan State University. The project is inspired by years of teaching, learning, and collaborating with others who share a passion for open, equitable education.
 
 Projects
 
