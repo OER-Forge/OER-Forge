@@ -1,4 +1,4 @@
-# OER-Forge 🛠️
+# OER-Forge
 
 [OER-Forge](https://oer-forge.github.io/oer-forge) is a suite of tools to help authors create WCAG-compliant Open Educational Resources (OERs). 
 

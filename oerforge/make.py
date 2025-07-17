@@ -314,6 +314,22 @@ def build_all_markdown_files():
                 rel_path = os.path.relpath(output_path_final, BUILD_HTML_DIR)
                 output_file = os.path.basename(output_path_final)
             top_menu = generate_nav_menu({'rel_path': rel_path, 'toc': toc}) or []
+            # --- Query converted files for download buttons ---
+            downloads = []
+            try:
+                cursor.execute("SELECT filename, extension, mime_type, url FROM files WHERE referenced_page=?", (source_path,))
+                for fname, ext, mime, url in cursor.fetchall():
+                    # Compute relative URL for the download link
+                    # If the file is in build/files/, make the link relative to the HTML file
+                    file_rel_path = os.path.relpath(url, os.path.dirname(output_path_final))
+                    downloads.append({
+                        'filename': fname,
+                        'extension': ext,
+                        'mime_type': mime,
+                        'url': file_rel_path
+                    })
+            except Exception as e:
+                logging.error(f"Failed to query downloads for {source_path}: {e}")
             context = {
                 'Title': title,
                 'Content': html_body,
@@ -323,6 +339,7 @@ def build_all_markdown_files():
                 'footer_text': footer_text,
                 'output_file': output_file,
                 'rel_path': rel_path,
+                'downloads': downloads,
             }
             context = add_asset_paths(context, rel_path)
             try:
@@ -344,3 +361,10 @@ def build_all_markdown_files():
                         logging.error(traceback.format_exc())
     copy_static_assets_to_build()
     logging.info("[AUTO] All markdown files built.")
+    
+if __name__ == "__main__":
+    import sys
+    config_file = "_content.yml"
+    if len(sys.argv) > 1:
+        config_file = sys.argv[1]
+    build_all_markdown_files()

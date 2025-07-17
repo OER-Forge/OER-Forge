@@ -181,6 +181,21 @@ def convert_md_to_docx(src_path, out_path, record_id=None, conn=None):
         import subprocess
         subprocess.run(["pandoc", src_path, "-o", out_path], check=True)
         logging.info(f"[DOCX] Converted {src_path} to {out_path}")
+        # Insert converted file record into files table
+        if conn is not None:
+            cursor = conn.cursor()
+            cursor.execute(
+                "INSERT INTO files (filename, extension, mime_type, url, referenced_page, relative_path) VALUES (?, ?, ?, ?, ?, ?)",
+                (
+                    os.path.basename(out_path),
+                    ".docx",
+                    "application/vnd.openxmlformats-officedocument.wordprocessingml.document",
+                    out_path,
+                    src_path,
+                    out_path
+                )
+            )
+            conn.commit()
         # DB update logic remains, but use logging for status
         if record_id:
             from oerforge.db_utils import get_db_connection
@@ -220,6 +235,21 @@ def convert_md_to_pdf(src_path, out_path, record_id=None, conn=None):
         import subprocess
         subprocess.run(["pandoc", src_path, "-o", out_path], check=True)
         logging.info(f"[PDF] Converted {src_path} to {out_path}")
+        # Insert converted file record into files table
+        if conn is not None:
+            cursor = conn.cursor()
+            cursor.execute(
+                "INSERT INTO files (filename, extension, mime_type, url, referenced_page, relative_path) VALUES (?, ?, ?, ?, ?, ?)",
+                (
+                    os.path.basename(out_path),
+                    ".pdf",
+                    "application/pdf",
+                    out_path,
+                    src_path,
+                    out_path
+                )
+            )
+            conn.commit()
         if record_id:
             from oerforge.db_utils import get_db_connection
             import datetime
@@ -258,6 +288,21 @@ def convert_md_to_tex(src_path, out_path, record_id=None, conn=None):
         import subprocess
         subprocess.run(["pandoc", src_path, "-o", out_path], check=True)
         logging.info(f"[TEX] Converted {src_path} to {out_path}")
+        # Insert converted file record into files table
+        if conn is not None:
+            cursor = conn.cursor()
+            cursor.execute(
+                "INSERT INTO files (filename, extension, mime_type, url, referenced_page, relative_path) VALUES (?, ?, ?, ?, ?, ?)",
+                (
+                    os.path.basename(out_path),
+                    ".tex",
+                    "application/x-tex",
+                    out_path,
+                    src_path,
+                    out_path
+                )
+            )
+            conn.commit()
         if record_id:
             from oerforge.db_utils import get_db_connection
             import datetime
@@ -405,6 +450,21 @@ def convert_md_to_txt(src_path, out_path, record_id=None, conn=None):
             f.write(plain_text)
 
         logging.info(f"[TXT] Converted {src_path} to {out_path}")
+        # Insert converted file record into files table
+        if conn is not None:
+            cursor = conn.cursor()
+            cursor.execute(
+                "INSERT INTO files (filename, extension, mime_type, url, referenced_page, relative_path) VALUES (?, ?, ?, ?, ?, ?)",
+                (
+                    os.path.basename(out_path),
+                    ".txt",
+                    "text/plain",
+                    out_path,
+                    src_path,
+                    out_path
+                )
+            )
+            conn.commit()
         if record_id:
             from oerforge.db_utils import get_db_connection
             import datetime
@@ -504,33 +564,41 @@ def batch_convert_all_content(config_path=None):
     logging.info("Batch conversion complete.")
 
 # --- Main Entry Point ---
-if __name__ == "__main__":
+def main():
     import argparse
     setup_logging()
     parser = argparse.ArgumentParser(description="OERForge Conversion CLI")
     parser.add_argument("mode", choices=["batch", "single"], help="Conversion mode: batch or single file")
     parser.add_argument("--src", type=str, help="Source file path (for single mode)")
     parser.add_argument("--out", type=str, help="Output file path (for single mode)")
-    parser.add_argument("--fmt", choices=["docx", "pdf", "tex"], help="Target format (for single mode)")
+    parser.add_argument("--fmt", choices=["docx", "pdf", "tex", "txt"], help="Target format (for single mode)")
     parser.add_argument("--record_id", type=int, default=None, help="Content record ID (optional)")
     args = parser.parse_args()
 
     if args.mode == "batch":
-        logging.info("[convert] __main__ entry: running batch_convert_all_content()")
+        logging.info("[convert] main() entry: running batch_convert_all_content()")
         batch_convert_all_content()
     elif args.mode == "single":
         if not args.src or not args.out or not args.fmt:
             print("Error: --src, --out, and --fmt are required for single mode.")
             exit(1)
-        if args.fmt == "docx":
-            convert_md_to_docx(args.src, args.out, args.record_id)
-        elif args.fmt == "pdf":
-            convert_md_to_pdf(args.src, args.out, args.record_id)
-        elif args.fmt == "tex":
-            convert_md_to_tex(args.src, args.out, args.record_id)
-        elif args.fmt == "txt":
-            convert_md_to_txt(args.src, args.out, args.record_id)
-        else:
-            print(f"Unknown format: {args.fmt}")
-            exit(1)
+        import sqlite3
+        conn = sqlite3.connect(DB_PATH)
+        try:
+            if args.fmt == "docx":
+                convert_md_to_docx(args.src, args.out, args.record_id, conn)
+            elif args.fmt == "pdf":
+                convert_md_to_pdf(args.src, args.out, args.record_id, conn)
+            elif args.fmt == "tex":
+                convert_md_to_tex(args.src, args.out, args.record_id, conn)
+            elif args.fmt == "txt":
+                convert_md_to_txt(args.src, args.out, args.record_id, conn)
+            else:
+                print(f"Unknown format: {args.fmt}")
+                exit(1)
+        finally:
+            conn.close()
+
+if __name__ == "__main__":
+    main()
 

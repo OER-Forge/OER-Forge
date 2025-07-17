@@ -1,18 +1,16 @@
 {% extends "_default/baseof.html" %}
 {% block main %}
   <article>
-    {% if download_buttons %}
-    <nav class="download-nav" role="navigation" aria-label="Download options">
-      {% for btn in download_buttons %}
-        <a href="{{ btn.href }}"
-           class="download-btn theme-{{ btn.theme }}"
-           role="button"
-           aria-label="Download as {{ btn.label }}">
-          {{ btn.label }}
-        </a>
-      {% endfor %}
-    </nav>
-    {% endif %}
+    {% if downloads %}
+  <div class="download-buttons">
+    <h3>Download this page:</h3>
+    {% for file in downloads %}
+      <a href="{{ file.url }}" class="download-btn" download>
+        {{ file.extension|upper }}
+      </a>
+    {% endfor %}
+  </div>
+{% endif %}
     <h1>{{ Title }}</h1>
     {{ Content | safe }}
     <!-- Only show font controls on the homepage -->
