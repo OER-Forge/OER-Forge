@@ -318,7 +318,6 @@ def build_all_markdown_files():
             # --- Copy source file to build/files/ and insert DB record for download ---
             try:
                 from oerforge.copyfile import copy_to_build
-                from oerforge import db_utils
                 copied_md_path = copy_to_build(source_path)
                 # Insert record for markdown file if not already present
                 files_exist = db_utils.get_records(
@@ -390,6 +389,62 @@ def build_all_markdown_files():
                     if DEBUG_MODE:
                         import traceback
                         logging.error(traceback.format_exc())
+    # --- Section Index Generation (TOC-driven) ---
+    def build_section_index(section, toc_entry, parent_dir):
+        """
+        Recursively build index.html for a section using TOC structure.
+        """
+        section_dir = os.path.join(BUILD_HTML_DIR, parent_dir)
+        index_html_path = os.path.join(section_dir, 'index.html')
+        if os.path.exists(index_html_path):
+            return
+        os.makedirs(section_dir, exist_ok=True)
+        links = []
+        children = toc_entry.get('children', [])
+        for child in children:
+            # Find DB record for child
+            child_slug = child.get('slug')
+            child_title = child.get('title', child_slug)
+            # Try to find output_path from DB
+            child_rec = None
+            db_recs = db_utils.get_records('content', where_clause="slug=?", params=(child_slug,), db_path=db_path)
+            if db_recs:
+                child_rec = db_recs[0]
+            child_output = child_rec['output_path'] if child_rec else None
+            # If child has its own children, link to its index.html
+            if child.get('children'):
+                child_index = os.path.join(child_slug, 'index.html')
+                links.append(f'<li><a href="{child_index}">{child_title}</a></li>')
+                # Recursively build child section index
+                build_section_index(child_slug, child, os.path.join(parent_dir, child_slug))
+            elif child_output:
+                child_rel = os.path.relpath(child_output, section_dir)
+                links.append(f'<li><a href="{child_rel}">{child_title}</a></li>')
+        html_body = f'<h1>Section Index: {section}</h1>\n<ul>\n' + '\n'.join(links) + '\n</ul>'
+        context = {
+            'Title': f'Section Index: {section}',
+            'Content': html_body,
+            'top_menu': [],
+            'site': {},
+            'footer_text': '',
+            'output_file': 'index.html',
+            'rel_path': os.path.relpath(index_html_path, BUILD_HTML_DIR),
+            'downloads': [],
+        }
+        context = add_asset_paths(context, context['rel_path'])
+        try:
+            html_output = render_page(context, 'single.html')
+        except Exception:
+            html_output = html_body
+        with open(index_html_path, 'w', encoding='utf-8') as f:
+            f.write(html_output)
+        logging.info(f"[AUTO] Generated section index: {index_html_path}")
+
+    # Build section indices for all top-level TOC entries
+    for entry in toc:
+        section_slug = entry.get('slug')
+        if section_slug:
+            build_section_index(section_slug, entry, section_slug)
     copy_static_assets_to_build()
     logging.info("[AUTO] All markdown files built.")
     
