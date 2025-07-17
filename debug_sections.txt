@@ -1,3 +1,0 @@
-get_top_level_sections() returned: [('News', 'build/news-roll'), ('Example', 'build/sample-resources')]
-Processing section: News at build/news-roll
-Processing section: Example at build/sample-resources
