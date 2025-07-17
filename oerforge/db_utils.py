@@ -215,14 +215,11 @@ def get_db_connection(db_path=None):
     db_log(f"Opening DB connection to {db_path}.")
     return sqlite3.connect(db_path)
 
+
 def get_descendants_for_parent(parent_output_path, db_path):
     """
     Query all children, grandchildren, and deeper descendants for a given parent_output_path using a recursive CTE.
-    Args:
-        parent_output_path (str): Output path of the parent section.
-        db_path (str): Path to the SQLite database.
-    Returns:
-        list: Dicts for each descendant (id, title, output_path, parent_output_path, slug, level).
+    Returns list of dicts.
     """
     conn = sqlite3.connect(db_path)
     cursor = conn.cursor()
@@ -252,6 +249,46 @@ def get_descendants_for_parent(parent_output_path, db_path):
         }
         for row in rows
     ]
+
+# --- Section Index & Navigation Utilities ---
+def get_top_level_sections(db_path=None):
+    """
+    Fetch all top-level section indices (parent_slug IS NULL and is_section_index=1).
+    Returns list of dicts.
+    """
+    conn = get_db_connection(db_path)
+    cursor = conn.cursor()
+    cursor.execute("SELECT * FROM content WHERE parent_slug IS NULL AND is_section_index=1 ORDER BY \"order\";")
+    rows = cursor.fetchall()
+    col_names = [desc[0] for desc in cursor.description]
+    conn.close()
+    return [dict(zip(col_names, row)) for row in rows]
+
+def get_children_for_section(parent_slug, db_path=None):
+    """
+    Fetch all direct children for a given parent_slug.
+    Returns list of dicts.
+    """
+    conn = get_db_connection(db_path)
+    cursor = conn.cursor()
+    cursor.execute("SELECT * FROM content WHERE parent_slug=? ORDER BY \"order\";", (parent_slug,))
+    rows = cursor.fetchall()
+    col_names = [desc[0] for desc in cursor.description]
+    conn.close()
+    return [dict(zip(col_names, row)) for row in rows]
+
+def get_section_by_slug(slug, db_path=None):
+    """
+    Fetch a section record by slug.
+    Returns dict or None.
+    """
+    conn = get_db_connection(db_path)
+    cursor = conn.cursor()
+    cursor.execute("SELECT * FROM content WHERE slug=?;", (slug,))
+    row = cursor.fetchone()
+    col_names = [desc[0] for desc in cursor.description]
+    conn.close()
+    return dict(zip(col_names, row)) if row else None
     
 def get_records(table_name, where_clause=None, params=None, db_path=None, conn=None, cursor=None):
     """

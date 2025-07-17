@@ -1,48 +1,110 @@
-\section{OER-Forge}\label{oer-forge}
+\# OER-Forge
 
-\href{https://oer-forge.github.io/oer-forge}{OER-Forge} is a suite of
-tools to help authors create WCAG-compliant Open Educational Resources
-(OERs).
+\textbf{Build, share, and improve WCAG-compliant Open Educational
+Resources with Python!}
 
-\emph{The project is under active development.}
+\subsection{Welcome}\label{welcome}
 
-Here you can find the source code, documentation, and examples of OERs
-created with OER-Forge.
+OER-Forge is an open source Python toolkit for building, organizing, and
+publishing accessible Open Educational Resources (OERs). Our goal: make
+it easy and fun to create sites and documents that meet
+\href{https://www.w3.org/WAI/standards-guidelines/wcag/}{WCAG}
+standards.
+
+\begin{itemize}
+\tightlist
+\item
+  \textbf{Accessible by design:} All templates and outputs aim for
+  \href{https://www.w3.org/WAI/standards-guidelines/wcag/}{WCAG
+  compliance}.
+\item
+  \textbf{Database-driven navigation:} Section indices, menus, and
+  hierarchy are managed in SQLite for robust, extensible site structure.
+\item
+  \textbf{Multi-format export:} Markdown, DOCX, PDF, LaTeX, and more.
+\item
+  \textbf{Built for maintainers:} Clean Code, SOLID principles, and a
+  growing suite of tests.
+\item
+  \textbf{Fun to hack:} Professional, but not boring. ☕️❤️
+\end{itemize}
+
+\subsection{Get Started}\label{get-started}
+
+\begin{enumerate}
+\def\labelenumi{\arabic{enumi}.}
+\item
+  \textbf{Clone the repo:}
+
+\begin{Shaded}
+\begin{Highlighting}[]
+\FunctionTok{git}\NormalTok{ clone https://github.com/OER{-}Forge/OER{-}Forge.git}
+\BuiltInTok{cd}\NormalTok{ OER{-}Forge}
+\end{Highlighting}
+\end{Shaded}
+\item
+  \textbf{Install dependencies:}
+
+\begin{Shaded}
+\begin{Highlighting}[]
+\ExtensionTok{pip}\NormalTok{ install }\AttributeTok{{-}r}\NormalTok{ requirements.txt}
+\end{Highlighting}
+\end{Shaded}
+\item
+  \textbf{Build the site:}
+
+\begin{Shaded}
+\begin{Highlighting}[]
+\ExtensionTok{python}\NormalTok{ build.py}
+\end{Highlighting}
+\end{Shaded}
+\item
+  \textbf{View your site:} Open \texttt{build/index.html} in your
+  browser.
+\end{enumerate}
+
+\subsection{Features}\label{features}
+
+\begin{itemize}
+\tightlist
+\item
+  Section indices \& navigation: DB-driven, supports arbitrary
+  hierarchy, top-level and nested menus.
+\item
+  Accessibility: ARIA labels, alt text, color contrast, keyboard
+  navigation.
+\item
+  Download options: Export pages in multiple formats (PDF, DOCX, TXT,
+  etc.).
+\item
+  Dark mode: Toggle theme for better readability.
+\item
+  Inline figures: Markdown images with alt text for accessibility.
+\item
+  Extensible templates: Jinja2-based, easy to customize.
+\item
+  Robust build system: Automated, logs to \texttt{log/} for debugging.
+\end{itemize}
 
 \subsection{Get Involved}\label{get-involved}
 
-We welcome your feedback, suggestions, and contributions!
+We welcome your feedback, suggestions, and contributions! -
+\href{https://github.com/OER-Forge/OER-Forge/issues}{GitHub Issues} -
+\href{https://github.com/OER-Forge/OER-Forge/labels/good\%20first\%20issue}{Good
+first issues} -
+\href{https://github.com/OER-Forge/OER-Forge/labels/help\%20wanted}{Help
+wanted}
 
-Visit our
-\href{https://github.com/open-physics-ed/open-physics-ed-org.github.io}{GitHub
-repository} to get started, or reach out to
-\href{https://dannycab.github.io/}{Danny Caballero} for more
-information.
-
-The easiest way to help is to
-\href{https://github.com/open-physics-ed-org/open-physics-ed-org.github.io/issues}{report
-an issue} or if you are so kind to clean some code,
-\href{https://github.com/open-physics-ed-org/open-physics-ed-org.github.io/pulls}{issue
-a pull request}.
-
-\href{https://github.com/open-physics-ed-org/open-physics-ed-org.github.io}{\pandocbounded{\includegraphics[keepaspectratio,alt={GitHub Repo stars}]{https://img.shields.io/github/stars/open-physics-ed-org/open-physics-ed-org.github.io?style=social}}}
-\href{https://github.com/open-physics-ed-org/open-physics-ed-org.github.io/issues}{\pandocbounded{\includegraphics[keepaspectratio,alt={GitHub issues}]{https://img.shields.io/github/issues/open-physics-ed-org/open-physics-ed-org.github.io}}}
-\href{https://github.com/open-physics-ed-org/open-physics-ed-org.github.io/pulls}{\pandocbounded{\includegraphics[keepaspectratio,alt={GitHub pull requests}]{https://img.shields.io/github/issues-pr/open-physics-ed-org/open-physics-ed-org.github.io}}}
+\textbf{Report a bug:}
+\href{https://github.com/OER-Forge/OER-Forge/issues/new?labels=bug}{File
+an issue} \textbf{Request a feature:}
+\href{https://github.com/OER-Forge/OER-Forge/issues/new?labels=enhancement}{File
+an enhancement} \textbf{Ask a question:}
+\href{https://github.com/OER-Forge/OER-Forge/issues/new?labels=question}{Open
+a question}
 
 \subsection{License}\label{license}
 
-The site including written content and the build process are licensed
-with the
-\href{https://creativecommons.org/licenses/by-nc-sa/4.0/}{Creative
-Commons Attribution-NonCommercial-ShareAlike 4.0 International License}.
-
-\href{https://github.com/open-physics-ed-org/open-physics-ed-org.github.io/blob/main/LICENSE}{\pandocbounded{\includegraphics[keepaspectratio,alt={GitHub license}]{https://img.shields.io/github/license/open-physics-ed-org/open-physics-ed-org.github.io}}}
-
-\subsection{Releases}\label{releases}
-
-Releases for this repo are limited to changes to \texttt{build.py} the
-code that builds the site from markdown. The build system is simpler and
-less feature rich than other static site generators, but can be used to
-stand up a similarly simple site.
-
-\href{https://github.com/open-physics-ed-org/open-physics-ed-org.github.io/releases}{\pandocbounded{\includegraphics[keepaspectratio,alt={Releases}]{https://img.shields.io/github/v/release/open-physics-ed-org/open-physics-ed-org.github.io?include_prereleases}}}
+Content and code are licensed under
+\href{https://creativecommons.org/licenses/by-nc-sa/4.0/}{CC BY-NC-SA
+4.0}.

@@ -42,10 +42,6 @@
       
         <li><a href="../index.html">Home</a></li>
       
-        <li><a href="../news-roll/index.html">News</a></li>
-      
-        <li><a href="../sample-resources/index.html">Example</a></li>
-      
         <li><a href="../about/index.html">About</a></li>
       
     </ul>
@@ -62,6 +58,7 @@
     
   <div class="download-buttons" role="region" aria-label="Download options">
     <h3>Download this page:</h3>
+    
     <p>Select a file format to download:</p>
     
       <a href="../files/home/index.txt" class="download-btn" role="button" aria-label="Download as .TXT" download>
@@ -70,10 +67,6 @@
     
       <a href="../files/home/index.tex" class="download-btn" role="button" aria-label="Download as .TEX" download>
         .TEX
-      </a>
-    
-      <a href="../files/home/index.pdf" class="download-btn" role="button" aria-label="Download as .PDF" download>
-        .PDF
       </a>
     
       <a href="../files/home/index.docx" class="download-btn" role="button" aria-label="Download as .DOCX" download>
@@ -87,22 +80,56 @@
   </div>
 
     <h1>OER-Forge</h1>
-    <p><a href="https://oer-forge.github.io/oer-forge">OER-Forge</a> is a suite of tools to help authors create WCAG-compliant Open Educational Resources (OERs).</p>
-<p><em>The project is under active development.</em></p>
-<p>Here you can find the source code, documentation, and examples of OERs created with OER-Forge.</p>
+    <div align="center">
+  <img src="images/logo.png" alt="OER-Forge Logo" width="120" />
+<p><strong>Build, share, and improve WCAG-compliant Open Educational Resources with Python!</strong></p>
+</div>
+<h2>Welcome</h2>
+<p>OER-Forge is an open source Python toolkit for building, organizing, and publishing accessible Open Educational Resources (OERs). Our goal: make it easy and fun to create sites and documents that meet <a href="https://www.w3.org/WAI/standards-guidelines/wcag/">WCAG</a> standards.</p>
+<ul role="list">
+<li role="listitem"><strong>Accessible by design:</strong> All templates and outputs aim for <a href="https://www.w3.org/WAI/standards-guidelines/wcag/">WCAG compliance</a>.</li>
+<li role="listitem"><strong>Database-driven navigation:</strong> Section indices, menus, and hierarchy are managed in SQLite for robust, extensible site structure.</li>
+<li role="listitem"><strong>Multi-format export:</strong> Markdown, DOCX, PDF, LaTeX, and more.</li>
+<li role="listitem"><strong>Built for maintainers:</strong> Clean Code, SOLID principles, and a growing suite of tests.</li>
+<li role="listitem"><strong>Fun to hack:</strong> Professional, but not boring. ☕️❤️</li>
+</ul>
+<h2>Get Started</h2>
+<ol role="list">
+<li role="listitem"><strong>Clone the repo:</strong><pre><code class="language-sh">git clone https://github.com/OER-Forge/OER-Forge.git
+cd OER-Forge
+</code></pre>
+</li>
+<li role="listitem"><strong>Install dependencies:</strong><pre><code class="language-sh">pip install -r requirements.txt
+</code></pre>
+</li>
+<li role="listitem"><strong>Build the site:</strong><pre><code class="language-sh">python build.py
+</code></pre>
+</li>
+<li role="listitem"><strong>View your site:</strong>
+Open <code>build/index.html</code> in your browser.</li>
+</ol>
+<h2>Features</h2>
+<ul role="list">
+<li role="listitem">Section indices &amp; navigation: DB-driven, supports arbitrary hierarchy, top-level and nested menus.</li>
+<li role="listitem">Accessibility: ARIA labels, alt text, color contrast, keyboard navigation.</li>
+<li role="listitem">Download options: Export pages in multiple formats (PDF, DOCX, TXT, etc.).</li>
+<li role="listitem">Dark mode: Toggle theme for better readability.</li>
+<li role="listitem">Inline figures: Markdown images with alt text for accessibility.</li>
+<li role="listitem">Extensible templates: Jinja2-based, easy to customize.</li>
+<li role="listitem">Robust build system: Automated, logs to <code>log/</code> for debugging.</li>
+</ul>
 <h2>Get Involved</h2>
 <p>We welcome your feedback, suggestions, and contributions!</p>
-<p>Visit our <a href="https://github.com/open-physics-ed/open-physics-ed-org.github.io">GitHub repository</a> to get started, or reach out to <a href="https://dannycab.github.io/">Danny Caballero</a> for more information.</p>
-<p>The easiest way to help is to <a href="https://github.com/open-physics-ed-org/open-physics-ed-org.github.io/issues">report an issue</a> or if you are so kind to clean some code, <a href="https://github.com/open-physics-ed-org/open-physics-ed-org.github.io/pulls">issue a pull request</a>.</p>
-<p><a href="https://github.com/open-physics-ed-org/open-physics-ed-org.github.io"><img src="https://img.shields.io/github/stars/open-physics-ed-org/open-physics-ed-org.github.io?style=social" alt="GitHub Repo stars"></a>
-<a href="https://github.com/open-physics-ed-org/open-physics-ed-org.github.io/issues"><img src="https://img.shields.io/github/issues/open-physics-ed-org/open-physics-ed-org.github.io" alt="GitHub issues"></a>
-<a href="https://github.com/open-physics-ed-org/open-physics-ed-org.github.io/pulls"><img src="https://img.shields.io/github/issues-pr/open-physics-ed-org/open-physics-ed-org.github.io" alt="GitHub pull requests"></a></p>
+<ul role="list">
+<li role="listitem"><a href="https://github.com/OER-Forge/OER-Forge/issues">GitHub Issues</a></li>
+<li role="listitem"><a href="https://github.com/OER-Forge/OER-Forge/labels/good%20first%20issue">Good first issues</a></li>
+<li role="listitem"><a href="https://github.com/OER-Forge/OER-Forge/labels/help%20wanted">Help wanted</a></li>
+</ul>
+<p><strong>Report a bug:</strong> <a href="https://github.com/OER-Forge/OER-Forge/issues/new?labels=bug">File an issue</a>
+<strong>Request a feature:</strong> <a href="https://github.com/OER-Forge/OER-Forge/issues/new?labels=enhancement">File an enhancement</a>
+<strong>Ask a question:</strong> <a href="https://github.com/OER-Forge/OER-Forge/issues/new?labels=question">Open a question</a></p>
 <h2>License</h2>
-<p>The site including written content and the build process are licensed with the <a href="https://creativecommons.org/licenses/by-nc-sa/4.0/">Creative Commons Attribution-NonCommercial-ShareAlike 4.0 International License</a>.</p>
-<p><a href="https://github.com/open-physics-ed-org/open-physics-ed-org.github.io/blob/main/LICENSE"><img src="https://img.shields.io/github/license/open-physics-ed-org/open-physics-ed-org.github.io" alt="GitHub license"></a></p>
-<h2>Releases</h2>
-<p>Releases for this repo are limited to changes to <code>build.py</code> the code that builds the site from markdown. The build system is simpler and less feature rich than other static site generators, but can be used to stand up a similarly simple site.</p>
-<p><a href="https://github.com/open-physics-ed-org/open-physics-ed-org.github.io/releases"><img src="https://img.shields.io/github/v/release/open-physics-ed-org/open-physics-ed-org.github.io?include_prereleases" alt="Releases"></a></p>
+<p>Content and code are licensed under <a href="https://creativecommons.org/licenses/by-nc-sa/4.0/">CC BY-NC-SA 4.0</a>.</p>
 <script src="https://cdn.jsdelivr.net/npm/mathjax@3/es5/tex-mml-chtml.js"></script>
     <!-- Only show font controls on the homepage -->
     

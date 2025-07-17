@@ -144,87 +144,98 @@ def scan_toc_and_populate_db(config_path):
 
     file_paths = []
 
+    def build_content_record(
+        title, file_path, item_slug, menu_context, children, parent_output_path, parent_slug, order, level
+    ):
+        is_section_index = 1 if children else 0
+        record_parent_slug = parent_slug if parent_slug else None
+        if file_path:
+            source_path = file_path if file_path.startswith('content/') else f'content/{file_path}'
+            ext = os.path.splitext(source_path)[1].lower()
+            rel_path = source_path[8:] if source_path.startswith('content/') else source_path
+            base_name = os.path.splitext(os.path.basename(rel_path))[0]
+            parent_dir = os.path.basename(os.path.dirname(source_path))
+            if source_path == f'content/{base_name}.md' and base_name != 'index':
+                output_path = os.path.join('build', base_name, 'index.html')
+            elif base_name == parent_dir:
+                output_path = os.path.join('build', item_slug, 'index.html')
+            else:
+                output_path = os.path.join('build', item_slug, base_name + '.html')
+            relative_link = output_path[6:] if output_path.startswith('build/') else output_path
+            flags = get_conversion_flags(ext)
+            return {
+                'title': title,
+                'source_path': source_path,
+                'output_path': output_path,
+                'is_autobuilt': 0,
+                'mime_type': ext,
+                'can_convert_md': flags['can_convert_md'],
+                'can_convert_tex': flags['can_convert_tex'],
+                'can_convert_pdf': flags['can_convert_pdf'],
+                'can_convert_docx': flags['can_convert_docx'],
+                'can_convert_ppt': flags['can_convert_ppt'],
+                'can_convert_jupyter': flags['can_convert_jupyter'],
+                'can_convert_ipynb': flags['can_convert_ipynb'],
+                'parent_output_path': parent_output_path,
+                'slug': item_slug,
+                'parent_slug': record_parent_slug,
+                'is_section_index': is_section_index,
+                'order': int(order),
+                'relative_link': relative_link,
+                'menu_context': menu_context,
+                'level': int(level)
+            }, source_path
+        else:
+            output_path = os.path.join('build', item_slug, 'index.html')
+            relative_link = output_path[6:] if output_path.startswith('build/') else output_path
+            return {
+                'title': title,
+                'source_path': None,
+                'output_path': output_path,
+                'is_autobuilt': 1,
+                'mime_type': 'section',
+                'can_convert_md': False,
+                'can_convert_tex': False,
+                'can_convert_pdf': False,
+                'can_convert_docx': False,
+                'can_convert_ppt': False,
+                'can_convert_jupyter': False,
+                'can_convert_ipynb': False,
+                'parent_output_path': parent_output_path,
+                'slug': item_slug,
+                'parent_slug': record_parent_slug,
+                'is_section_index': is_section_index,
+                'order': int(order),
+                'relative_link': relative_link,
+                'menu_context': menu_context,
+                'level': int(level)
+            }, None
+
     def walk_toc(items, parent_output_path=None, parent_slug=None, parent_menu_context=None, level=0):
         content_records = []
         for idx, item in enumerate(items):
-            file_path = item.get('file')
             title = item.get('title', None)
+            file_path = item.get('file')
             order = int(idx)
             item_slug = item.get('slug', re.sub(r'[^a-zA-Z0-9]+', '_', title.lower()).strip('_')) if title else f'section_{idx}'
             menu_context = item.get('menu_context', parent_menu_context if parent_menu_context else 'main')
             children = item.get('children', [])
-            is_section_index = 1 if children else 0
-            # Always set parent_slug for children
-            record_parent_slug = parent_slug if parent_slug else None
-            if file_path:
-                source_path = file_path if file_path.startswith('content/') else f'content/{file_path}'
-                ext = os.path.splitext(source_path)[1].lower()
-                rel_path = source_path[8:] if source_path.startswith('content/') else source_path
-                base_name = os.path.splitext(os.path.basename(rel_path))[0]
-                parent_dir = os.path.basename(os.path.dirname(source_path))
-                if source_path == f'content/{base_name}.md' and base_name != 'index':
-                    output_path = os.path.join('build', base_name, 'index.html')
-                elif base_name == parent_dir:
-                    output_path = os.path.join('build', item_slug, 'index.html')
-                else:
-                    output_path = os.path.join('build', item_slug, base_name + '.html')
-                relative_link = output_path[6:] if output_path.startswith('build/') else output_path
-                flags = get_conversion_flags(ext)
-                content_record = {
-                    'title': title,
-                    'source_path': source_path,
-                    'output_path': output_path,
-                    'is_autobuilt': 0,
-                    'mime_type': ext,
-                    'can_convert_md': flags['can_convert_md'],
-                    'can_convert_tex': flags['can_convert_tex'],
-                    'can_convert_pdf': flags['can_convert_pdf'],
-                    'can_convert_docx': flags['can_convert_docx'],
-                    'can_convert_ppt': flags['can_convert_ppt'],
-                    'can_convert_jupyter': flags['can_convert_jupyter'],
-                    'can_convert_ipynb': flags['can_convert_ipynb'],
-                    'parent_output_path': parent_output_path,
-                    'slug': item_slug,
-                    'parent_slug': record_parent_slug,
-                    'is_section_index': is_section_index,
-                    'order': int(order),
-                    'relative_link': relative_link,
-                    'menu_context': menu_context,
-                    'level': int(level)
-                }
-                content_records.append(content_record)
+            record, source_path = build_content_record(
+                title, file_path, item_slug, menu_context, children,
+                parent_output_path, parent_slug, order, level
+            )
+            content_records.append(record)
+            if source_path:
                 abs_path = os.path.join(project_root, source_path)
                 file_paths.append(abs_path)
-                if children:
-                    child_records = walk_toc(children, parent_output_path=output_path, parent_slug=item_slug, parent_menu_context=menu_context, level=int(level)+1)
-                    content_records.extend(child_records)
-            elif children:
-                output_path = os.path.join('build', item_slug, 'index.html')
-                relative_link = output_path[6:] if output_path.startswith('build/') else output_path
-                content_record = {
-                    'title': title,
-                    'source_path': None,
-                    'output_path': output_path,
-                    'is_autobuilt': 1,
-                    'mime_type': 'section',
-                    'can_convert_md': False,
-                    'can_convert_tex': False,
-                    'can_convert_pdf': False,
-                    'can_convert_docx': False,
-                    'can_convert_ppt': False,
-                    'can_convert_jupyter': False,
-                    'can_convert_ipynb': False,
-                    'parent_output_path': parent_output_path,
-                    'slug': item_slug,
-                    'parent_slug': record_parent_slug,
-                    'is_section_index': is_section_index,
-                    'order': int(order),
-                    'relative_link': relative_link,
-                    'menu_context': menu_context,
-                    'level': int(level)
-                }
-                content_records.append(content_record)
-                child_records = walk_toc(children, parent_output_path=output_path, parent_slug=item_slug, parent_menu_context=menu_context, level=int(level)+1)
+            if children:
+                child_records = walk_toc(
+                    children,
+                    parent_output_path=record['output_path'],
+                    parent_slug=record['slug'],
+                    parent_menu_context=menu_context,
+                    level=int(level)+1
+                )
                 content_records.extend(child_records)
         return content_records
 

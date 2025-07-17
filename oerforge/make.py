@@ -129,7 +129,8 @@ def generate_nav_menu(context: dict) -> list:
     db_path = os.path.join(PROJECT_ROOT, 'db', 'sqlite.db')
     with sqlite3.connect(db_path) as conn:
         cursor = conn.cursor()
-        sql = "SELECT title, relative_link FROM content WHERE menu_context='main' AND (parent_output_path IS NULL OR parent_output_path = '') ORDER BY \"order\";"
+        # Use parent_slug IS NULL for top-level navigation items
+        sql = "SELECT title, relative_link FROM content WHERE menu_context='main' AND parent_slug IS NULL ORDER BY \"order\";"
         cursor.execute(sql)
         rows = cursor.fetchall()
     rel_path = context.get('rel_path', '')
@@ -390,9 +391,12 @@ def build_all_markdown_files():
                         import traceback
                         logging.error(traceback.format_exc())
     # --- Section Index Generation (DB-driven) ---
+    from oerforge.db_utils import get_top_level_sections, get_children_for_section, get_section_by_slug
+
     def build_section_index_db(section_slug, parent_dir):
         """
         Build index.html for a section using DB-driven hierarchy.
+        Uses new db_utils utilities for clarity and extensibility.
         """
         section_dir = os.path.join(BUILD_HTML_DIR, parent_dir)
         index_html_path = os.path.join(section_dir, 'index.html')
@@ -400,54 +404,68 @@ def build_all_markdown_files():
             return
         os.makedirs(section_dir, exist_ok=True)
         # Query children from DB
-        children = db_utils.get_records(
-            'content',
-            where_clause="parent_slug=?",
-            params=(section_slug,),
-            db_path=db_path
-        )
-        links = []
+        children = get_children_for_section(section_slug, db_path=db_path)
+        children_list = []
         for child in children:
             child_slug = child.get('slug')
             child_title = child.get('title', child_slug)
             child_output = child.get('output_path')
             is_section_index = child.get('is_section_index', 0)
-            # Only proceed if child_slug is valid
             if child_slug:
                 if is_section_index:
                     child_index = os.path.join(child_slug, 'index.html')
-                    links.append(f'<li><a href="{child_index}">{child_title}</a></li>')
+                    children_list.append({
+                        'link': child_index,
+                        'title': child_title,
+                        'description': child.get('description', ''),
+                        'level': child.get('level', 0)
+                    })
                     next_parent_dir = os.path.join(parent_dir, child_slug) if parent_dir else child_slug
                     build_section_index_db(child_slug, next_parent_dir)
                 elif child_output:
                     child_rel = os.path.relpath(child_output, section_dir)
-                    links.append(f'<li><a href="{child_rel}">{child_title}</a></li>')
-        html_body = f'<h1>Section Index: {section_slug}</h1>\n<ul>\n' + '\n'.join(links) + '\n</ul>'
+                    children_list.append({
+                        'link': child_rel,
+                        'title': child_title,
+                        'description': child.get('description', ''),
+                        'level': child.get('level', 0)
+                    })
+        # Query section record for title
+        section_record = get_section_by_slug(section_slug, db_path=db_path)
+        section_title = section_record.get('title', section_slug) if section_record else section_slug
+        # Always populate top_menu and site context for navigation and completeness
+        rel_path = os.path.relpath(index_html_path, BUILD_HTML_DIR)
+        config_path = os.path.join(PROJECT_ROOT, '_content.yml')
+        config = load_yaml_config(config_path)
+        site = config.get('site', {})
+        toc = config.get('toc', [])
+        footer_text = config.get('footer', {}).get('text', '')
+        top_menu = generate_nav_menu({'rel_path': rel_path, 'toc': toc}) or []
         context = {
-            'Title': f'Section Index: {section_slug}',
-            'Content': html_body,
-            'top_menu': [],
-            'site': {},
-            'footer_text': '',
+            'Title': section_title,
+            'Children': children_list,
+            'top_menu': top_menu,
+            'site': site,
+            'footer_text': footer_text,
             'output_file': 'index.html',
-            'rel_path': os.path.relpath(index_html_path, BUILD_HTML_DIR),
+            'rel_path': rel_path,
             'downloads': [],
         }
-        context = add_asset_paths(context, context['rel_path'])
+        context = add_asset_paths(context, rel_path)
         try:
-            html_output = render_page(context, 'single.html')
+            html_output = render_page(context, 'section.html')
         except Exception:
-            html_output = html_body
-        with open(index_html_path, 'w', encoding='utf-8') as f:
-            f.write(html_output)
+            html_output = None
+        if html_output:
+            with open(index_html_path, 'w', encoding='utf-8') as f:
+                f.write(html_output)
+        else:
+            with open(index_html_path, 'w', encoding='utf-8') as f:
+                f.write(f'<h1>{section_title}</h1><p>No content found in this section.</p>')
         logging.info(f"[AUTO] Generated section index: {index_html_path}")
 
     # Build section indices for all top-level sections in DB
-    top_sections = db_utils.get_records(
-        'content',
-        where_clause="parent_slug IS NULL AND is_section_index=1",
-        db_path=db_path
-    )
+    top_sections = get_top_level_sections(db_path=db_path)
     for section in top_sections:
         section_slug = section.get('slug')
         if section_slug:

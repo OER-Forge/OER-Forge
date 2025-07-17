@@ -41,7 +41,7 @@ def run() -> None:
     logging.info("Step 5: Building HTML and section indexes...")
     build_all_markdown_files()
 
-    print("Step 6: Copying build/ to docs/ for publishing...")
+    logging.info("Step 6: Copying build/ to docs/ for publishing...")
     copy_build_to_docs()
 
     logging.info("Workflow complete. Please check the build/, docs/, and logs directories for results.")

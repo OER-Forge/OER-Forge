@@ -1,29 +1,78 @@
 OER-Forge
 
-OER-Forge is a suite of tools to help authors create WCAG-compliant Open Educational Resources (OERs).
+Build, share, and improve WCAG-compliant Open Educational Resources with Python!
 
-The project is under active development.
+Welcome
 
-Here you can find the source code, documentation, and examples of OERs created with OER-Forge.
+OER-Forge is an open source Python toolkit for building, organizing, and publishing accessible Open Educational Resources (OERs). Our goal: make it easy and fun to create sites and documents that meet WCAG standards.
+
+Accessible by design: All templates and outputs aim for WCAG compliance.
+
+
+Database-driven navigation: Section indices, menus, and hierarchy are managed in SQLite for robust, extensible site structure.
+
+
+Multi-format export: Markdown, DOCX, PDF, LaTeX, and more.
+
+
+Built for maintainers: Clean Code, SOLID principles, and a growing suite of tests.
+
+
+Fun to hack: Professional, but not boring. ☕️❤️
+
+
+Get Started
+
+Clone the repo:
+
+
+Install dependencies:
+
+
+Build the site:
+
+
+View your site:Open  in your browser.
+
+
+Features
+
+Section indices & navigation: DB-driven, supports arbitrary hierarchy, top-level and nested menus.
+
+
+Accessibility: ARIA labels, alt text, color contrast, keyboard navigation.
+
+
+Download options: Export pages in multiple formats (PDF, DOCX, TXT, etc.).
+
+
+Dark mode: Toggle theme for better readability.
+
+
+Inline figures: Markdown images with alt text for accessibility.
+
+
+Extensible templates: Jinja2-based, easy to customize.
+
+
+Robust build system: Automated, logs to  for debugging.
+
 
 Get Involved
 
 We welcome your feedback, suggestions, and contributions!
 
-Visit our GitHub repository to get started, or reach out to Danny Caballero for more information.
+GitHub Issues
 
-The easiest way to help is to report an issue or if you are so kind to clean some code, issue a pull request.
 
-GitHub Repo starsGitHub issuesGitHub pull requests
+Good first issues
+
+
+Help wanted
+
+
+Report a bug: File an issueRequest a feature: File an enhancementAsk a question: Open a question
 
 License
 
-The site including written content and the build process are licensed with the Creative Commons Attribution-NonCommercial-ShareAlike 4.0 International License.
-
-GitHub license
-
-Releases
-
-Releases for this repo are limited to changes to  the code that builds the site from markdown. The build system is simpler and less feature rich than other static site generators, but can be used to stand up a similarly simple site.
-
-Releases
+Content and code are licensed under CC BY-NC-SA 4.0.
