@@ -51,6 +51,9 @@ def drop_tables(cursor):
         db_log(f"Dropped table: {table}")
 
 def create_tables(cursor):
+    """
+    Create all required tables.
+    """
     """Create all required tables."""
     cursor.execute("""
         CREATE TABLE IF NOT EXISTS conversion_results (
@@ -116,7 +119,9 @@ def create_tables(cursor):
             is_autobuilt BOOLEAN DEFAULT 0,
             mime_type TEXT,
             parent_output_path TEXT DEFAULT NULL,
+            parent_slug TEXT DEFAULT NULL,
             slug TEXT DEFAULT NULL,
+            is_section_index BOOLEAN DEFAULT 0,
             wcag_status_html TEXT DEFAULT NULL,
             can_convert_md BOOLEAN DEFAULT 0,
             can_convert_tex BOOLEAN DEFAULT 0,
@@ -160,6 +165,7 @@ def create_tables(cursor):
     """)
     db_log("Created table: conversion_capabilities")
 
+
 def insert_default_conversion_capabilities(cursor):
     """Insert default conversion capabilities if table is empty."""
     default_conversion_matrix = {
@@ -172,18 +178,19 @@ def insert_default_conversion_capabilities(cursor):
         '.ppt':    ['.txt','.ppt'],
         '.txt':    ['.txt','.md','.tex','.docx','.pdf']
     }
+    # Only insert if table is empty
     cursor.execute("SELECT COUNT(*) FROM conversion_capabilities")
     if cursor.fetchone()[0] == 0:
         for source, targets in default_conversion_matrix.items():
             for target in targets:
                 cursor.execute(
-                    "INSERT OR IGNORE INTO conversion_capabilities (source_format, target_format, is_enabled) VALUES (?, ?, ?)",
-                    (source, target, 1)
+                    "INSERT OR IGNORE INTO conversion_capabilities (source_format, target_format, is_enabled) VALUES (?, ?, 1)",
+                    (source, target)
                 )
-                db_log(f"Inserted conversion capability: {source} -> {target}")
+        db_log("Inserted default conversion capabilities.")
 
 def initialize_database():
-    """Initialize the OERForge database schema and defaults."""
+    """Drop and recreate all tables, then insert default conversion capabilities."""
     db_dir = os.path.join(PROJECT_ROOT, 'db')
     db_path = os.path.join(db_dir, 'sqlite.db')
     os.makedirs(db_dir, exist_ok=True)
@@ -432,10 +439,12 @@ def get_available_conversions_for_page(output_path, db_path=None):
     return results
 
 if __name__ == "__main__":
-    # Example test: print available conversions for a given output_path
     import sys
-    test_output_path = sys.argv[1] if len(sys.argv) > 1 else None
-    if test_output_path:
+    if len(sys.argv) > 1 and sys.argv[1] == "init":
+        initialize_database()
+        print("Database initialized.")
+    elif len(sys.argv) > 1:
+        test_output_path = sys.argv[1]
         print(f"Available conversions for {test_output_path}:")
         for conv in get_available_conversions_for_page(test_output_path):
             print(conv)

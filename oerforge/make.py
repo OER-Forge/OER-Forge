@@ -389,40 +389,42 @@ def build_all_markdown_files():
                     if DEBUG_MODE:
                         import traceback
                         logging.error(traceback.format_exc())
-    # --- Section Index Generation (TOC-driven) ---
-    def build_section_index(section, toc_entry, parent_dir):
+    # --- Section Index Generation (DB-driven) ---
+    def build_section_index_db(section_slug, parent_dir):
         """
-        Recursively build index.html for a section using TOC structure.
+        Build index.html for a section using DB-driven hierarchy.
         """
         section_dir = os.path.join(BUILD_HTML_DIR, parent_dir)
         index_html_path = os.path.join(section_dir, 'index.html')
         if os.path.exists(index_html_path):
             return
         os.makedirs(section_dir, exist_ok=True)
+        # Query children from DB
+        children = db_utils.get_records(
+            'content',
+            where_clause="parent_slug=?",
+            params=(section_slug,),
+            db_path=db_path
+        )
         links = []
-        children = toc_entry.get('children', [])
         for child in children:
-            # Find DB record for child
             child_slug = child.get('slug')
             child_title = child.get('title', child_slug)
-            # Try to find output_path from DB
-            child_rec = None
-            db_recs = db_utils.get_records('content', where_clause="slug=?", params=(child_slug,), db_path=db_path)
-            if db_recs:
-                child_rec = db_recs[0]
-            child_output = child_rec['output_path'] if child_rec else None
-            # If child has its own children, link to its index.html
-            if child.get('children'):
-                child_index = os.path.join(child_slug, 'index.html')
-                links.append(f'<li><a href="{child_index}">{child_title}</a></li>')
-                # Recursively build child section index
-                build_section_index(child_slug, child, os.path.join(parent_dir, child_slug))
-            elif child_output:
-                child_rel = os.path.relpath(child_output, section_dir)
-                links.append(f'<li><a href="{child_rel}">{child_title}</a></li>')
-        html_body = f'<h1>Section Index: {section}</h1>\n<ul>\n' + '\n'.join(links) + '\n</ul>'
+            child_output = child.get('output_path')
+            is_section_index = child.get('is_section_index', 0)
+            # Only proceed if child_slug is valid
+            if child_slug:
+                if is_section_index:
+                    child_index = os.path.join(child_slug, 'index.html')
+                    links.append(f'<li><a href="{child_index}">{child_title}</a></li>')
+                    next_parent_dir = os.path.join(parent_dir, child_slug) if parent_dir else child_slug
+                    build_section_index_db(child_slug, next_parent_dir)
+                elif child_output:
+                    child_rel = os.path.relpath(child_output, section_dir)
+                    links.append(f'<li><a href="{child_rel}">{child_title}</a></li>')
+        html_body = f'<h1>Section Index: {section_slug}</h1>\n<ul>\n' + '\n'.join(links) + '\n</ul>'
         context = {
-            'Title': f'Section Index: {section}',
+            'Title': f'Section Index: {section_slug}',
             'Content': html_body,
             'top_menu': [],
             'site': {},
@@ -440,11 +442,16 @@ def build_all_markdown_files():
             f.write(html_output)
         logging.info(f"[AUTO] Generated section index: {index_html_path}")
 
-    # Build section indices for all top-level TOC entries
-    for entry in toc:
-        section_slug = entry.get('slug')
+    # Build section indices for all top-level sections in DB
+    top_sections = db_utils.get_records(
+        'content',
+        where_clause="parent_slug IS NULL AND is_section_index=1",
+        db_path=db_path
+    )
+    for section in top_sections:
+        section_slug = section.get('slug')
         if section_slug:
-            build_section_index(section_slug, entry, section_slug)
+            build_section_index_db(section_slug, section_slug)
     copy_static_assets_to_build()
     logging.info("[AUTO] All markdown files built.")
     

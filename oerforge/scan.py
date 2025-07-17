@@ -151,8 +151,11 @@ def scan_toc_and_populate_db(config_path):
             title = item.get('title', None)
             order = int(idx)
             item_slug = item.get('slug', re.sub(r'[^a-zA-Z0-9]+', '_', title.lower()).strip('_')) if title else f'section_{idx}'
-            effective_slug = parent_slug if parent_slug else item_slug
             menu_context = item.get('menu_context', parent_menu_context if parent_menu_context else 'main')
+            children = item.get('children', [])
+            is_section_index = 1 if children else 0
+            # Always set parent_slug for children
+            record_parent_slug = parent_slug if parent_slug else None
             if file_path:
                 source_path = file_path if file_path.startswith('content/') else f'content/{file_path}'
                 ext = os.path.splitext(source_path)[1].lower()
@@ -162,9 +165,9 @@ def scan_toc_and_populate_db(config_path):
                 if source_path == f'content/{base_name}.md' and base_name != 'index':
                     output_path = os.path.join('build', base_name, 'index.html')
                 elif base_name == parent_dir:
-                    output_path = os.path.join('build', effective_slug, 'index.html')
+                    output_path = os.path.join('build', item_slug, 'index.html')
                 else:
-                    output_path = os.path.join('build', effective_slug, base_name + '.html')
+                    output_path = os.path.join('build', item_slug, base_name + '.html')
                 relative_link = output_path[6:] if output_path.startswith('build/') else output_path
                 flags = get_conversion_flags(ext)
                 content_record = {
@@ -181,7 +184,9 @@ def scan_toc_and_populate_db(config_path):
                     'can_convert_jupyter': flags['can_convert_jupyter'],
                     'can_convert_ipynb': flags['can_convert_ipynb'],
                     'parent_output_path': parent_output_path,
-                    'slug': effective_slug,
+                    'slug': item_slug,
+                    'parent_slug': record_parent_slug,
+                    'is_section_index': is_section_index,
                     'order': int(order),
                     'relative_link': relative_link,
                     'menu_context': menu_context,
@@ -190,11 +195,10 @@ def scan_toc_and_populate_db(config_path):
                 content_records.append(content_record)
                 abs_path = os.path.join(project_root, source_path)
                 file_paths.append(abs_path)
-                children = item.get('children', [])
                 if children:
-                    child_records = walk_toc(children, parent_output_path=output_path, parent_slug=effective_slug, parent_menu_context=menu_context, level=int(level)+1)
+                    child_records = walk_toc(children, parent_output_path=output_path, parent_slug=item_slug, parent_menu_context=menu_context, level=int(level)+1)
                     content_records.extend(child_records)
-            elif item.get('children'):
+            elif children:
                 output_path = os.path.join('build', item_slug, 'index.html')
                 relative_link = output_path[6:] if output_path.startswith('build/') else output_path
                 content_record = {
@@ -212,16 +216,16 @@ def scan_toc_and_populate_db(config_path):
                     'can_convert_ipynb': False,
                     'parent_output_path': parent_output_path,
                     'slug': item_slug,
+                    'parent_slug': record_parent_slug,
+                    'is_section_index': is_section_index,
                     'order': int(order),
                     'relative_link': relative_link,
-                    'menu_context': 'main',
+                    'menu_context': menu_context,
                     'level': int(level)
                 }
                 content_records.append(content_record)
-                children = item.get('children', [])
-                if children:
-                    child_records = walk_toc(children, parent_output_path=output_path, parent_slug=item_slug, parent_menu_context=menu_context, level=int(level)+1)
-                    content_records.extend(child_records)
+                child_records = walk_toc(children, parent_output_path=output_path, parent_slug=item_slug, parent_menu_context=menu_context, level=int(level)+1)
+                content_records.extend(child_records)
         return content_records
 
     all_content_records = walk_toc(toc)
