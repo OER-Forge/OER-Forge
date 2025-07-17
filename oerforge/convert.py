@@ -183,41 +183,37 @@ def convert_md_to_docx(src_path, out_path, record_id=None, conn=None):
         logging.info(f"[DOCX] Converted {src_path} to {out_path}")
         # Insert converted file record into files table
         if conn is not None:
-            cursor = conn.cursor()
-            cursor.execute(
-                "INSERT INTO files (filename, extension, mime_type, url, referenced_page, relative_path) VALUES (?, ?, ?, ?, ?, ?)",
-                (
-                    os.path.basename(out_path),
-                    ".docx",
-                    "application/vnd.openxmlformats-officedocument.wordprocessingml.document",
-                    out_path,
-                    src_path,
-                    out_path
-                )
+            from oerforge import db_utils
+            db_utils.insert_records(
+                'files',
+                [{
+                    'filename': os.path.basename(out_path),
+                    'extension': '.docx',
+                    'mime_type': 'application/vnd.openxmlformats-officedocument.wordprocessingml.document',
+                    'url': out_path,
+                    'referenced_page': src_path,
+                    'relative_path': out_path
+                }],
+                conn=conn
             )
-            conn.commit()
         # DB update logic remains, but use logging for status
         if record_id:
-            from oerforge.db_utils import get_db_connection
+            from oerforge import db_utils
             import datetime
             try:
-                db_conn = conn if conn is not None else get_db_connection()
-                db_cursor = db_conn.cursor()
-                db_cursor.execute(
-                    "INSERT INTO conversion_results (content_id, source_format, target_format, output_path, conversion_time, status) VALUES (?, ?, ?, ?, ?, ?)",
-                    (
-                        record_id,
-                        '.md',
-                        '.docx',
-                        out_path,
-                        datetime.datetime.now().isoformat(),
-                        'success'
-                    )
+                db_utils.insert_records(
+                    'conversion_results',
+                    [{
+                        'content_id': record_id,
+                        'source_format': '.md',
+                        'target_format': '.docx',
+                        'output_path': out_path,
+                        'conversion_time': datetime.datetime.now().isoformat(),
+                        'status': 'success'
+                    }],
+                    conn=conn
                 )
-                db_conn.commit()
                 logging.info(f"[DOCX] conversion_results updated for id {record_id}")
-                if conn is None:
-                    db_conn.close()
             except Exception as e:
                 logging.error(f"[DOCX] conversion_results insert failed for id {record_id}: {e}")
     except Exception as e:
@@ -237,40 +233,36 @@ def convert_md_to_pdf(src_path, out_path, record_id=None, conn=None):
         logging.info(f"[PDF] Converted {src_path} to {out_path}")
         # Insert converted file record into files table
         if conn is not None:
-            cursor = conn.cursor()
-            cursor.execute(
-                "INSERT INTO files (filename, extension, mime_type, url, referenced_page, relative_path) VALUES (?, ?, ?, ?, ?, ?)",
-                (
-                    os.path.basename(out_path),
-                    ".pdf",
-                    "application/pdf",
-                    out_path,
-                    src_path,
-                    out_path
-                )
+            from oerforge import db_utils
+            db_utils.insert_records(
+                'files',
+                [{
+                    'filename': os.path.basename(out_path),
+                    'extension': '.pdf',
+                    'mime_type': 'application/pdf',
+                    'url': out_path,
+                    'referenced_page': src_path,
+                    'relative_path': out_path
+                }],
+                conn=conn
             )
-            conn.commit()
         if record_id:
-            from oerforge.db_utils import get_db_connection
+            from oerforge import db_utils
             import datetime
             try:
-                db_conn = conn if conn is not None else get_db_connection()
-                db_cursor = db_conn.cursor()
-                db_cursor.execute(
-                    "INSERT INTO conversion_results (content_id, source_format, target_format, output_path, conversion_time, status) VALUES (?, ?, ?, ?, ?, ?)",
-                    (
-                        record_id,
-                        '.md',
-                        '.pdf',
-                        out_path,
-                        datetime.datetime.now().isoformat(),
-                        'success'
-                    )
+                db_utils.insert_records(
+                    'conversion_results',
+                    [{
+                        'content_id': record_id,
+                        'source_format': '.md',
+                        'target_format': '.pdf',
+                        'output_path': out_path,
+                        'conversion_time': datetime.datetime.now().isoformat(),
+                        'status': 'success'
+                    }],
+                    conn=conn
                 )
-                db_conn.commit()
                 logging.info(f"[PDF] conversion_results updated for id {record_id}")
-                if conn is None:
-                    db_conn.close()
             except Exception as e:
                 logging.error(f"[PDF] conversion_results insert failed for id {record_id}: {e}")
     except Exception as e:
@@ -290,40 +282,36 @@ def convert_md_to_tex(src_path, out_path, record_id=None, conn=None):
         logging.info(f"[TEX] Converted {src_path} to {out_path}")
         # Insert converted file record into files table
         if conn is not None:
-            cursor = conn.cursor()
-            cursor.execute(
-                "INSERT INTO files (filename, extension, mime_type, url, referenced_page, relative_path) VALUES (?, ?, ?, ?, ?, ?)",
-                (
-                    os.path.basename(out_path),
-                    ".tex",
-                    "application/x-tex",
-                    out_path,
-                    src_path,
-                    out_path
-                )
+            from oerforge import db_utils
+            db_utils.insert_records(
+                'files',
+                [{
+                    'filename': os.path.basename(out_path),
+                    'extension': '.tex',
+                    'mime_type': 'application/x-tex',
+                    'url': out_path,
+                    'referenced_page': src_path,
+                    'relative_path': out_path
+                }],
+                conn=conn
             )
-            conn.commit()
         if record_id:
-            from oerforge.db_utils import get_db_connection
+            from oerforge import db_utils
             import datetime
             try:
-                db_conn = conn if conn is not None else get_db_connection()
-                db_cursor = db_conn.cursor()
-                db_cursor.execute(
-                    "INSERT INTO conversion_results (content_id, source_format, target_format, output_path, conversion_time, status) VALUES (?, ?, ?, ?, ?, ?)",
-                    (
-                        record_id,
-                        '.md',
-                        '.tex',
-                        out_path,
-                        datetime.datetime.now().isoformat(),
-                        'success'
-                    )
+                db_utils.insert_records(
+                    'conversion_results',
+                    [{
+                        'content_id': record_id,
+                        'source_format': '.md',
+                        'target_format': '.tex',
+                        'output_path': out_path,
+                        'conversion_time': datetime.datetime.now().isoformat(),
+                        'status': 'success'
+                    }],
+                    conn=conn
                 )
-                db_conn.commit()
                 logging.info(f"[TEX] conversion_results updated for id {record_id}")
-                if conn is None:
-                    db_conn.close()
             except Exception as e:
                 logging.error(f"[TEX] conversion_results insert failed for id {record_id}: {e}")
     except Exception as e:
@@ -452,40 +440,36 @@ def convert_md_to_txt(src_path, out_path, record_id=None, conn=None):
         logging.info(f"[TXT] Converted {src_path} to {out_path}")
         # Insert converted file record into files table
         if conn is not None:
-            cursor = conn.cursor()
-            cursor.execute(
-                "INSERT INTO files (filename, extension, mime_type, url, referenced_page, relative_path) VALUES (?, ?, ?, ?, ?, ?)",
-                (
-                    os.path.basename(out_path),
-                    ".txt",
-                    "text/plain",
-                    out_path,
-                    src_path,
-                    out_path
-                )
+            from oerforge import db_utils
+            db_utils.insert_records(
+                'files',
+                [{
+                    'filename': os.path.basename(out_path),
+                    'extension': '.txt',
+                    'mime_type': 'text/plain',
+                    'url': out_path,
+                    'referenced_page': src_path,
+                    'relative_path': out_path
+                }],
+                conn=conn
             )
-            conn.commit()
         if record_id:
-            from oerforge.db_utils import get_db_connection
+            from oerforge import db_utils
             import datetime
             try:
-                db_conn = conn if conn is not None else get_db_connection()
-                db_cursor = db_conn.cursor()
-                db_cursor.execute(
-                    "INSERT INTO conversion_results (content_id, source_format, target_format, output_path, conversion_time, status) VALUES (?, ?, ?, ?, ?, ?)",
-                    (
-                        record_id,
-                        '.md',
-                        '.txt',
-                        out_path,
-                        datetime.datetime.now().isoformat(),
-                        'success'
-                    )
+                db_utils.insert_records(
+                    'conversion_results',
+                    [{
+                        'content_id': record_id,
+                        'source_format': '.md',
+                        'target_format': '.txt',
+                        'output_path': out_path,
+                        'conversion_time': datetime.datetime.now().isoformat(),
+                        'status': 'success'
+                    }],
+                    conn=conn
                 )
-                db_conn.commit()
                 logging.info(f"[TXT] conversion_results updated for id {record_id}")
-                if conn is None:
-                    db_conn.close()
             except Exception as e:
                 logging.error(f"[TXT] conversion_results insert failed for id {record_id}: {e}")
     except Exception as e:
