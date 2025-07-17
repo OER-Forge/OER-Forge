@@ -3,7 +3,7 @@ import logging
 from oerforge.db_utils import initialize_database
 from oerforge.scan import scan_toc_and_populate_db
 from oerforge.convert import batch_convert_all_content
-from oerforge.make import build_all_markdown_files, build_section_indexes
+from oerforge.make import build_all_markdown_files
 from oerforge.export_all import export_all
 from oerforge.copyfile import copy_build_to_docs
 
@@ -40,7 +40,6 @@ def run() -> None:
 
     logging.info("Step 5: Building HTML and section indexes...")
     build_all_markdown_files()
-    build_section_indexes()
 
     print("Step 6: Copying build/ to docs/ for publishing...")
     copy_build_to_docs()
