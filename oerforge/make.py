@@ -23,6 +23,7 @@ from markdown_it import MarkdownIt
 from mdit_py_plugins.footnote import footnote_plugin
 from mdit_py_plugins.texmath import texmath_plugin
 import html
+from oerforge import db_utils
 
 # --- Configurable Environment ---
 DEBUG_MODE = os.environ.get("DEBUG", "0") == "1"
@@ -317,35 +318,45 @@ def build_all_markdown_files():
             # --- Copy source file to build/files/ and insert DB record for download ---
             try:
                 from oerforge.copyfile import copy_to_build
+                from oerforge import db_utils
                 copied_md_path = copy_to_build(source_path)
                 # Insert record for markdown file if not already present
-                cursor.execute("SELECT COUNT(*) FROM files WHERE referenced_page=? AND extension='.md'", (source_path,))
-                already_exists = cursor.fetchone()[0]
-                if not already_exists:
-                    cursor.execute(
-                        "INSERT INTO files (filename, extension, mime_type, url, referenced_page, relative_path) VALUES (?, ?, ?, ?, ?, ?)",
-                        (
-                            os.path.basename(copied_md_path),
-                            ".md",
-                            "text/markdown",
-                            copied_md_path,
-                            source_path,
-                            copied_md_path
-                        )
+                files_exist = db_utils.get_records(
+                    'files',
+                    where_clause="referenced_page=? AND extension='.md'",
+                    params=(source_path,),
+                    db_path=db_path
+                )
+                if not files_exist:
+                    db_utils.insert_records(
+                        'files',
+                        [{
+                            'filename': os.path.basename(copied_md_path),
+                            'extension': '.md',
+                            'mime_type': 'text/markdown',
+                            'url': copied_md_path,
+                            'referenced_page': source_path,
+                            'relative_path': copied_md_path
+                        }],
+                        db_path=db_path
                     )
-                    conn.commit()
             except Exception as e:
                 logging.error(f"Failed to copy markdown or insert DB record for {source_path}: {e}")
             # --- Query converted files for download buttons ---
             downloads = []
             try:
-                cursor.execute("SELECT filename, extension, mime_type, url FROM files WHERE referenced_page=?", (source_path,))
-                for fname, ext, mime, url in cursor.fetchall():
-                    file_rel_path = os.path.relpath(url, os.path.dirname(output_path_final))
+                file_records = db_utils.get_records(
+                    'files',
+                    where_clause="referenced_page=?",
+                    params=(source_path,),
+                    db_path=db_path
+                )
+                for file_rec in file_records:
+                    file_rel_path = os.path.relpath(file_rec['url'], os.path.dirname(output_path_final))
                     downloads.append({
-                        'filename': fname,
-                        'extension': ext,
-                        'mime_type': mime,
+                        'filename': file_rec['filename'],
+                        'extension': file_rec['extension'],
+                        'mime_type': file_rec['mime_type'],
                         'url': file_rel_path
                     })
             except Exception as e:
