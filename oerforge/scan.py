@@ -49,7 +49,7 @@ def initialize_db():
     """Ensure the database exists and schema is valid."""
     if not os.path.exists(DB_PATH):
         db_log("Database not found. Initializing fresh database.", level=logging.WARNING)
-        initialize_database()
+        initialize_database(db_path=DB_PATH)
     else:
         try:
             conn = get_db_connection(DB_PATH)
@@ -308,12 +308,13 @@ def extract_and_register_images(content_path, content_text, db_path):
             else:
                 logging.info(f"[ASSET] Image already registered: {filename}")
 
-def scan_toc_and_populate_db(config_path):
+def scan_toc_and_populate_db(config_path, db_path=DB_PATH):
     """
     Walk the TOC from the config YAML, read each file, extract assets/images, and populate the DB with content and asset records.
     Maintains TOC hierarchy and section relationships.
     Args:
         config_path (str): Path to the config YAML file.
+        db_path (str): Path to the SQLite database file.
     """
     import yaml
     full_config_path = os.path.join(PROJECT_ROOT, config_path)
@@ -321,10 +322,10 @@ def scan_toc_and_populate_db(config_path):
         config = yaml.safe_load(f)
     toc = config.get('toc', [])
 
-    conn = get_db_connection()
+    conn = get_db_connection(db_path)
     cursor = conn.cursor()
     # Clear content records for fresh scan
-    content_records = get_records('content', db_path=DB_PATH, conn=conn, cursor=cursor)
+    content_records = get_records('content', db_path=db_path, conn=conn, cursor=cursor)
     if content_records:
         cursor.execute("DELETE FROM content")
         conn.commit()
@@ -338,7 +339,7 @@ def scan_toc_and_populate_db(config_path):
         if key not in unique_records:
             unique_records[key] = rec
     deduped_records = list(unique_records.values())
-    insert_records('content', deduped_records, db_path=DB_PATH, conn=conn, cursor=cursor)
+    insert_records('content', deduped_records, db_path=db_path, conn=conn, cursor=cursor)
     try:
         conn.commit()
     except Exception as e:
@@ -346,13 +347,53 @@ def scan_toc_and_populate_db(config_path):
         logging.error(f"Commit failed in scan_toc_and_populate_db: {e}\n{traceback.format_exc()}")
         if not DEBUG_MODE:
             raise
+    import mimetypes
     rel_file_paths = [os.path.relpath(p, PROJECT_ROOT) for p in file_paths if os.path.exists(p)]
     contents = batch_read_files(rel_file_paths)
-    # Asset extraction
+
+    # Register all files (not just images) in files table
+    for abs_path in file_paths:
+        if not os.path.exists(abs_path):
+            continue
+        filename = os.path.basename(abs_path)
+        extension = os.path.splitext(filename)[1].lower()
+        mime_type, _ = mimetypes.guess_type(abs_path)
+        is_image = int(extension in ['.png', '.jpg', '.jpeg', '.gif', '.webp', '.svg'])
+        is_remote = 0
+        # For now, referenced_page is None for content files
+        insert_records('files', [{
+            'filename': filename,
+            'extension': extension,
+            'mime_type': mime_type or 'application/octet-stream',
+            'is_image': is_image,
+            'is_remote': is_remote,
+            'url': None,
+            'referenced_page': None,
+            'relative_path': os.path.relpath(abs_path, PROJECT_ROOT),
+            'absolute_path': abs_path,
+            'has_local_copy': 1  # New field for tracking local copy
+        }], db_path=db_path, conn=conn, cursor=cursor)
+
+    # Asset extraction (images)
     for content_path, content_text in contents.items():
         if content_text:
-            extract_and_register_images(content_path, content_text, db_path=DB_PATH)
+            extract_and_register_images(content_path, content_text, db_path=db_path)
+
+    # Stub: extract and register videos (e.g., YouTube)
+    for content_path, content_text in contents.items():
+        if content_text:
+            extract_and_register_videos(content_path, content_text, db_path=db_path)
+
     conn.close()
+
+def extract_and_register_videos(content_path, content_text, db_path):
+    """Extract YouTube/video links and register in a future videos table. Stub for now."""
+    # Example: Find YouTube links
+    youtube_links = re.findall(r'(https?://(?:www\.)?youtube\.com/watch\?v=[\w-]+)', content_text)
+    for url in youtube_links:
+        # TODO: insert into videos table with has_local_copy=0
+        logging.info(f"[VIDEO] Found YouTube link: {url} in {content_path}")
+    # Extend for other video platforms as needed
 
 def main():
     """Main entry point for scan.py."""

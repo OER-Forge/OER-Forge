@@ -353,70 +353,8 @@ def build_all_markdown_files():
         cursor = conn.cursor()
         cursor.execute("SELECT source_path, output_path, title, mime_type FROM content")
         records = cursor.fetchall()
-    homepage_md = os.path.join(PROJECT_ROOT, 'content', 'index.md')
-    homepage_html = os.path.join(BUILD_HTML_DIR, 'index.html')
-    if os.path.exists(homepage_md):
-        try:
-            with open(homepage_md, 'r', encoding='utf-8') as f:
-                md_text = f.read()
-            title, body_text = extract_title_and_body(md_text, "Home")
-            rel_path = 'index.html'
-            html_body = convert_markdown_to_html_text(body_text, homepage_md, rel_path)
-            top_menu = generate_nav_menu({'rel_path': rel_path, 'toc': toc}) or []
-            context = {
-                'Title': title,
-                'Content': html_body,
-                'toc': toc,
-                'top_menu': top_menu,
-                'site': site,
-                'footer_text': footer_text,
-                'output_file': 'index.html',
-                'rel_path': 'index.html',
-            }
-            context = add_asset_paths(context, rel_path)
-            html_output = render_page(context, 'single.html')
-            with open(homepage_html, 'w', encoding='utf-8') as f:
-                f.write(html_output)
-            logging.info(f"[AUTO] Built homepage: {homepage_html}")
-        except Exception as e:
-            logging.error(f"Failed to build homepage from {homepage_md}: {e}")
-            if DEBUG_MODE:
-                import traceback
-                logging.error(traceback.format_exc())
-    def walk_toc_for_files(toc, parent_dir=None):
-        for item in toc:
-            slug = item.get('slug', parent_dir)
-            if DEBUG_MODE:
-                logging.debug(f"[MAKE] walk_toc_for_files: item={item}, parent_dir={parent_dir}")
-            if item.get('file'):
-                src_path = os.path.join(PROJECT_ROOT, 'content', item['file'])
-                md_basename = os.path.splitext(os.path.basename(item['file']))[0]
-                if not slug and md_basename == 'index':
-                    out_path = os.path.join(BUILD_HTML_DIR, 'index.html')
-                    rel_path = 'index.html'
-                    if DEBUG_MODE:
-                        logging.debug(f"[MAKE] Output path for homepage: {out_path}")
-                elif md_basename == '_index' and slug:
-                    out_path = os.path.join(BUILD_HTML_DIR, slug, 'index.html')
-                    rel_path = os.path.join(slug, 'index.html')
-                    if DEBUG_MODE:
-                        logging.debug(f"[MAKE] Output path for section index: {src_path} -> {out_path}")
-                elif slug:
-                    out_path = os.path.join(BUILD_HTML_DIR, slug, f"{md_basename}.html")
-                    rel_path = os.path.join(slug, f"{md_basename}.html")
-                    if DEBUG_MODE:
-                        logging.debug(f"[MAKE] Output path for file: {src_path} -> {out_path}")
-                else:
-                    out_path = os.path.join(BUILD_HTML_DIR, f"{md_basename}.html")
-                    rel_path = f"{md_basename}.html"
-                    if DEBUG_MODE:
-                        logging.debug(f"[MAKE] Output path (default): {src_path} -> {out_path}")
-                yield (src_path, out_path, item.get('title', md_basename), rel_path)
-            children = item.get('children')
-            if isinstance(children, list) and children:
-                if DEBUG_MODE:
-                    logging.debug(f"[MAKE] Recursing into children for slug={slug}")
-                yield from walk_toc_for_files(children, parent_dir=slug)
+    # Homepage and all other files are now handled by the new config-driven builder (all_exports loop)
+    # Legacy toc-based logic and walk_toc_for_files have been removed.
 
     for item in all_exports:
         if not item["is_valid"]:

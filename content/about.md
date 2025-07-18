@@ -2,6 +2,8 @@
   
 # About OER-Forge
 
+![SAMPLE](images/sample.png)
+
 [**Jump to Font Controls**](#font-controls)
 
 OER-Forge is an open-source project dedicated to building accessible, high-quality, and modern educational resources for physics and computational science. Our mission is to empower educators, students, and lifelong learners by providing free, adaptable, and open materials—while supporting a transparent, collaborative, and sustainable approach to educational publishing.
