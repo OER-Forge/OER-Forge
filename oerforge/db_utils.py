@@ -51,121 +51,141 @@ def drop_tables(cursor):
         db_log(f"Dropped table: {table}")
 
 def create_tables(cursor):
-    """Create all required tables."""
+    """Create all required tables for OERForge."""
     cursor.execute("""
-        CREATE TABLE IF NOT EXISTS conversion_results (
-            id INTEGER PRIMARY KEY AUTOINCREMENT,
-            content_id INTEGER NOT NULL,
-            source_format TEXT NOT NULL,
-            target_format TEXT NOT NULL,
-            output_path TEXT,
-            conversion_time TEXT,
-            status TEXT,
-            FOREIGN KEY(content_id) REFERENCES content(id)
-        )
+    CREATE TABLE IF NOT EXISTS conversion_results (
+        id INTEGER PRIMARY KEY AUTOINCREMENT,
+        content_id INTEGER NOT NULL,
+        source_format TEXT NOT NULL,
+        target_format TEXT NOT NULL,
+        output_path TEXT,
+        conversion_time TEXT,
+        status TEXT,
+        reason TEXT,
+        forced BOOLEAN,
+        custom_label TEXT,
+        created_at TEXT,
+        FOREIGN KEY(content_id) REFERENCES content(id)
+    )
     """)
     db_log("Created table: conversion_results")
+
     cursor.execute("""
-        CREATE TABLE IF NOT EXISTS accessibility_results (
-            id INTEGER PRIMARY KEY AUTOINCREMENT,
-            content_id INTEGER NOT NULL,
-            pa11y_json TEXT,
-            badge_html TEXT,
-            wcag_level TEXT,
-            error_count INTEGER,
-            warning_count INTEGER,
-            notice_count INTEGER,
-            checked_at TEXT,
-            FOREIGN KEY(content_id) REFERENCES content(id)
-        )
+    CREATE TABLE IF NOT EXISTS accessibility_results (
+        id INTEGER PRIMARY KEY AUTOINCREMENT,
+        content_id INTEGER NOT NULL,
+        pa11y_json TEXT,
+        badge_html TEXT,
+        wcag_level TEXT,
+        error_count INTEGER,
+        warning_count INTEGER,
+        notice_count INTEGER,
+        checked_at TEXT,
+        status TEXT,
+        reason TEXT,
+        custom_label TEXT,
+        forced BOOLEAN,
+        created_at TEXT,
+        FOREIGN KEY(content_id) REFERENCES content(id)
+    )
     """)
     db_log("Created table: accessibility_results")
+
     cursor.execute("""
-        CREATE TABLE IF NOT EXISTS files (
-            id INTEGER PRIMARY KEY AUTOINCREMENT,
-            filename TEXT,
-            extension TEXT,
-            mime_type TEXT,
-            is_image BOOLEAN,
-            is_remote BOOLEAN,
-            url TEXT,
-            referenced_page TEXT,
-            relative_path TEXT,
-            absolute_path TEXT,
-            cell_type TEXT,
-            is_code_generated BOOLEAN,
-            is_embedded BOOLEAN
-        )
+    CREATE TABLE IF NOT EXISTS files (
+        id INTEGER PRIMARY KEY AUTOINCREMENT,
+        filename TEXT,
+        extension TEXT,
+        mime_type TEXT,
+        is_image BOOLEAN,
+        is_remote BOOLEAN,
+        url TEXT,
+        referenced_page TEXT,
+        relative_path TEXT,
+        absolute_path TEXT,
+        cell_type TEXT,
+        is_code_generated BOOLEAN,
+        is_embedded BOOLEAN,
+        has_local_copy BOOLEAN
+    )
     """)
     db_log("Created table: files")
+
     cursor.execute("""
-        CREATE TABLE IF NOT EXISTS pages_files (
-            id INTEGER PRIMARY KEY AUTOINCREMENT,
-            file_id INTEGER,
-            page_path TEXT,
-            FOREIGN KEY(file_id) REFERENCES files(id)
-        )
+    CREATE TABLE IF NOT EXISTS pages_files (
+        id INTEGER PRIMARY KEY AUTOINCREMENT,
+        file_id INTEGER,
+        page_path TEXT,
+        FOREIGN KEY(file_id) REFERENCES files(id)
+    )
     """)
     db_log("Created table: pages_files")
+
     cursor.execute("""
-        CREATE TABLE IF NOT EXISTS content (
-            id INTEGER PRIMARY KEY AUTOINCREMENT,
-            title TEXT,
-            source_path TEXT,
-            output_path TEXT,
-            is_autobuilt BOOLEAN DEFAULT 0,
-            mime_type TEXT,
-            parent_output_path TEXT DEFAULT NULL,
-            parent_slug TEXT DEFAULT NULL,
-            slug TEXT DEFAULT NULL,
-            is_section_index BOOLEAN DEFAULT 0,
-            wcag_status_html TEXT DEFAULT NULL,
-            can_convert_md BOOLEAN DEFAULT 0,
-            can_convert_tex BOOLEAN DEFAULT 0,
-            can_convert_pdf BOOLEAN DEFAULT 0,
-            can_convert_docx BOOLEAN DEFAULT 0,
-            can_convert_ppt BOOLEAN DEFAULT 0,
-            can_convert_jupyter BOOLEAN DEFAULT 0,
-            can_convert_ipynb BOOLEAN DEFAULT 0,
-            relative_link TEXT DEFAULT NULL,
-            menu_context TEXT DEFAULT NULL,
-            level INTEGER DEFAULT 0
-        )
+    CREATE TABLE IF NOT EXISTS content (
+        id INTEGER PRIMARY KEY AUTOINCREMENT,
+        title TEXT,
+        source_path TEXT,
+        output_path TEXT,
+        is_autobuilt BOOLEAN DEFAULT 0,
+        mime_type TEXT,
+        parent_output_path TEXT DEFAULT NULL,
+        parent_slug TEXT DEFAULT NULL,
+        slug TEXT DEFAULT NULL,
+        is_section_index BOOLEAN DEFAULT 0,
+        wcag_status_html TEXT DEFAULT NULL,
+        can_convert_md BOOLEAN DEFAULT 0,
+        can_convert_tex BOOLEAN DEFAULT 0,
+        can_convert_pdf BOOLEAN DEFAULT 0,
+        can_convert_docx BOOLEAN DEFAULT 0,
+        can_convert_ppt BOOLEAN DEFAULT 0,
+        can_convert_jupyter BOOLEAN DEFAULT 0,
+        can_convert_ipynb BOOLEAN DEFAULT 0,
+        relative_link TEXT DEFAULT NULL,
+        menu_context TEXT DEFAULT NULL,
+        level INTEGER DEFAULT 0,
+        export_types TEXT DEFAULT NULL,
+        export_force INTEGER DEFAULT 0,
+        export_custom_label TEXT DEFAULT NULL,
+        export_output_path TEXT DEFAULT NULL
+    )
     """)
     db_log("Created table: content")
+
     cursor.execute("""
-        CREATE TABLE IF NOT EXISTS site_info (
-            id INTEGER PRIMARY KEY AUTOINCREMENT,
-            title TEXT,
-            author TEXT,
-            description TEXT,
-            logo TEXT,
-            favicon TEXT,
-            theme_default TEXT,
-            theme_light TEXT,
-            theme_dark TEXT,
-            language TEXT,
-            github_url TEXT,
-            footer_text TEXT,
-            header TEXT
-        );
+    CREATE TABLE IF NOT EXISTS site_info (
+        id INTEGER PRIMARY KEY AUTOINCREMENT,
+        title TEXT,
+        author TEXT,
+        description TEXT,
+        logo TEXT,
+        favicon TEXT,
+        theme_default TEXT,
+        theme_light TEXT,
+        theme_dark TEXT,
+        language TEXT,
+        github_url TEXT,
+        footer_text TEXT,
+        header TEXT
+    )
     """)
     db_log("Created table: site_info")
+
     cursor.execute("""
-        CREATE TABLE IF NOT EXISTS conversion_capabilities (
-            id INTEGER PRIMARY KEY AUTOINCREMENT,
-            source_format TEXT NOT NULL,
-            target_format TEXT NOT NULL,
-            is_enabled BOOLEAN DEFAULT 1,
-            UNIQUE(source_format, target_format)
-        )
+    CREATE TABLE IF NOT EXISTS conversion_capabilities (
+        id INTEGER PRIMARY KEY AUTOINCREMENT,
+        source_format TEXT NOT NULL,
+        target_format TEXT NOT NULL,
+        is_enabled BOOLEAN DEFAULT 1,
+        UNIQUE(source_format, target_format)
+    )
     """)
     db_log("Created table: conversion_capabilities")
 
 def insert_default_conversion_capabilities(cursor):
     """Insert default conversion capabilities if table is empty."""
     default_conversion_matrix = {
-        '.md':     ['.txt','.md', '.marp', '.tex', '.pdf', '.docx', '.ppt', '.jupyter'],
+        '.md':     ['.txt','.md', '.marp', '.tex', '.pdf', '.docx', '.ppt', '.jupyter', '.epub'],
         '.marp':   ['.txt','.md', '.marp', '.pdf', '.docx', '.ppt'],
         '.tex':    ['.txt','.md', '.tex', '.pdf', '.docx'],
         '.ipynb':  ['.txt','.md', '.tex', '.pdf', '.docx', '.jupyter', '.ipynb'],
@@ -184,19 +204,36 @@ def insert_default_conversion_capabilities(cursor):
                 )
         db_log("Inserted default conversion capabilities.")
 
-def initialize_database():
+def initialize_database(db_path=None):
     """Drop and recreate all tables, then insert default conversion capabilities."""
-    db_dir = os.path.join(PROJECT_ROOT, 'db')
-    db_path = os.path.join(db_dir, 'sqlite.db')
+    if db_path is None:
+        db_dir = os.path.join(PROJECT_ROOT, 'db')
+        db_path = os.path.join(db_dir, 'sqlite.db')
+    else:
+        db_dir = os.path.dirname(db_path)
     os.makedirs(db_dir, exist_ok=True)
     conn = sqlite3.connect(db_path)
     cursor = conn.cursor()
     drop_tables(cursor)
     create_tables(cursor)
+    conn.commit()
     insert_default_conversion_capabilities(cursor)
     conn.commit()
     conn.close()
-    db_log("Closed DB connection after initialization.")
+    db_log(f"Closed DB connection after initialization at {db_path}.")
+
+# --- Migration Entrypoint ---
+def migrate_database(db_path=None):
+    """Run schema migration for existing database."""
+    if db_path is None:
+        db_dir = os.path.join(PROJECT_ROOT, 'db')
+        db_path = os.path.join(db_dir, 'sqlite.db')
+    conn = sqlite3.connect(db_path)
+    cursor = conn.cursor()
+    migrate_tables(cursor)
+    conn.commit()
+    conn.close()
+    db_log("Closed DB connection after migration.")
 
 # --- General Purpose DB Functions ---
 

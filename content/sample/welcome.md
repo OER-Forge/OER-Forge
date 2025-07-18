@@ -23,3 +23,5 @@ We welcome contributions from anyone including students who want to help improve
 
 You can also contact [Danny Caballero](https://dannycab.github.io/) directly if you have questions or suggestions.
 
+![SAMPLE](../images/sample.png)
+

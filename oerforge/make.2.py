@@ -4,8 +4,8 @@ make.py
 
 Hugo-style Markdown to HTML Static Site Generator
 
-Builds a static website from Markdown and other content sources using Jinja2 templates,
-asset management, navigation, accessibility, and SQLite integration.
+Core logic for building a static website from Markdown and other content sources.
+Supports Jinja2 templating, asset management, navigation, accessibility, and SQLite integration.
 
 Debug mode and logging level are controlled via environment variables:
     DEBUG=1 enables debug logging and extra error details.
@@ -18,6 +18,9 @@ import yaml
 import copy
 import re
 import sqlite3
+import shutil
+import base64
+from PIL import Image
 from typing import Any, Dict, List, Tuple, Optional
 from jinja2 import Environment, FileSystemLoader, select_autoescape
 from markdown_it import MarkdownIt
@@ -27,10 +30,11 @@ import html
 from oerforge import db_utils
 from oerforge.copyfile import copy_db_images_to_build, copy_static_assets_to_build
 
-# --- Constants and Logging Setup ---
+# --- Logging Setup ---
 PROJECT_ROOT = os.path.dirname(os.path.dirname(os.path.abspath(__file__)))
 LOG_PATH = os.path.join(PROJECT_ROOT, 'log', 'build.log')
 BUILD_HTML_DIR = os.path.join(PROJECT_ROOT, 'build')
+BUILD_FILES_DIR = os.path.join(PROJECT_ROOT, 'build', 'files')
 LAYOUTS_DIR = os.path.join(PROJECT_ROOT, 'layouts')
 DEBUG_MODE = os.environ.get("DEBUG", "0") == "1"
 LOG_LEVEL = os.environ.get("LOG_LEVEL", "INFO").upper()
@@ -47,35 +51,50 @@ def configure_logging(overwrite=False):
         format='%(asctime)s %(levelname)s %(message)s',
         handlers=[file_handler, stream_handler]
     )
-
+    
 def load_content_yaml(path: str = "_content.yml") -> Dict[str, Any]:
-    with open(path, "r", encoding="utf-8") as f:
+    """
+    Load and parse the _content.yml file.
+    """
+    with open(path, "r") as f:
         return yaml.safe_load(f)
 
 def merge_export_config(global_export: Dict[str, Any], local_export: Optional[Dict[str, Any]]) -> Dict[str, Any]:
+    """
+    Merge global export config with a local (per-file/section) override.
+    """
     merged = copy.deepcopy(global_export)
     if local_export:
         merged.update(local_export)
     return merged
 
 def validate_export_config(export_config: Dict[str, Any]) -> Tuple[bool, List[str]]:
+    """
+    Validate the export config. Returns (is_valid, list_of_errors).
+    """
     errors = []
     if not isinstance(export_config.get("types"), list):
         errors.append("types must be a list")
+    # Add more validation as needed (e.g., required fields)
     return (len(errors) == 0, errors)
 
 def walk_toc_with_exports(
     toc: List[Dict[str, Any]],
     global_export: Dict[str, Any],
     parent_export: Optional[Dict[str, Any]] = None,
+    parent_slug: Optional[str] = None,
 ) -> List[Dict[str, Any]]:
+    """
+    Recursively walk the toc, merging export config and collecting file info.
+    Returns a list of dicts: {title, file, slug, export_config, is_valid, errors}
+    """
     results = []
     for entry in toc:
         local_export = entry.get("export")
         parent = parent_export or global_export
         effective_export = merge_export_config(parent, local_export)
         if "slug" not in entry and "file" in entry:
-            entry["slug"] = os.path.splitext(entry["file"])[0]
+            entry["slug"] = entry["file"].replace(".md", "")
         is_valid, errors = validate_export_config(effective_export)
         results.append({
             "title": entry.get("title"),
@@ -87,14 +106,31 @@ def walk_toc_with_exports(
         })
         if "children" in entry:
             results.extend(
-                walk_toc_with_exports(entry["children"], global_export, effective_export)
+                walk_toc_with_exports(entry["children"], global_export, effective_export, entry.get("slug"))
             )
     return results
 
 def get_all_exports(content_dict: Dict[str, Any]) -> List[Dict[str, Any]]:
+    """
+    Entry point: returns all files with their effective export config and validation.
+    """
     global_export = content_dict.get("export", {})
     toc = content_dict.get("toc", [])
     return walk_toc_with_exports(toc, global_export)
+
+def extract_title_and_body(md_text, default_title="Untitled"):
+    lines = md_text.splitlines()
+    title = default_title
+    body_lines = []
+    found_title = False
+    for line in lines:
+        if not found_title and line.strip().startswith('# '):
+            title = line.strip()[2:].strip()
+            found_title = True
+            continue
+        body_lines.append(line)
+    body_text = '\n'.join(body_lines)
+    return title, body_text
 
 def slugify(title: str) -> str:
     slug = title.lower()
@@ -102,6 +138,29 @@ def slugify(title: str) -> str:
     slug = re.sub(r'\s+', '-', slug)
     slug = re.sub(r'-+', '-', slug)
     return slug.strip('-')
+
+def load_yaml_config(config_path: str) -> dict:
+    try:
+        with open(config_path, 'r', encoding='utf-8') as f:
+            config = yaml.safe_load(f)
+        logging.info(f"Loaded YAML config from {config_path}")
+        if DEBUG_MODE:
+            logging.debug(f"[MAKE] YAML config loaded: {config}")
+        return config
+    except Exception as e:
+        logging.error(f"Failed to load YAML config: {e}")
+        if DEBUG_MODE:
+            import traceback
+            logging.error(traceback.format_exc())
+        return {}
+
+def ensure_output_dir(md_path):
+    rel_path = os.path.relpath(md_path, BUILD_FILES_DIR)
+    output_dir = os.path.join(BUILD_HTML_DIR, os.path.dirname(rel_path))
+    if not os.path.exists(output_dir):
+        os.makedirs(output_dir, exist_ok=True)
+        if DEBUG_MODE:
+            logging.debug(f"[MAKE] Created output directory: {output_dir}")
 
 def setup_template_env():
     layouts_default = os.path.join(LAYOUTS_DIR, '_default')
@@ -116,6 +175,105 @@ def render_page(context: dict, template_name: str) -> str:
     env = setup_template_env()
     template = env.get_template(f'_default/{template_name}')
     return template.render(**context)
+
+def generate_nav_menu(context: dict) -> list:
+    toc = context.get('toc')
+    if toc is None:
+        config_path = os.path.join(PROJECT_ROOT, '_content.yml')
+        config = load_yaml_config(config_path)
+        toc = config.get('toc', [])
+
+    rel_path = context.get('rel_path', '')
+
+    def compute_menu_link(item, rel_path):
+        if item.get('file', '') == 'index.md':
+            target = 'index.html'
+        elif 'file' in item:
+            md_basename = os.path.splitext(os.path.basename(item['file']))[0]
+            if md_basename == '_index':
+                parent_dir = item.get('slug', md_basename)
+                target = os.path.join(parent_dir, 'index.html')
+            else:
+                target = f"{md_basename}.html"
+        elif 'slug' in item:
+            target = os.path.join(item['slug'], 'index.html')
+        else:
+            target = 'index.html'
+
+        if not rel_path:
+            return target
+        current_dir = os.path.dirname(rel_path)
+        is_section_index = rel_path.endswith('index.html') and current_dir and rel_path != 'index.html'
+        if is_section_index:
+            if os.path.normpath(target) == os.path.normpath(rel_path):
+                return 'index.html'
+            if not os.path.dirname(target):
+                return f"../{target}"
+            return os.path.relpath(target, current_dir)
+        else:
+            return os.path.relpath(target, current_dir) if not os.path.isabs(target) else target
+
+    menu_items = []
+    for item in toc:
+        if not item.get('menu', False):
+            continue
+        title = item.get('title', 'Untitled')
+        link = compute_menu_link(item, rel_path)
+        menu_items.append({'title': title, 'link': link})
+    return menu_items
+
+def convert_markdown_to_html(md_path: str) -> str:
+    def custom_image_renderer(self, tokens, idx, options, env):
+        token = tokens[idx]
+        src = token.attrs.get('src', '')
+        alt = html.escape(token.content) or "Image"
+        db_path = os.path.join(PROJECT_ROOT, 'db', 'sqlite.db')
+        referenced_page = env.get('referenced_page', '')
+        filename = os.path.basename(src)
+        image_record = db_utils.get_image_record(referenced_page, filename, db_path=db_path)
+        if image_record:
+            image_build_path = os.path.join('images', filename)
+            rel_path = env.get('rel_path', 'index.html')
+            image_src = os.path.relpath(image_build_path, os.path.dirname(rel_path))
+            return f'<img src="{image_src}" alt="{alt}">'
+        else:
+            logging.warning(f"Missing image in DB: {src} (referenced from {referenced_page})")
+            return f'<span class="missing-image">{alt} [Image not found]</span>'
+
+    md = MarkdownIt("commonmark", {"html": True, "linkify": True, "typographer": True})
+    md.use(footnote_plugin)
+    md.use(texmath_plugin)
+    md.add_render_rule('image', custom_image_renderer)
+    with open(md_path, 'r', encoding='utf-8') as f:
+        md_text = f.read()
+
+    def rewrite_md_links(tokens, target_ext='.html'):
+        for token in tokens:
+            if token.type == 'inline' and token.children:
+                for child in token.children:
+                    if child.type == 'link_open' and child.attrs:
+                        href = child.attrGet('href')
+                        if href and href.endswith('.md') and not href.startswith('http'):
+                            child.attrSet('href', href[:-3] + target_ext)
+            if token.children:
+                rewrite_md_links(token.children, target_ext)
+        return tokens
+
+    tokens = md.parse(md_text)
+    tokens = rewrite_md_links(tokens)
+    html_body = md.renderer.render(tokens, md.options, {})
+    html_body = html_body.replace('<table>', '<table role="table">')
+    html_body = html_body.replace('<th>', '<th role="columnheader">')
+    html_body = html_body.replace('<td>', '<td role="cell">')
+    html_body = html_body.replace('<ul>', '<ul role="list">')
+    html_body = html_body.replace('<ol>', '<ol role="list">')
+    html_body = html_body.replace('<li>', '<li role="listitem">')
+    html_body = html_body.replace('<nav>', '<nav role="navigation">')
+    html_body = html_body.replace('<header>', '<header role="banner">')
+    html_body = html_body.replace('<footer>', '<footer role="contentinfo">')
+    mathjax_script = '<script src="https://cdn.jsdelivr.net/npm/mathjax@3/es5/tex-mml-chtml.js"></script>'
+    html_body += mathjax_script
+    return html_body
 
 def convert_markdown_to_html_text(md_text: str, referenced_page: str, rel_path: str) -> str:
     def custom_image_renderer(self, tokens, idx, options, env):
@@ -155,7 +313,6 @@ def convert_markdown_to_html_text(md_text: str, referenced_page: str, rel_path: 
     tokens = md.parse(md_text, env=env)
     tokens = rewrite_md_links(tokens)
     html_body = md.renderer.render(tokens, md.options, env)
-    # Accessibility roles
     html_body = html_body.replace('<table>', '<table role="table">')
     html_body = html_body.replace('<th>', '<th role="columnheader">')
     html_body = html_body.replace('<td>', '<td role="cell">')
@@ -189,10 +346,15 @@ def build_all_markdown_files():
     footer_text = content.get('footer', {}).get('text', '')
     db_path = os.path.join(PROJECT_ROOT, 'db', 'sqlite.db')
     all_exports = get_all_exports(content)
+    db_path = os.path.join(PROJECT_ROOT, 'db', 'sqlite.db')
+    if DEBUG_MODE:
+        logging.debug(f"[MAKE] build_all_markdown_files: site={site}, toc={toc}, footer={footer_text}")
     with sqlite3.connect(db_path) as conn:
         cursor = conn.cursor()
         cursor.execute("SELECT source_path, output_path, title, mime_type FROM content")
         records = cursor.fetchall()
+    # Homepage and all other files are now handled by the new config-driven builder (all_exports loop)
+    # Legacy toc-based logic and walk_toc_for_files have been removed.
 
     for item in all_exports:
         if not item["is_valid"]:
@@ -204,43 +366,18 @@ def build_all_markdown_files():
         src_path = os.path.join(PROJECT_ROOT, 'content', file)
         slug = item.get("slug")
         export_config = item["export_config"]
+        # Compute output path using export_config['output_path'] or fallback logic
         output_path_template = export_config.get("output_path", "build/{slug}/{file}")
         file_stem = os.path.splitext(os.path.basename(file))[0]
         out_path = output_path_template.format(slug=slug or "", file=file_stem)
         out_path = os.path.join(PROJECT_ROOT, out_path)
         rel_path = os.path.relpath(out_path, BUILD_HTML_DIR)
-        # Read markdown, convert to HTML, render template, write output
-        try:
-            with open(src_path, "r", encoding="utf-8") as f:
-                md_text = f.read()
-            html_body = convert_markdown_to_html_text(md_text, referenced_page=file, rel_path=rel_path)
-            context = {
-                "site": site,
-                "footer": footer_text,
-                "title": item.get("title") or file_stem,
-                "body": html_body,
-                "rel_path": rel_path,
-                "slug": slug,
-            }
-            context = add_asset_paths(context, rel_path)
-            page_html = render_page(context, "base.html")
-            os.makedirs(os.path.dirname(out_path), exist_ok=True)
-            with open(out_path, "w", encoding="utf-8") as outf:
-                outf.write(page_html)
-            logging.info(f"Built {out_path}")
-        except Exception as e:
-            logging.error(f"Failed to build {file}: {e}")
-            if DEBUG_MODE:
-                import traceback
-                logging.error(traceback.format_exc())
-
+    
     copy_static_assets_to_build()
     copy_db_images_to_build()
     logging.info("[AUTO] All markdown files built.")
 
-def main():
-    configure_logging(overwrite=True)
-    build_all_markdown_files()
-
 if __name__ == "__main__":
-    main()
+    configure_logging(overwrite=True)
+else:
+    configure_logging(overwrite=False)

@@ -1,453 +1,535 @@
-import sys
 import os
-import shutil
-import sqlite3
-import subprocess
 import logging
-import re
-from nbconvert import MarkdownExporter
-from nbconvert.preprocessors import ExecutePreprocessor, ExtractOutputPreprocessor
-from traitlets.config import Config
-from markdown_it import MarkdownIt
+import json
+import concurrent.futures
+from datetime import datetime
+try:
+    from . import db_utils
+except ImportError:
+    import db_utils
 
-# --- Constants ---
+ # --- Constants ---
 PROJECT_ROOT = os.path.dirname(os.path.dirname(os.path.abspath(__file__)))
-LOG_PATH = os.path.join(PROJECT_ROOT, 'log', 'build.log')
-CONTENT_ROOT = os.path.join(PROJECT_ROOT, 'content')
-BUILD_FILES_ROOT = os.path.join(PROJECT_ROOT, 'build', 'files')
-BUILD_IMAGES_ROOT = os.path.join(PROJECT_ROOT, 'build', 'images')
 DB_PATH = os.path.join(PROJECT_ROOT, 'db', 'sqlite.db')
+BUILD_DIR = os.path.join(PROJECT_ROOT, 'build')
+LOG_PATH = os.path.join(PROJECT_ROOT, 'log', 'build.log')
+SUMMARY_JSON = os.path.join(BUILD_DIR, 'conversion_summary.json')
 DEBUG_MODE = os.environ.get("DEBUG", "0") == "1"
-LOG_LEVEL = os.environ.get("LOG_LEVEL", "INFO").upper()
 
-# --- Logging Setup ---
-def configure_logging():
-    log_level = logging.DEBUG if DEBUG_MODE else getattr(logging, LOG_LEVEL, logging.INFO)
-    os.makedirs(os.path.dirname(LOG_PATH), exist_ok=True)
-    handlers = [
-        logging.FileHandler(LOG_PATH, mode='a', encoding='utf-8'),
-        logging.StreamHandler()
-    ]
+def get_section_files_dir(content_row):
+    """
+    Given a content row, return the absolute path to the section-local files/ directory.
+    E.g., for build/section/index.html, returns build/section/files/
+    """
+    output_path = content_row.get("output_path")
+    if not output_path:
+        return None
+    section_dir = os.path.dirname(output_path)
+    return os.path.join(section_dir, "files")
     logging.basicConfig(
         level=log_level,
         format='%(asctime)s %(levelname)s %(message)s',
         handlers=handlers
     )
 
-configure_logging()
-
-# --- Image Handling ---
-def query_images_for_content(content_record, conn):
-    from oerforge.db_utils import get_records
-    images = get_records(
-        "files",
-        "is_image=1 AND referenced_page=?",
-        (content_record['source_path'],),
-        conn=conn
-    )
-    logging.debug(f"[IMAGES] Found {len(images)} images for {content_record['source_path']}")
-    return images
-
-def copy_images_to_build(images, images_root=BUILD_IMAGES_ROOT, conn=None):
-    os.makedirs(images_root, exist_ok=True)
-    copied = []
-    content_lookup = {}
-    if conn is not None:
-        cursor = conn.cursor()
-        cursor.execute("SELECT source_path FROM content")
-        for row in cursor.fetchall():
-            content_lookup[row[0]] = row[0]
-    for img in images:
-        src = img.get('relative_path') or img.get('absolute_path')
-        referenced_page = img.get('referenced_page')
-        logging.debug(f"[IMAGES][DEBUG] src={src} img={img}")
-        if not src or img.get('is_remote'):
-            logging.warning(f"[IMAGES] Skipping remote or missing image: {img.get('filename')}")
-            continue
-        if referenced_page and referenced_page in content_lookup and not os.path.isabs(src):
-            src_path = os.path.normpath(os.path.join(os.path.dirname(referenced_page), src))
-        else:
-            src_path = src
-        filename = os.path.basename(src)
-        dest = os.path.join(images_root, filename)
-        logging.debug(f"[IMAGES][DEBUG] Copying {src_path} to {dest}")
-        try:
-            shutil.copy2(src_path, dest)
-            logging.info(f"[IMAGES] Copied image {src_path} to {dest}")
-            copied.append(dest)
-        except Exception as e:
-            logging.error(f"[IMAGES] Failed to copy {src_path} to {dest}: {e}")
-    return copied
-
-def update_markdown_image_links(md_path, images, images_root=BUILD_IMAGES_ROOT):
-    if not os.path.exists(md_path):
-        logging.warning(f"[IMAGES] Markdown file not found: {md_path}")
-        return
-    rel_path = os.path.relpath(md_path, BUILD_FILES_ROOT)
-    source_path = os.path.join(CONTENT_ROOT, rel_path)
-    img_map = {}
+# --- DB Queries ---
+def get_enabled_conversions(db_path):
+    """Return list of (input_ext, output_ext) for enabled conversions."""
+    # Uses db_utils to query conversion_capabilities for enabled conversions
+    import sqlite3
+    conn = sqlite3.connect(db_path)
     try:
-        conn = sqlite3.connect(DB_PATH)
-        cursor = conn.cursor()
-        cursor.execute("SELECT relative_path, absolute_path, filename FROM files WHERE is_image=1 AND referenced_page=?", (source_path,))
-        for row in cursor.fetchall():
-            rel, abs_path, filename = row
-            src = rel or abs_path
-            if not src:
-                continue
-            rel_img_path = os.path.join('..', '..', 'images', filename)
-            img_map[os.path.basename(src)] = rel_img_path
+        rows = db_utils.get_records(
+            "conversion_capabilities",
+            "is_enabled=1",
+            conn=conn
+        )
+        return [(row["source_format"], row["target_format"]) for row in rows]
+    finally:
         conn.close()
-    except Exception as e:
-        logging.error(f"[IMAGES] DB lookup failed for {md_path}: {e}")
-    with open(md_path, "r", encoding="utf-8") as f:
-        content = f.read()
-    lines = content.splitlines()
-    new_lines = lines.copy()
-    for idx, line in enumerate(lines):
-        matches = re.findall(r'!\[[^\]]*\]\(([^)]+)\)', line)
-        for old_src in matches:
-            filename = os.path.basename(old_src)
-            if filename in img_map:
-                new_src = img_map[filename]
-                new_lines[idx] = new_lines[idx].replace(old_src, new_src)
-    with open(md_path, "w", encoding="utf-8") as f:
-        f.write("\n".join(new_lines))
-    logging.info(f"[IMAGES] Updated image links in {md_path} to use correct relative paths (DB-driven)")
 
-def handle_images_for_markdown(content_record, conn):
-    images = query_images_for_content(content_record, conn)
-    copy_images_to_build(images, images_root=BUILD_IMAGES_ROOT, conn=conn)
-    rel_path = os.path.relpath(content_record['source_path'], CONTENT_ROOT)
-    md_path = os.path.join(BUILD_FILES_ROOT, rel_path)
-    os.makedirs(os.path.dirname(md_path), exist_ok=True)
-    abs_src_path = os.path.join(CONTENT_ROOT, rel_path)
-    if not os.path.exists(md_path):
-        try:
-            shutil.copy2(abs_src_path, md_path)
-            logging.info(f"Copied original md to {md_path}")
-        except Exception as e:
-            logging.error(f"Failed to copy md: {e}")
-            return
-    update_markdown_image_links(md_path, images, images_root=BUILD_IMAGES_ROOT)
-    logging.info(f"[IMAGES] Finished handling images for {md_path}")
-
-# --- Conversion Functions ---
-def convert_md_to_docx(src_path, out_path, record_id=None, conn=None):
-    logging.info(f"[DOCX] Starting conversion: {src_path} -> {out_path}")
-    os.makedirs(os.path.dirname(out_path), exist_ok=True)
+def get_content_files_to_convert(db_path):
+    """Return list of dicts: {source_path, extension, ...} for all content files."""
+    # Uses db_utils to query content table
+    import sqlite3
+    conn = sqlite3.connect(db_path)
     try:
-        subprocess.run(["pandoc", src_path, "-o", out_path], check=True)
-        logging.info(f"[DOCX] Converted {src_path} to {out_path}")
-        if conn is not None:
-            from oerforge import db_utils
-            db_utils.insert_records(
-                'files',
-                [{
-                    'filename': os.path.basename(out_path),
-                    'extension': '.docx',
-                    'mime_type': 'application/vnd.openxmlformats-officedocument.wordprocessingml.document',
-                    'url': out_path,
-                    'referenced_page': src_path,
-                    'relative_path': out_path
-                }],
-                conn=conn
-            )
-        if record_id:
-            from oerforge import db_utils
-            import datetime
-            try:
-                db_utils.insert_records(
-                    'conversion_results',
-                    [{
-                        'content_id': record_id,
-                        'source_format': '.md',
-                        'target_format': '.docx',
-                        'output_path': out_path,
-                        'conversion_time': datetime.datetime.now().isoformat(),
-                        'status': 'success'
-                    }],
-                    conn=conn
-                )
-                logging.info(f"[DOCX] conversion_results updated for id {record_id}")
-            except Exception as e:
-                logging.error(f"[DOCX] conversion_results insert failed for id {record_id}: {e}")
-    except Exception as e:
-        logging.error(f"[DOCX] Pandoc conversion failed for {src_path}: {e}")
+        return db_utils.get_records("content", None, conn=conn)
+    finally:
+        conn.close()
 
-def convert_md_to_pdf(src_path, out_path, record_id=None, conn=None):
-    logging.info(f"[PDF] Starting conversion: {src_path} -> {out_path}")
-    os.makedirs(os.path.dirname(out_path), exist_ok=True)
-    try:
-        subprocess.run(["pandoc", src_path, "-o", out_path], check=True)
-        logging.info(f"[PDF] Converted {src_path} to {out_path}")
-        if conn is not None:
-            from oerforge import db_utils
-            db_utils.insert_records(
-                'files',
-                [{
-                    'filename': os.path.basename(out_path),
-                    'extension': '.pdf',
-                    'mime_type': 'application/pdf',
-                    'url': out_path,
-                    'referenced_page': src_path,
-                    'relative_path': out_path
-                }],
-                conn=conn
-            )
-        if record_id:
-            from oerforge import db_utils
-            import datetime
-            try:
-                db_utils.insert_records(
-                    'conversion_results',
-                    [{
-                        'content_id': record_id,
-                        'source_format': '.md',
-                        'target_format': '.pdf',
-                        'output_path': out_path,
-                        'conversion_time': datetime.datetime.now().isoformat(),
-                        'status': 'success'
-                    }],
-                    conn=conn
-                )
-                logging.info(f"[PDF] conversion_results updated for id {record_id}")
-            except Exception as e:
-                logging.error(f"[PDF] conversion_results insert failed for id {record_id}: {e}")
-    except Exception as e:
-        logging.error(f"[PDF] Pandoc conversion failed for {src_path}: {e}")
+# --- Caching ---
+def should_convert(input_path, output_path, force=False):
+    """Return True if conversion should be attempted."""
+    if force:
+        return True
+    if not os.path.exists(output_path):
+        return True
+    if not os.path.exists(input_path):
+        return False
+    return os.path.getmtime(output_path) < os.path.getmtime(input_path)
 
-def convert_md_to_tex(src_path, out_path, record_id=None, conn=None):
-    logging.info(f"[TEX] Starting conversion: {src_path} -> {out_path}")
-    os.makedirs(os.path.dirname(out_path), exist_ok=True)
+# --- Converter Dispatch ---
+def convert_file(input_path, output_path, input_ext, output_ext, db_path, log_queue=None):
+    """
+    Dispatch to the correct converter function based on input/output extensions.
+    Returns a dict: {input, output, status, reason, start_time, end_time}
+    """
+    start = datetime.now().isoformat()
+    logging.debug(f"[convert_file] Attempting: {input_path} ({input_ext}) -> {output_path} ({output_ext})")
     try:
-        subprocess.run(["pandoc", src_path, "-o", out_path], check=True)
-        logging.info(f"[TEX] Converted {src_path} to {out_path}")
-        if conn is not None:
-            from oerforge import db_utils
-            db_utils.insert_records(
-                'files',
-                [{
-                    'filename': os.path.basename(out_path),
-                    'extension': '.tex',
-                    'mime_type': 'application/x-tex',
-                    'url': out_path,
-                    'referenced_page': src_path,
-                    'relative_path': out_path
-                }],
-                conn=conn
-            )
-        if record_id:
-            from oerforge import db_utils
-            import datetime
-            try:
-                db_utils.insert_records(
-                    'conversion_results',
-                    [{
-                        'content_id': record_id,
-                        'source_format': '.md',
-                        'target_format': '.tex',
-                        'output_path': out_path,
-                        'conversion_time': datetime.datetime.now().isoformat(),
-                        'status': 'success'
-                    }],
-                    conn=conn
-                )
-                logging.info(f"[TEX] conversion_results updated for id {record_id}")
-            except Exception as e:
-                logging.error(f"[TEX] conversion_results insert failed for id {record_id}: {e}")
+        # Dispatch for all real Markdown converters
+        if input_ext == ".md" and output_ext == ".txt":
+            logging.debug(f"[convert_file] Dispatch: convert_md_to_txt")
+            result = convert_md_to_txt(input_path, output_path)
+        elif input_ext == ".md" and output_ext == ".md":
+            logging.debug(f"[convert_file] Dispatch: convert_md_to_md")
+            result = convert_md_to_md(input_path, output_path)
+        elif input_ext == ".md" and output_ext == ".tex":
+            logging.debug(f"[convert_file] Dispatch: convert_md_to_tex")
+            result = convert_md_to_tex(input_path, output_path)
+        elif input_ext == ".md" and output_ext == ".pdf":
+            logging.debug(f"[convert_file] Dispatch: convert_md_to_pdf")
+            result = convert_md_to_pdf(input_path, output_path)
+        elif input_ext == ".md" and output_ext == ".docx":
+            logging.debug(f"[convert_file] Dispatch: convert_md_to_docx")
+            result = convert_md_to_docx(input_path, output_path)
+        elif input_ext == ".docx" and output_ext == ".md":
+            logging.debug(f"[convert_file] Dispatch: convert_docx_to_md")
+            result = convert_docx_to_md(input_path, output_path)
+        elif input_ext == ".ipynb" and output_ext == ".epub":
+            logging.debug(f"[convert_file] Dispatch: convert_ipynb_to_epub")
+            result = convert_ipynb_to_epub(input_path, output_path)
+        elif input_ext == ".md" and output_ext == ".epub":
+            logging.debug(f"[convert_file] Dispatch: convert_md_to_epub")
+            result = convert_md_to_epub(input_path, output_path)
+        else:
+            msg = f"No converter for {input_ext} -> {output_ext}"
+            logging.warning(msg)
+            return {"input": input_path, "output": output_path, "status": "skipped", "reason": msg, "start_time": start, "end_time": datetime.now().isoformat()}
+        status = "success" if result else "failed"
+        logging.info(f"[convert_file] {input_path} -> {output_path}: {status}")
+        return {"input": input_path, "output": output_path, "status": status, "reason": None, "start_time": start, "end_time": datetime.now().isoformat()}
     except Exception as e:
-        logging.error(f"[TEX] Pandoc conversion failed for {src_path}: {e}")
+        logging.error(f"[convert_file] Conversion failed: {input_path} -> {output_path}: {e}")
+        return {"input": input_path, "output": output_path, "status": "failed", "reason": str(e), "start_time": start, "end_time": datetime.now().isoformat()}
 
-def convert_md_to_txt(src_path, out_path, record_id=None, conn=None):
-    logging.info(f"[TXT] Starting conversion: {src_path} -> {out_path}")
-    os.makedirs(os.path.dirname(out_path), exist_ok=True)
+# --- Markdown Converters ---
+def convert_md_to_txt(input_path, output_path):
+    """
+    Convert Markdown to plain text using Pandoc.
+    Images will be ignored in plain text output.
+    """
+    import subprocess
     try:
-        with open(src_path, "r", encoding="utf-8") as f:
+        os.makedirs(os.path.dirname(output_path), exist_ok=True)
+        result = subprocess.run([
+            "pandoc", input_path, "-t", "plain", "-o", output_path
+        ], check=True, capture_output=True, text=True)
+        return True
+    except subprocess.CalledProcessError as e:
+        logging.error(f"Pandoc failed for TXT: {e}\nSTDOUT: {e.stdout}\nSTDERR: {e.stderr}")
+        return False
+    except Exception as e:
+        logging.error(f"Pandoc failed for TXT (unexpected): {e}")
+        return False
+
+def convert_md_to_md(input_path, output_path):
+    """
+    Copy Markdown file to new location (identity conversion).
+    Images are referenced as in the original file.
+    """
+    import shutil
+    try:
+        os.makedirs(os.path.dirname(output_path), exist_ok=True)
+        shutil.copy2(input_path, output_path)
+        return True
+    except Exception as e:
+        logging.error(f"Copy failed for MD: {e}")
+        return False
+
+# def convert_md_to_marp(input_path, output_path):
+#     """
+#     Convert Markdown to Marp Markdown (for slides). Assumes Marp-compatible input.
+#     This is a simple copy; for real conversion, use Marp CLI.
+#     """
+#     import shutil
+#     try:
+#         shutil.copy2(input_path, output_path)
+#         return True
+#     except Exception as e:
+#         logging.error(f"Copy failed for MARP: {e}")
+#         return False
+
+def convert_md_to_tex(input_path, output_path):
+    """
+    Convert Markdown to LaTeX using Pandoc.
+    Images are converted to LaTeX includegraphics commands.
+    """
+    import subprocess
+    try:
+        os.makedirs(os.path.dirname(output_path), exist_ok=True)
+        result = subprocess.run([
+            "pandoc", input_path, "-o", output_path
+        ], check=True, capture_output=True, text=True)
+        return True
+    except subprocess.CalledProcessError as e:
+        logging.error(f"Pandoc failed for LaTeX: {e}\nSTDOUT: {e.stdout}\nSTDERR: {e.stderr}")
+        return False
+    except Exception as e:
+        logging.error(f"Pandoc failed for LaTeX (unexpected): {e}")
+        return False
+
+def convert_md_to_pdf(input_path, output_path):
+    """
+    Convert Markdown to PDF using Pandoc, removing emoji characters before conversion.
+    """
+    import subprocess
+    import tempfile
+    try:
+        os.makedirs(os.path.dirname(output_path), exist_ok=True)
+        import emoji
+    except ImportError:
+        logging.error("The 'emoji' package is required for emoji removal in PDF export. Please install it.")
+        return False
+    try:
+        # Read and clean the input file
+        with open(input_path, "r", encoding="utf-8") as f:
             md_text = f.read()
-        md = MarkdownIt()
-        tokens = md.parse(md_text)
-
-        def extract_text_with_newlines(tokens, depth=0):
-            indent = '  ' * depth
-            if tokens is None:
-                logging.warning(f"[TXT][extract_text] tokens is None at depth {depth}")
-                return ""
-            if not tokens:
-                logging.debug(f"[TXT][extract_text] tokens is empty at depth {depth}")
-                return ""
-            text = []
-            for t in tokens:
-                logging.debug(f"{indent}[TXT][extract_text] token type: {getattr(t, 'type', None)}, content: {getattr(t, 'content', None)}")
-                if getattr(t, 'type', None) == "link_open":
-                    text.append("")
-                elif getattr(t, 'type', None) == "link_close":
-                    text.append("")
-                elif getattr(t, 'type', None) == "inline" and hasattr(t, "children"):
-                    i = 0
-                    children = t.children or []
-                    while i < len(children):
-                        child = children[i]
-                        if getattr(child, 'type', None) == 'link_open':
-                            href = None
-                            for attr in getattr(child, 'attrs', []) or []:
-                                if attr[0] == 'href':
-                                    href = attr[1]
-                                    break
-                            link_text = ""
-                            j = i + 1
-                            while j < len(children) and getattr(children[j], 'type', None) != 'link_close':
-                                if getattr(children[j], 'type', None) == 'text':
-                                    link_text += children[j].content
-                                elif hasattr(children[j], 'children'):
-                                    link_text += extract_text_with_newlines(children[j].children, depth+2)
-                                j += 1
-                            if link_text:
-                                text.append(link_text)
-                            if href:
-                                text.append(f" ({href})")
-                            i = j
-                        elif getattr(child, 'type', None) == 'text':
-                            text.append(child.content)
-                        elif hasattr(child, 'children'):
-                            text.append(extract_text_with_newlines(child.children, depth+2))
-                        i += 1
-                elif getattr(t, 'type', None) == "text":
-                    text.append(t.content)
-                elif t.type in ("paragraph_close", "heading_close"):
-                    text.append("\n\n")
-                elif t.type in ("list_item_close"):
-                    text.append("\n")
-                elif hasattr(t, "children"):
-                    text.append(extract_text_with_newlines(t.children, depth+1))
-            try:
-                joined = "".join(text)
-            except Exception as e:
-                logging.error(f"[TXT][extract_text] join failed at depth {depth}: {e}, text={text}")
-                raise
-            return joined
-
-        plain_text = extract_text_with_newlines(tokens).strip()
-        with open(out_path, "w", encoding="utf-8") as f:
-            f.write(plain_text)
-        logging.info(f"[TXT] Converted {src_path} to {out_path}")
-        if conn is not None:
-            from oerforge import db_utils
-            db_utils.insert_records(
-                'files',
-                [{
-                    'filename': os.path.basename(out_path),
-                    'extension': '.txt',
-                    'mime_type': 'text/plain',
-                    'url': out_path,
-                    'referenced_page': src_path,
-                    'relative_path': out_path
-                }],
-                conn=conn
-            )
-        if record_id:
-            from oerforge import db_utils
-            import datetime
-            try:
-                db_utils.insert_records(
-                    'conversion_results',
-                    [{
-                        'content_id': record_id,
-                        'source_format': '.md',
-                        'target_format': '.txt',
-                        'output_path': out_path,
-                        'conversion_time': datetime.datetime.now().isoformat(),
-                        'status': 'success'
-                    }],
-                    conn=conn
-                )
-                logging.info(f"[TXT] conversion_results updated for id {record_id}")
-            except Exception as e:
-                logging.error(f"[TXT] conversion_results insert failed for id {record_id}: {e}")
+        # Remove all emojis using the emoji package
+        md_text_clean = emoji.replace_emoji(md_text, replace="")
+        # Write to a temporary file
+        with tempfile.NamedTemporaryFile("w", delete=False, suffix=".md", encoding="utf-8") as tmp:
+            tmp.write(md_text_clean)
+            tmp_path = tmp.name
+        # Prefer template in templates/tex/oerforge-pdf-template.tex if it exists
+        project_root = os.path.dirname(os.path.dirname(os.path.abspath(__file__)))
+        template_path = os.path.join(project_root, "templates", "tex", "oerforge-pdf-template.tex")
+        pandoc_cmd = ["pandoc", tmp_path, "-o", output_path]
+        if os.path.exists(template_path):
+            pandoc_cmd += ["--template", template_path]
+        result = subprocess.run(pandoc_cmd, check=True, capture_output=True, text=True)
+        return True
+    except subprocess.CalledProcessError as e:
+        logging.error(f"Pandoc failed for PDF (emoji removed): {e}\nSTDOUT: {e.stdout}\nSTDERR: {e.stderr}")
+        return False
     except Exception as e:
-        logging.error(f"[TXT] Conversion failed for {src_path}: {e}")
+        logging.error(f"Pandoc failed for PDF (unexpected): {e}")
+        return False
 
-# --- Batch Conversion Orchestrator ---
-def batch_convert_all_content(config_path=None):
-    logging.info("Starting batch conversion for all content records.")
-    import yaml
-    project_root = PROJECT_ROOT
-    if config_path is None:
-        config_path = os.path.join(project_root, "_content.yml")
-    with open(config_path, 'r', encoding='utf-8') as f:
-        config = yaml.safe_load(f)
-    toc = config.get('toc', [])
-    conn = sqlite3.connect(DB_PATH)
-    cursor = conn.cursor()
-    cursor.execute("SELECT source_format, target_format FROM conversion_capabilities WHERE is_enabled=1")
-    conversions = cursor.fetchall()
-    cursor.execute("SELECT id, source_path, output_path, slug FROM content")
-    content_files = cursor.fetchall()
-    for record_id, source_path, output_path, slug in content_files:
-        if not source_path or not output_path:
-            logging.warning(f"Skipping content record id={record_id} with None source_path or output_path")
+def convert_md_to_docx(input_path, output_path):
+    """
+    Convert Markdown to DOCX using Pandoc, extracting media to embed images.
+    """
+    import subprocess
+    import os
+    try:
+        os.makedirs(os.path.dirname(output_path), exist_ok=True)
+        media_dir = os.path.splitext(output_path)[0] + "_media"
+        result = subprocess.run([
+            "pandoc", input_path, "-o", output_path,
+            "--extract-media", media_dir
+        ], check=True, capture_output=True, text=True)
+        return True
+    except subprocess.CalledProcessError as e:
+        logging.error(f"Pandoc failed for DOCX: {e}\nSTDOUT: {e.stdout}\nSTDERR: {e.stderr}")
+        return False
+    except Exception as e:
+        logging.error(f"Pandoc failed for DOCX (unexpected): {e}")
+        return False
+
+def convert_md_to_epub(input_path, output_path):
+    """
+    Convert Markdown to EPUB using Pandoc.
+    """
+    import subprocess
+    try:
+        os.makedirs(os.path.dirname(output_path), exist_ok=True)
+        result = subprocess.run([
+            "pandoc", input_path, "-o", output_path
+        ], check=True, capture_output=True, text=True)
+        return True
+    except subprocess.CalledProcessError as e:
+        logging.error(f"Pandoc failed for EPUB: {e}\nSTDOUT: {e.stdout}\nSTDERR: {e.stderr}")
+        return False
+    except Exception as e:
+        logging.error(f"Pandoc failed for EPUB (unexpected): {e}")
+        return False
+    
+# ----- .ipynb converters ------
+        logging.error(f"Pandoc failed for Jupyter: {e}")
+        return False
+
+def convert_ipynb_to_txt(input_path, output_path):
+    """Convert .ipynb to .txt (stub)."""
+    logging.info(f"[STUB] convert_ipynb_to_txt called: {input_path} -> {output_path}")
+    return False
+
+def convert_ipynb_to_md(input_path, output_path):
+    """Convert .ipynb to .md (stub)."""
+    logging.info(f"[STUB] convert_ipynb_to_md called: {input_path} -> {output_path}")
+    return False
+
+def convert_ipynb_to_tex(input_path, output_path):
+    """Convert .ipynb to .tex (stub)."""
+    logging.info(f"[STUB] convert_ipynb_to_tex called: {input_path} -> {output_path}")
+    return False
+
+def convert_ipynb_to_pdf(input_path, output_path):
+    """Convert .ipynb to .pdf (stub)."""
+    logging.info(f"[STUB] convert_ipynb_to_pdf called: {input_path} -> {output_path}")
+    return False
+
+def convert_ipynb_to_docx(input_path, output_path):
+    """Convert .ipynb to .docx (stub)."""
+    logging.info(f"[STUB] convert_ipynb_to_docx called: {input_path} -> {output_path}")
+    return False
+
+def convert_ipynb_to_jupyter(input_path, output_path):
+    """Convert .ipynb to .jupyter (stub)."""
+    logging.info(f"[STUB] convert_ipynb_to_jupyter called: {input_path} -> {output_path}")
+    return False
+
+def convert_ipynb_to_ipynb(input_path, output_path):
+    """Convert .ipynb to .ipynb (stub)."""
+    logging.info(f"[STUB] convert_ipynb_to_ipynb called: {input_path} -> {output_path}")
+    return False
+
+def convert_ipynb_to_epub(input_path, output_path):
+    """
+    Convert a Jupyter Notebook (.ipynb) file to EPUB (.epub).
+
+    Args:
+        input_path (str): Path to the input notebook file.
+        output_path (str): Path to the output EPUB file.
+
+    Returns:
+        bool: True if conversion succeeds, False otherwise.
+    """
+    # TODO: Implement with nbconvert or other tool
+    return False
+
+# ---- docx converters ---
+
+def convert_docx_to_txt(input_path, output_path):
+    """Convert .docx to .txt (stub)."""
+    logging.info(f"[STUB] convert_docx_to_txt called: {input_path} -> {output_path}")
+    return False
+
+def convert_docx_to_md(input_path, output_path):
+    """Convert .docx to .md (already implemented as stub)."""
+    # TODO: Implement with Pandoc or other tool
+    return False
+
+def convert_docx_to_tex(input_path, output_path):
+    """Convert .docx to .tex (stub)."""
+    logging.info(f"[STUB] convert_docx_to_tex called: {input_path} -> {output_path}")
+    return False
+
+def convert_docx_to_pdf(input_path, output_path):
+    """Convert .docx to .pdf (stub)."""
+    logging.info(f"[STUB] convert_docx_to_pdf called: {input_path} -> {output_path}")
+    return False
+
+def convert_docx_to_docx(input_path, output_path):
+    """Convert .docx to .docx (stub)."""
+    logging.info(f"[STUB] convert_docx_to_docx called: {input_path} -> {output_path}")
+    return False
+
+# --- unused convertors ---
+
+def convert_marp_to_txt(input_path, output_path):
+    """Convert .marp to .txt (stub)."""
+    logging.info(f"[STUB] convert_marp_to_txt called: {input_path} -> {output_path}")
+    return False
+
+def convert_marp_to_md(input_path, output_path):
+    """Convert .marp to .md (stub)."""
+    logging.info(f"[STUB] convert_marp_to_md called: {input_path} -> {output_path}")
+    return False
+
+def convert_marp_to_marp(input_path, output_path):
+    """Convert .marp to .marp (stub)."""
+    logging.info(f"[STUB] convert_marp_to_marp called: {input_path} -> {output_path}")
+    return False
+
+def convert_marp_to_pdf(input_path, output_path):
+    """Convert .marp to .pdf (stub)."""
+    logging.info(f"[STUB] convert_marp_to_pdf called: {input_path} -> {output_path}")
+    return False
+
+def convert_marp_to_docx(input_path, output_path):
+    """Convert .marp to .docx (stub)."""
+    logging.info(f"[STUB] convert_marp_to_docx called: {input_path} -> {output_path}")
+    return False
+
+def convert_marp_to_ppt(input_path, output_path):
+    """Convert .marp to .ppt (stub)."""
+    logging.info(f"[STUB] convert_marp_to_ppt called: {input_path} -> {output_path}")
+    return False
+
+def convert_tex_to_txt(input_path, output_path):
+    """Convert .tex to .txt (stub)."""
+    logging.info(f"[STUB] convert_tex_to_txt called: {input_path} -> {output_path}")
+    return False
+def convert_tex_to_md(input_path, output_path):
+    """Convert .tex to .md (stub)."""
+    logging.info(f"[STUB] convert_tex_to_md called: {input_path} -> {output_path}")
+    return False
+def convert_tex_to_tex(input_path, output_path):
+    """Convert .tex to .tex (stub)."""
+    logging.info(f"[STUB] convert_tex_to_tex called: {input_path} -> {output_path}")
+    return False
+def convert_tex_to_pdf(input_path, output_path):
+    """Convert .tex to .pdf (stub)."""
+    logging.info(f"[STUB] convert_tex_to_pdf called: {input_path} -> {output_path}")
+    return False
+def convert_tex_to_docx(input_path, output_path):
+    """Convert .tex to .docx (stub)."""
+    logging.info(f"[STUB] convert_tex_to_docx called: {input_path} -> {output_path}")
+    return False
+
+def convert_jupyter_to_md(input_path, output_path):
+    """Convert .jupyter to .md (stub)."""
+    logging.info(f"[STUB] convert_jupyter_to_md called: {input_path} -> {output_path}")
+    return False
+def convert_jupyter_to_tex(input_path, output_path):
+    """Convert .jupyter to .tex (stub)."""
+    logging.info(f"[STUB] convert_jupyter_to_tex called: {input_path} -> {output_path}")
+    return False
+def convert_jupyter_to_pdf(input_path, output_path):
+    """Convert .jupyter to .pdf (stub)."""
+    logging.info(f"[STUB] convert_jupyter_to_pdf called: {input_path} -> {output_path}")
+    return False
+def convert_jupyter_to_docx(input_path, output_path):
+    """Convert .jupyter to .docx (stub)."""
+    logging.info(f"[STUB] convert_jupyter_to_docx called: {input_path} -> {output_path}")
+    return False
+def convert_jupyter_to_jupyter(input_path, output_path):
+    """Convert .jupyter to .jupyter (stub)."""
+    logging.info(f"[STUB] convert_jupyter_to_jupyter called: {input_path} -> {output_path}")
+    return False
+def convert_jupyter_to_ipynb(input_path, output_path):
+    """Convert .jupyter to .ipynb (stub)."""
+    logging.info(f"[STUB] convert_jupyter_to_ipynb called: {input_path} -> {output_path}")
+    return False
+
+def convert_ppt_to_txt(input_path, output_path):
+    """Convert .ppt to .txt (stub)."""
+    logging.info(f"[STUB] convert_ppt_to_txt called: {input_path} -> {output_path}")
+    return False
+def convert_ppt_to_ppt(input_path, output_path):
+    """Convert .ppt to .ppt (stub)."""
+    logging.info(f"[STUB] convert_ppt_to_ppt called: {input_path} -> {output_path}")
+    return False
+def convert_txt_to_txt(input_path, output_path):
+    """Convert .txt to .txt (stub)."""
+    logging.info(f"[STUB] convert_txt_to_txt called: {input_path} -> {output_path}")
+    return False
+def convert_txt_to_md(input_path, output_path):
+    """Convert .txt to .md (stub)."""
+    logging.info(f"[STUB] convert_txt_to_md called: {input_path} -> {output_path}")
+    return False
+def convert_txt_to_tex(input_path, output_path):
+    """Convert .txt to .tex (stub)."""
+    logging.info(f"[STUB] convert_txt_to_tex called: {input_path} -> {output_path}")
+    return False
+def convert_txt_to_docx(input_path, output_path):
+    """Convert .txt to .docx (stub)."""
+    logging.info(f"[STUB] convert_txt_to_docx called: {input_path} -> {output_path}")
+    return False
+def convert_txt_to_pdf(input_path, output_path):
+    """Convert .txt to .pdf (stub)."""
+    logging.info(f"[STUB] convert_txt_to_pdf called: {input_path} -> {output_path}")
+    return False
+print("Total converter stubs defined: 44")
+
+# --- Orchestrator ---
+def batch_convert_all_content(db_path=DB_PATH, force=False, summary_json_path=SUMMARY_JSON):
+    # configure_logging()  # Logging is configured elsewhere or by the main script
+    logging.info("[batch_convert_all_content] Starting batch conversion...")
+    conversions = get_enabled_conversions(db_path)
+    logging.debug(f"[batch_convert_all_content] Enabled conversions: {conversions}")
+    files = get_content_files_to_convert(db_path)
+    logging.debug(f"[batch_convert_all_content] Content files to convert: {len(files)}")
+    jobs = []
+    for i, file in enumerate(files):
+        if i < 5:
+            logging.debug(f"[batch_convert_all_content] file dict {i}: keys={list(file.keys())}, file={file}")
+    for file in files:
+        input_path = file["source_path"]
+        # Skip _index.md files (autogenerated section pages)
+        if input_path and os.path.basename(input_path) == "_index.md":
+            logging.info(f"[batch_convert_all_content] Skipping conversion for section index: {input_path}")
             continue
-        src_ext = os.path.splitext(source_path)[1]
-        rel_path = os.path.relpath(source_path, CONTENT_ROOT)
-        src_path = os.path.join(CONTENT_ROOT, rel_path)
-        out_dir = os.path.join(BUILD_FILES_ROOT, slug) if slug else os.path.dirname(output_path)
-        os.makedirs(out_dir, exist_ok=True)
-        for conv_src, conv_target in conversions:
-            if src_ext == conv_src:
-                out_name = os.path.splitext(os.path.basename(output_path))[0] + conv_target
-                out_path = os.path.join(out_dir, out_name)
-                if conv_src == ".md" and conv_target == ".md":
-                    try:
-                        shutil.copy2(src_path, out_path)
-                        logging.info(f"COPY: {src_path} -> {out_path}")
-                    except Exception as e:
-                        logging.error(f"ERROR: Failed to copy {src_path} -> {out_path}: {e}")
-                elif conv_src == ".md" and conv_target == ".docx":
-                    convert_md_to_docx(src_path, out_path, record_id, conn)
-                elif conv_src == ".md" and conv_target == ".pdf":
-                    convert_md_to_pdf(src_path, out_path, record_id, conn)
-                elif conv_src == ".md" and conv_target == ".tex":
-                    convert_md_to_tex(src_path, out_path, record_id, conn)
-                elif conv_src == ".md" and conv_target == ".txt":
-                    convert_md_to_txt(src_path, out_path, record_id, conn)
-                elif conv_src == ".ipynb" and conv_target == ".jupyter":
-                    logging.info(f"JUPYTER: {src_path} -> {out_path}")
-    conn.close()
-    logging.info("Batch conversion complete.")
+        input_ext = file.get("mime_type")
+        if not input_ext:
+            _, input_ext = os.path.splitext(input_path)
 
-# --- Main Entry Point ---
-def main():
-    import argparse
-    parser = argparse.ArgumentParser(description="OERForge Conversion CLI")
-    parser.add_argument("mode", choices=["batch", "single"], help="Conversion mode: batch or single file")
-    parser.add_argument("--src", type=str, help="Source file path (for single mode)")
-    parser.add_argument("--out", type=str, help="Output file path (for single mode)")
-    parser.add_argument("--fmt", choices=["docx", "pdf", "tex", "txt"], help="Target format (for single mode)")
-    parser.add_argument("--record_id", type=int, default=None, help="Content record ID (optional)")
-    args = parser.parse_args()
+        # --- Respect export config (types/force only) ---
+        export_types = file.get("export_types")
+        if export_types:
+            export_types_list = [t.strip() for t in export_types.split(",") if t.strip()]
+        else:
+            export_types_list = []
+        export_force = file.get("export_force")
+        force_this = bool(export_force) if export_force is not None else force
 
-    if args.mode == "batch":
-        logging.info("[convert] main() entry: running batch_convert_all_content()")
-        batch_convert_all_content()
-    elif args.mode == "single":
-        if not args.src or not args.out or not args.fmt:
-            print("Error: --src, --out, and --fmt are required for single mode.")
-            exit(1)
-        conn = sqlite3.connect(DB_PATH)
-        try:
-            if args.fmt == "docx":
-                convert_md_to_docx(args.src, args.out, args.record_id, conn)
-            elif args.fmt == "pdf":
-                convert_md_to_pdf(args.src, args.out, args.record_id, conn)
-            elif args.fmt == "tex":
-                convert_md_to_tex(args.src, args.out, args.record_id, conn)
-            elif args.fmt == "txt":
-                convert_md_to_txt(args.src, args.out, args.record_id, conn)
+        # Use the output_path from the DB as the base for all export types
+        base_output_path = file.get("output_path")
+        if not base_output_path:
+            continue
+        base_dir = os.path.dirname(base_output_path)
+        base_name = os.path.splitext(os.path.basename(base_output_path))[0]
+
+        # Always perform identity conversion (copy original) unless explicitly excluded
+        did_identity = False
+        for (src_ext, tgt_ext) in conversions:
+            if input_ext != src_ext:
+                continue
+            tgt_fmt = tgt_ext.lstrip(".")
+            # Identity conversion: e.g., md->md, docx->docx, etc.
+            if input_ext == tgt_ext:
+                if export_types_list and tgt_fmt not in export_types_list:
+                    logging.debug(f"[batch_convert_all_content] SKIP: identity conversion {input_ext}->{tgt_ext} excluded by export_types_list {export_types_list}")
+                    continue
+                # Output file: same as base_output_path (no double extension)
+                output_path = os.path.join(base_dir, base_name + tgt_ext)
+                did_identity = True
             else:
-                print(f"Unknown format: {args.fmt}")
-                exit(1)
-        finally:
-            conn.close()
+                if export_types_list and tgt_fmt not in export_types_list:
+                    continue
+                output_path = os.path.join(base_dir, base_name + tgt_ext)
+            # Prevent overwriting the source file in-place (never copy to same path)
+            if os.path.abspath(input_path) == os.path.abspath(output_path):
+                logging.info(f"[batch_convert_all_content] Skipping identity conversion to avoid overwriting source: {input_path} -> {output_path}")
+                continue
+            os.makedirs(os.path.dirname(output_path), exist_ok=True)
+            if not should_convert(input_path, output_path, force=force_this):
+                logging.info(f"[batch_convert_all_content] Skipping up-to-date: {input_path} -> {output_path}")
+                continue
+            logging.debug(f"[batch_convert_all_content] Adding job: {input_path} ({input_ext}) -> {output_path} ({tgt_ext})")
+            jobs.append((input_path, output_path, input_ext, tgt_ext, db_path))
+    logging.info(f"[batch_convert_all_content] Total jobs queued: {len(jobs)}")
+    results = []
+    with concurrent.futures.ThreadPoolExecutor() as executor:
+        future_to_job = {executor.submit(convert_file, *job): job for job in jobs}
+        for future in concurrent.futures.as_completed(future_to_job):
+            result = future.result()
+            logging.debug(f"[batch_convert_all_content] Job result: {result}")
+            results.append(result)
+    # Write summary JSON
+    os.makedirs(BUILD_DIR, exist_ok=True)
+    with open(summary_json_path, "w", encoding="utf-8") as f:
+        json.dump(results, f, indent=2)
+    # Print plain text summary
+    print("\nConversion Summary:")
+    for r in results:
+        print(f"{r['input']} -> {r['output']}: {r['status']} ({r.get('reason', '')})")
 
-if __name__ == "__main__":
-    main()
+# --- CLI ---
+def cli():
+    import argparse
+    parser = argparse.ArgumentParser(description="OERForge Batch Conversion Pipeline")
+    parser.add_argument("--force", action="store_true", help="Force all conversions (ignore cache)")
+    parser.add_argument("--summary-json", type=str, default=SUMMARY_JSON, help="Path to summary JSON output")

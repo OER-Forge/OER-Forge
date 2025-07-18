@@ -49,7 +49,7 @@ def initialize_db():
     """Ensure the database exists and schema is valid."""
     if not os.path.exists(DB_PATH):
         db_log("Database not found. Initializing fresh database.", level=logging.WARNING)
-        initialize_database()
+        initialize_database(db_path=DB_PATH)
     else:
         try:
             conn = get_db_connection(DB_PATH)
@@ -142,11 +142,13 @@ def get_conversion_flags(extension):
             flags[flag_map[t]] = True
     return flags
 
-def build_content_record(title, file_path, item_slug, menu_context, children, parent_output_path, parent_slug, order, level):
+def build_content_record(title, file_path, item_slug, menu_context, children, parent_output_path, parent_slug, order, level, export_config=None, section_path=None):
     """Build a content record for the database."""
     md_is_section_index = bool(file_path and os.path.basename(file_path) == '_index.md')
     is_section_index = 1 if children or md_is_section_index else 0
     record_parent_slug = parent_slug if parent_slug else None
+    # output_slug: propagate nearest ancestor's slug (for output path logic)
+    output_slug = parent_slug if parent_slug else None
     if DEBUG_MODE:
         logging.debug(f"[RECORD-START] title={title}, file_path={file_path}, item_slug={item_slug}, parent_slug={parent_slug}, is_section_index={is_section_index}, order={order}, level={level}")
     if file_path:
@@ -155,25 +157,19 @@ def build_content_record(title, file_path, item_slug, menu_context, children, pa
         ext = os.path.splitext(source_path)[1].lower()
         rel_path = source_path[8:] if source_path.startswith('content/') else source_path
         base_name = os.path.splitext(os.path.basename(rel_path))[0]
-        parent_dir = os.path.basename(os.path.dirname(source_path))
-        if DEBUG_MODE:
-            logging.debug(f"[DEBUG] Checking output path logic for file_path={file_path}, source_path={source_path}, base_name={base_name}, parent_dir={parent_dir}")
-        # Output path logic
+        # section_path: list of slugs from root to this item (excluding root 'build')
+        if section_path is None:
+            section_path = []
+        # If this is a section index (_index.md), output to .../slug/index.html
         if os.path.basename(source_path) == '_index.md':
-            output_path = os.path.join('build', item_slug, 'index.html')
-            if DEBUG_MODE:
-                logging.info(f"[SECTION-INDEX] Processing _index.md for section '{item_slug}' -> {output_path}")
-        elif source_path == f'content/{base_name}.md' and base_name != 'index':
-            output_path = os.path.join('build', base_name, 'index.html')
-        elif base_name == parent_dir:
-            output_path = os.path.join('build', item_slug, 'index.html')
+            output_path = os.path.join('build', *section_path, 'index.html')
         else:
-            output_path = os.path.join('build', item_slug, base_name + '.html')
+            output_path = os.path.join('build', *section_path, base_name + '.html')
         relative_link = output_path[6:] if output_path.startswith('build/') else output_path
         flags = get_conversion_flags(ext)
         if DEBUG_MODE:
-            logging.debug(f"[RECORD-BUILD] title={title}, source_path={rel_source_path}, output_path={output_path}, relative_link={relative_link}, flags={flags}")
-        return {
+            logging.debug(f"[RECORD-BUILD] title={title}, source_path={rel_source_path}, output_path={output_path}, relative_link={relative_link}, flags={flags}, section_path={section_path}")
+        record = {
             'title': title,
             'source_path': rel_source_path,
             'output_path': output_path,
@@ -193,14 +189,23 @@ def build_content_record(title, file_path, item_slug, menu_context, children, pa
             'order': int(order),
             'relative_link': relative_link,
             'menu_context': menu_context,
-            'level': int(level)
-        }, rel_source_path
+            'level': int(level),
+            'output_slug': output_slug
+        }
+        if export_config:
+            record['export_types'] = ','.join(export_config.get('types', []))
+            record['export_force'] = export_config.get('force', False)
+            record['export_custom_label'] = export_config.get('custom_label', None)
+            record['export_output_path'] = export_config.get('output_path', None)
+        return record, rel_source_path
     else:
-        output_path = os.path.join('build', item_slug, 'index.html')
+        if section_path is None:
+            section_path = []
+        output_path = os.path.join('build', *section_path, 'index.html')
         relative_link = output_path[6:] if output_path.startswith('build/') else output_path
         if DEBUG_MODE:
-            logging.debug(f"[RECORD-BUILD] (section) title={title}, output_path={output_path}, relative_link={relative_link}")
-        return {
+            logging.debug(f"[RECORD-BUILD] (section) title={title}, output_path={output_path}, relative_link={relative_link}, section_path={section_path}")
+        record = {
             'title': title,
             'source_path': None,
             'output_path': output_path,
@@ -220,17 +225,39 @@ def build_content_record(title, file_path, item_slug, menu_context, children, pa
             'order': int(order),
             'relative_link': relative_link,
             'menu_context': menu_context,
-            'level': int(level)
-        }, None
+            'level': int(level),
+            'output_slug': output_slug
+        }
+        if export_config:
+            record['export_types'] = ','.join(export_config.get('types', []))
+            record['export_force'] = export_config.get('force', False)
+            record['export_custom_label'] = export_config.get('custom_label', None)
+            record['export_output_path'] = export_config.get('output_path', None)
+        return record, None
 
-def walk_toc(items, file_paths, parent_output_path=None, parent_slug=None, parent_menu_context=None, level=0):
-    """Recursively walk the TOC and build content records."""
+def merge_export_config(parent, override):
+    """Merge two export config dicts, with override taking precedence."""
+    if not parent:
+        return dict(override) if override else {}
+    if not override:
+        return dict(parent)
+    merged = dict(parent)
+    for k, v in override.items():
+        merged[k] = v
+    return merged
+
+def walk_toc(items, file_paths, parent_output_path=None, parent_slug=None, parent_menu_context=None, level=0, parent_export_config=None, section_path=None):
+    """Recursively walk the TOC and build content records, merging export configs."""
     content_records = []
+    if section_path is None:
+        section_path = []
     for idx, item in enumerate(items):
         title = item.get('title', None)
         file_path = item.get('file')
         order = int(idx)
         item_slug = item.get('slug', re.sub(r'[^a-zA-Z0-9]+', '_', title.lower()).strip('_')) if title else f'section_{idx}'
+        # Propagate output_slug: if parent_slug exists, use it for all descendants; else use this item's slug if present
+        output_slug = parent_slug if parent_slug else item_slug if 'slug' in item else None
         menu_context = item.get('menu_context', parent_menu_context if parent_menu_context else 'main')
         children = item.get('children', [])
 
@@ -244,11 +271,18 @@ def walk_toc(items, file_paths, parent_output_path=None, parent_slug=None, paren
                 if DEBUG_MODE:
                     logging.info(f"[AUTO-INDEX] Using _index.md for section '{item_slug}': {file_path}")
 
+        # Merge export config: parent_export_config (from parent) and item.get('export')
+        item_export = item.get('export', None)
+        merged_export = merge_export_config(parent_export_config, item_export)
+
+        # Build new section_path for this item
+        this_section_path = section_path + [item_slug]
+
         if DEBUG_MODE:
-            logging.debug(f"[TOC] Entering item: title={title}, slug={item_slug}, file={file_path}, children={len(children)}, level={level}")
+            logging.debug(f"[TOC] Entering item: title={title}, slug={item_slug}, file={file_path}, children={len(children)}, level={level}, export={merged_export}, section_path={this_section_path}")
         record, source_path = build_content_record(
             title, file_path, item_slug, menu_context, children,
-            parent_output_path, parent_slug, order, level
+            parent_output_path, output_slug, order, level, export_config=merged_export, section_path=this_section_path
         )
         content_records.append(record)
         if source_path:
@@ -261,9 +295,11 @@ def walk_toc(items, file_paths, parent_output_path=None, parent_slug=None, paren
                 children,
                 file_paths,
                 parent_output_path=record['output_path'],
-                parent_slug=record['slug'],
+                parent_slug=output_slug,
                 parent_menu_context=menu_context,
-                level=int(level)+1
+                level=int(level)+1,
+                parent_export_config=merged_export,
+                section_path=this_section_path
             )
             content_records.extend(child_records)
     return content_records
@@ -308,29 +344,31 @@ def extract_and_register_images(content_path, content_text, db_path):
             else:
                 logging.info(f"[ASSET] Image already registered: {filename}")
 
-def scan_toc_and_populate_db(config_path):
+def scan_toc_and_populate_db(config_path, db_path=DB_PATH):
     """
     Walk the TOC from the config YAML, read each file, extract assets/images, and populate the DB with content and asset records.
     Maintains TOC hierarchy and section relationships.
     Args:
         config_path (str): Path to the config YAML file.
+        db_path (str): Path to the SQLite database file.
     """
     import yaml
     full_config_path = os.path.join(PROJECT_ROOT, config_path)
     with open(full_config_path, 'r', encoding='utf-8') as f:
         config = yaml.safe_load(f)
     toc = config.get('toc', [])
+    global_export = config.get('export', {})
 
-    conn = get_db_connection()
+    conn = get_db_connection(db_path)
     cursor = conn.cursor()
     # Clear content records for fresh scan
-    content_records = get_records('content', db_path=DB_PATH, conn=conn, cursor=cursor)
+    content_records = get_records('content', db_path=db_path, conn=conn, cursor=cursor)
     if content_records:
         cursor.execute("DELETE FROM content")
         conn.commit()
 
     file_paths = []
-    all_content_records = walk_toc(toc, file_paths)
+    all_content_records = walk_toc(toc, file_paths, parent_export_config=global_export)
     # Deduplicate records
     unique_records = {}
     for rec in all_content_records:
@@ -338,7 +376,7 @@ def scan_toc_and_populate_db(config_path):
         if key not in unique_records:
             unique_records[key] = rec
     deduped_records = list(unique_records.values())
-    insert_records('content', deduped_records, db_path=DB_PATH, conn=conn, cursor=cursor)
+    insert_records('content', deduped_records, db_path=db_path, conn=conn, cursor=cursor)
     try:
         conn.commit()
     except Exception as e:
@@ -346,13 +384,53 @@ def scan_toc_and_populate_db(config_path):
         logging.error(f"Commit failed in scan_toc_and_populate_db: {e}\n{traceback.format_exc()}")
         if not DEBUG_MODE:
             raise
+    import mimetypes
     rel_file_paths = [os.path.relpath(p, PROJECT_ROOT) for p in file_paths if os.path.exists(p)]
     contents = batch_read_files(rel_file_paths)
-    # Asset extraction
+
+    # Register all files (not just images) in files table
+    for abs_path in file_paths:
+        if not os.path.exists(abs_path):
+            continue
+        filename = os.path.basename(abs_path)
+        extension = os.path.splitext(filename)[1].lower()
+        mime_type, _ = mimetypes.guess_type(abs_path)
+        is_image = int(extension in ['.png', '.jpg', '.jpeg', '.gif', '.webp', '.svg'])
+        is_remote = 0
+        # For now, referenced_page is None for content files
+        insert_records('files', [{
+            'filename': filename,
+            'extension': extension,
+            'mime_type': mime_type or 'application/octet-stream',
+            'is_image': is_image,
+            'is_remote': is_remote,
+            'url': None,
+            'referenced_page': None,
+            'relative_path': os.path.relpath(abs_path, PROJECT_ROOT),
+            'absolute_path': abs_path,
+            'has_local_copy': 1  # New field for tracking local copy
+        }], db_path=db_path, conn=conn, cursor=cursor)
+
+    # Asset extraction (images)
     for content_path, content_text in contents.items():
         if content_text:
-            extract_and_register_images(content_path, content_text, db_path=DB_PATH)
+            extract_and_register_images(content_path, content_text, db_path=db_path)
+
+    # Stub: extract and register videos (e.g., YouTube)
+    for content_path, content_text in contents.items():
+        if content_text:
+            extract_and_register_videos(content_path, content_text, db_path=db_path)
+
     conn.close()
+
+def extract_and_register_videos(content_path, content_text, db_path):
+    """Extract YouTube/video links and register in a future videos table. Stub for now."""
+    # Example: Find YouTube links
+    youtube_links = re.findall(r'(https?://(?:www\.)?youtube\.com/watch\?v=[\w-]+)', content_text)
+    for url in youtube_links:
+        # TODO: insert into videos table with has_local_copy=0
+        logging.info(f"[VIDEO] Found YouTube link: {url} in {content_path}")
+    # Extend for other video platforms as needed
 
 def main():
     """Main entry point for scan.py."""

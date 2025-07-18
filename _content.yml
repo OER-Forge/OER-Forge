@@ -17,6 +17,12 @@ footer:
   text: |
     Made with tons of ☕️  and lots of ❤️ for students and educators everywhere. | Built with <a href="https://github.com/OER-Forge/">OER Forge</a>
 
+# Global export configuration for testing
+export:
+  types: [html, md, docx, pdf, tex, txt, epub]      # Global default export types
+  force: false                  # Global default: do not force conversion
+  output_path: "build/{slug}/files"   # Global output path template
+
 toc:
   - title: "Home"
     menu: true
@@ -24,13 +30,15 @@ toc:
   - title: "Sample"
     menu: true
     slug: sample-resources
-    file: sample/_index.md
+    file: sample/index.md
     children:
       - title: "Introduction to Newton's Laws"
         file: sample/newton.md
+        slug: newton
         menu: false
-      - title: "Activities"
+      - title: "Sample Activities"
         file: sample/activities.md
+        slug: activities
         menu: false
   - title: "About"
     menu: true

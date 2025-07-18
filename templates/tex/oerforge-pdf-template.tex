@@ -1,0 +1,54 @@
+% oerforge-pdf-template.tex
+% A clean, modern Pandoc LaTeX template for OER-Forge PDFs
+\documentclass[11pt]{article}
+\usepackage[margin=1in]{geometry}
+\usepackage{lmodern}
+\usepackage{hyperref}
+\usepackage{graphicx}
+\usepackage{fancyhdr}
+\usepackage{color}
+\usepackage{fancyvrb}
+\usepackage{listings}
+\usepackage{framed}
+$if(highlighting-macros)$
+$highlighting-macros$
+$endif$
+$if(pandocbounded)$
+$pandocbounded$
+$endif$
+\providecommand{\pandocbounded}[1]{#1}
+\pagestyle{fancy}
+\fancyhead{}
+\fancyfoot{}
+\fancyhead[L]{\leftmark}
+\fancyhead[R]{OER-Forge}
+\fancyfoot[C]{\thepage}
+\setlength{\parskip}{0.5em}
+\setlength{\parindent}{0pt}
+\providecommand{\tightlist}{%
+  \setlength{\itemsep}{0pt}\setlength{\parskip}{0pt}}
+\hypersetup{
+  colorlinks=true,
+  linkcolor=blue,
+  urlcolor=blue,
+  pdfauthor={OER-Forge},
+  pdftitle={OER-Forge Export}
+}
+
+$if(title)$
+\title{$title$}
+$endif$
+$if(author)$
+\author{$for(author)$$author$$sep$ \\ $endfor$}
+$endif$
+$if(date)$
+\date{$date$}
+$else$
+\date{\today}
+$endif$
+\begin{document}
+$if(title)$
+\maketitle
+$endif$
+$body$
+\end{document}
