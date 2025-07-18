@@ -183,16 +183,15 @@ def add_asset_paths(context, rel_path):
     return context
 
 def build_all_markdown_files():
+
+    # Load global site context once
     config_path = os.path.join(PROJECT_ROOT, '_content.yml')
     content = load_content_yaml(config_path)
     site = content.get('site', {})
-    footer_text = content.get('footer', {}).get('text', '')
+    footer = content.get('footer', {})
+
     db_path = os.path.join(PROJECT_ROOT, 'db', 'sqlite.db')
     all_exports = get_all_exports(content)
-    with sqlite3.connect(db_path) as conn:
-        cursor = conn.cursor()
-        cursor.execute("SELECT source_path, output_path, title, mime_type FROM content")
-        records = cursor.fetchall()
 
     for item in all_exports:
         if not item["is_valid"]:
@@ -216,13 +215,16 @@ def build_all_markdown_files():
             html_body = convert_markdown_to_html_text(md_text, referenced_page=file, rel_path=rel_path)
             context = {
                 "site": site,
-                "footer": footer_text,
+                "footer": footer,
                 "title": item.get("title") or file_stem,
                 "body": html_body,
                 "rel_path": rel_path,
                 "slug": slug,
             }
             context = add_asset_paths(context, rel_path)
+            if DEBUG_MODE:
+                logging.debug(f"Context keys for {file}: {list(context.keys())}")
+                logging.debug(f"Context['site']: {context.get('site')}")
             page_html = render_page(context, "base.html")
             os.makedirs(os.path.dirname(out_path), exist_ok=True)
             with open(out_path, "w", encoding="utf-8") as outf:
