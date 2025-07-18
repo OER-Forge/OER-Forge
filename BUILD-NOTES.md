@@ -3,12 +3,21 @@
 _Last updated: 2025-07-18_
 
 ## 1. Build Pipeline
-- [ ] Run `python make.py` to build the site and generate all outputs.
-- [ ] Confirm all Markdown (.md) files are converted to all requested formats (PDF, DOCX, LaTeX, EPUB, TXT, etc.).
-- [ ] Check that images in Markdown files appear in DOCX, PDF, and LaTeX outputs.
-- [ ] Ensure all outputs are placed in the correct section-local directories (next to `index.html` and in `files/` as needed).
+- [x] Run `python make.py` to build the site and generate all outputs.
+- [x] Confirm all Markdown (.md) files are converted to all requested formats (PDF, DOCX, LaTeX, EPUB, TXT, etc.).
+- [x] Check that images in Markdown files appear in DOCX, PDF, and LaTeX outputs.
+- [x] Ensure all outputs are placed in the correct section-local directories (next to `index.html` and in `files/` as needed). Main `index.html` is now always in the build root.
 - [ ] Remove any duplicate or stub converter functions in `convert.py`.
 - [ ] Clean up debug prints and stub counters in production code.
+## 1a. Static Asset Path Robustness (2025-07-18)
+
+- [ ] Review and fix all CSS, JS, and image paths in generated HTML to ensure they are correct relative links from every page (including subdirectories) to the assets in `build/`.
+- [ ] Confirm all static assets (css, js, images) are copied to the correct subfolders in `build/` (e.g., `build/css/`, `build/js/`, `build/images/`).
+- [ ] Use the database (`db/sqlite.db`) to help resolve and verify asset file paths as needed.
+- [ ] Ensure all asset links are correct for static deployment (site is self-contained, all links work regardless of page depth).
+- [ ] Confirm that any changes to file links are logged and/or updated in the database if required.
+
+**Note:** The build now syncs site context from `_content.yml` to the `site_info` table in the database and warns if there is a mismatch. Main page is always at `build/index.html` for static hosting. Asset path review/fix is in progress.
 
 ## 2. Accessibility (WCAG) Verification
 - [ ] Run `verify.py` on all generated HTML files.
