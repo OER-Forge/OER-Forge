@@ -482,20 +482,28 @@ def batch_convert_all_content(db_path=DB_PATH, force=False, summary_json_path=SU
         base_dir = os.path.dirname(base_output_path)
         base_name = os.path.splitext(os.path.basename(base_output_path))[0]
 
-        # Only convert to formats listed in export_types_list
+        # Always perform identity conversion (copy original) unless explicitly excluded
+        did_identity = False
         for (src_ext, tgt_ext) in conversions:
             if input_ext != src_ext:
                 continue
             tgt_fmt = tgt_ext.lstrip(".")
-            if export_types_list and tgt_fmt not in export_types_list:
-                continue
-            # Output file: same as base_output_path, but with new extension
-            output_path = os.path.join(base_dir, base_name + tgt_ext)
-            # Prevent overwriting the source file (e.g., content/index.md -> content/index.md)
-            if os.path.abspath(input_path) == os.path.abspath(output_path):
-                if not (input_ext == ".md" and tgt_ext == ".md"):
-                    logging.info(f"[batch_convert_all_content] Skipping .md -> .md to avoid overwriting source: {input_path} -> {output_path}")
+            # Identity conversion: e.g., md->md, docx->docx, etc.
+            if input_ext == tgt_ext:
+                if export_types_list and tgt_fmt not in export_types_list:
+                    logging.debug(f"[batch_convert_all_content] SKIP: identity conversion {input_ext}->{tgt_ext} excluded by export_types_list {export_types_list}")
                     continue
+                # Output file: same as base_output_path (no double extension)
+                output_path = os.path.join(base_dir, base_name + tgt_ext)
+                did_identity = True
+            else:
+                if export_types_list and tgt_fmt not in export_types_list:
+                    continue
+                output_path = os.path.join(base_dir, base_name + tgt_ext)
+            # Prevent overwriting the source file in-place (never copy to same path)
+            if os.path.abspath(input_path) == os.path.abspath(output_path):
+                logging.info(f"[batch_convert_all_content] Skipping identity conversion to avoid overwriting source: {input_path} -> {output_path}")
+                continue
             os.makedirs(os.path.dirname(output_path), exist_ok=True)
             if not should_convert(input_path, output_path, force=force_this):
                 logging.info(f"[batch_convert_all_content] Skipping up-to-date: {input_path} -> {output_path}")

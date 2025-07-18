@@ -19,7 +19,7 @@ footer:
 
 # Global export configuration for testing
 export:
-  types: [html, docx, pdf, tex, txt, epub]      # Global default export types
+  types: [html, md, docx, pdf, tex, txt, epub]      # Global default export types
   force: false                  # Global default: do not force conversion
   output_path: "build/{slug}/files"   # Global output path template
 
@@ -27,9 +27,6 @@ toc:
   - title: "Home"
     menu: true
     file: index.md
-    export:
-      types: [html, md, docx, pdf]    # Override global export types for this page
-      force: true                 # Force conversion for this page
   - title: "Sample"
     menu: true
     slug: sample-resources
