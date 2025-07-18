@@ -181,7 +181,7 @@ def create_tables(cursor):
 def insert_default_conversion_capabilities(cursor):
     """Insert default conversion capabilities if table is empty."""
     default_conversion_matrix = {
-        '.md':     ['.txt','.md', '.marp', '.tex', '.pdf', '.docx', '.ppt', '.jupyter'],
+        '.md':     ['.txt','.md', '.marp', '.tex', '.pdf', '.docx', '.ppt', '.jupyter', '.epub'],
         '.marp':   ['.txt','.md', '.marp', '.pdf', '.docx', '.ppt'],
         '.tex':    ['.txt','.md', '.tex', '.pdf', '.docx'],
         '.ipynb':  ['.txt','.md', '.tex', '.pdf', '.docx', '.jupyter', '.ipynb'],
