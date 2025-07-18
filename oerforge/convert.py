@@ -1,56 +1,31 @@
+import os
+import logging
+import json
+import concurrent.futures
+from datetime import datetime
+try:
+    from . import db_utils
+except ImportError:
+    import db_utils
+
+ # --- Constants ---
+PROJECT_ROOT = os.path.dirname(os.path.dirname(os.path.abspath(__file__)))
+DB_PATH = os.path.join(PROJECT_ROOT, 'db', 'sqlite.db')
+BUILD_DIR = os.path.join(PROJECT_ROOT, 'build')
+LOG_PATH = os.path.join(PROJECT_ROOT, 'log', 'build.log')
+SUMMARY_JSON = os.path.join(BUILD_DIR, 'conversion_summary.json')
+DEBUG_MODE = os.environ.get("DEBUG", "0") == "1"
+
 def get_section_files_dir(content_row):
     """
     Given a content row, return the absolute path to the section-local files/ directory.
     E.g., for build/section/index.html, returns build/section/files/
     """
-    # output_path is like build/section/index.html or build/section/subsection/index.html
     output_path = content_row.get("output_path")
     if not output_path:
         return None
-    # Remove the filename (index.html or whatever) to get the section dir
     section_dir = os.path.dirname(output_path)
-    files_dir = os.path.join(section_dir, "files")
-    abs_files_dir = os.path.join(PROJECT_ROOT, files_dir)
-    return abs_files_dir
-
-"""
-convert.py
-----------
-Generic, SQL-driven, parallelized content conversion pipeline for OER-Forge.
-
-- Only enabled conversions (from conversion_capabilities) attempted.
-- Caching: skip if up-to-date, unless --force.
-- Parallelization with concurrent.futures (default max_workers).
-- CLI: simple, with --force and summary JSON output.
-- Logging to file and screen; no need to store skip reasons in the DB.
-- Best-effort: continue on errors.
-
-Add new converter functions as needed for (input_ext, output_ext) pairs.
-"""
-
-import os
-import sys
-import logging
-import json
-import concurrent.futures
-from datetime import datetime
-from oerforge import db_utils
-
-PROJECT_ROOT = os.path.dirname(os.path.dirname(os.path.abspath(__file__)))
-DB_PATH = os.path.join(PROJECT_ROOT, 'db', 'sqlite.db')
-BUILD_DIR = os.path.join(PROJECT_ROOT, 'build')
-LOG_PATH = os.path.join(PROJECT_ROOT, 'log', 'build.log')
-SUMMARY_JSON = os.path.join(BUILD_DIR, 'convert_summary.json')
-DEBUG_MODE = os.environ.get("DEBUG", "0") == "1"
-
-# --- Logging Setup ---
-def configure_logging():
-    log_level = logging.DEBUG if DEBUG_MODE else logging.INFO
-    os.makedirs(os.path.dirname(LOG_PATH), exist_ok=True)
-    handlers = [
-        logging.FileHandler(LOG_PATH, mode='a', encoding='utf-8'),
-        logging.StreamHandler()
-    ]
+    return os.path.join(section_dir, "files")
     logging.basicConfig(
         level=log_level,
         format='%(asctime)s %(levelname)s %(message)s',
@@ -471,14 +446,13 @@ print("Total converter stubs defined: 44")
 
 # --- Orchestrator ---
 def batch_convert_all_content(db_path=DB_PATH, force=False, summary_json_path=SUMMARY_JSON):
-    configure_logging()
+    # configure_logging()  # Logging is configured elsewhere or by the main script
     logging.info("[batch_convert_all_content] Starting batch conversion...")
     conversions = get_enabled_conversions(db_path)
     logging.debug(f"[batch_convert_all_content] Enabled conversions: {conversions}")
     files = get_content_files_to_convert(db_path)
     logging.debug(f"[batch_convert_all_content] Content files to convert: {len(files)}")
     jobs = []
-    # Debug: print keys of first few file dicts
     for i, file in enumerate(files):
         if i < 5:
             logging.debug(f"[batch_convert_all_content] file dict {i}: keys={list(file.keys())}, file={file}")
@@ -491,16 +465,39 @@ def batch_convert_all_content(db_path=DB_PATH, force=False, summary_json_path=SU
         input_ext = file.get("mime_type")
         if not input_ext:
             _, input_ext = os.path.splitext(input_path)
-        section_files_dir = get_section_files_dir(file)
-        if section_files_dir:
-            os.makedirs(section_files_dir, exist_ok=True)
+
+        # --- Respect export config (types/force only) ---
+        export_types = file.get("export_types")
+        if export_types:
+            export_types_list = [t.strip() for t in export_types.split(",") if t.strip()]
+        else:
+            export_types_list = []
+        export_force = file.get("export_force")
+        force_this = bool(export_force) if export_force is not None else force
+
+        # Use the output_path from the DB as the base for all export types
+        base_output_path = file.get("output_path")
+        if not base_output_path:
+            continue
+        base_dir = os.path.dirname(base_output_path)
+        base_name = os.path.splitext(os.path.basename(base_output_path))[0]
+
+        # Only convert to formats listed in export_types_list
         for (src_ext, tgt_ext) in conversions:
             if input_ext != src_ext:
                 continue
-            # Output path: section/files/basename.ext
-            base_name = os.path.splitext(os.path.basename(input_path))[0]
-            output_path = os.path.join(section_files_dir, base_name + tgt_ext) if section_files_dir else os.path.join(BUILD_DIR, base_name + tgt_ext)
-            if not should_convert(input_path, output_path, force=force):
+            tgt_fmt = tgt_ext.lstrip(".")
+            if export_types_list and tgt_fmt not in export_types_list:
+                continue
+            # Output file: same as base_output_path, but with new extension
+            output_path = os.path.join(base_dir, base_name + tgt_ext)
+            # Prevent overwriting the source file (e.g., content/index.md -> content/index.md)
+            if os.path.abspath(input_path) == os.path.abspath(output_path):
+                if not (input_ext == ".md" and tgt_ext == ".md"):
+                    logging.info(f"[batch_convert_all_content] Skipping .md -> .md to avoid overwriting source: {input_path} -> {output_path}")
+                    continue
+            os.makedirs(os.path.dirname(output_path), exist_ok=True)
+            if not should_convert(input_path, output_path, force=force_this):
                 logging.info(f"[batch_convert_all_content] Skipping up-to-date: {input_path} -> {output_path}")
                 continue
             logging.debug(f"[batch_convert_all_content] Adding job: {input_path} ({input_ext}) -> {output_path} ({tgt_ext})")

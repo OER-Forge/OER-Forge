@@ -142,11 +142,13 @@ def get_conversion_flags(extension):
             flags[flag_map[t]] = True
     return flags
 
-def build_content_record(title, file_path, item_slug, menu_context, children, parent_output_path, parent_slug, order, level, export_config=None):
+def build_content_record(title, file_path, item_slug, menu_context, children, parent_output_path, parent_slug, order, level, export_config=None, section_path=None):
     """Build a content record for the database."""
     md_is_section_index = bool(file_path and os.path.basename(file_path) == '_index.md')
     is_section_index = 1 if children or md_is_section_index else 0
     record_parent_slug = parent_slug if parent_slug else None
+    # output_slug: propagate nearest ancestor's slug (for output path logic)
+    output_slug = parent_slug if parent_slug else None
     if DEBUG_MODE:
         logging.debug(f"[RECORD-START] title={title}, file_path={file_path}, item_slug={item_slug}, parent_slug={parent_slug}, is_section_index={is_section_index}, order={order}, level={level}")
     if file_path:
@@ -155,24 +157,18 @@ def build_content_record(title, file_path, item_slug, menu_context, children, pa
         ext = os.path.splitext(source_path)[1].lower()
         rel_path = source_path[8:] if source_path.startswith('content/') else source_path
         base_name = os.path.splitext(os.path.basename(rel_path))[0]
-        parent_dir = os.path.basename(os.path.dirname(source_path))
-        if DEBUG_MODE:
-            logging.debug(f"[DEBUG] Checking output path logic for file_path={file_path}, source_path={source_path}, base_name={base_name}, parent_dir={parent_dir}")
-        # Output path logic
+        # section_path: list of slugs from root to this item (excluding root 'build')
+        if section_path is None:
+            section_path = []
+        # If this is a section index (_index.md), output to .../slug/index.html
         if os.path.basename(source_path) == '_index.md':
-            output_path = os.path.join('build', item_slug, 'index.html')
-            if DEBUG_MODE:
-                logging.info(f"[SECTION-INDEX] Processing _index.md for section '{item_slug}' -> {output_path}")
-        elif source_path == f'content/{base_name}.md' and base_name != 'index':
-            output_path = os.path.join('build', base_name, 'index.html')
-        elif base_name == parent_dir:
-            output_path = os.path.join('build', item_slug, 'index.html')
+            output_path = os.path.join('build', *section_path, 'index.html')
         else:
-            output_path = os.path.join('build', item_slug, base_name + '.html')
+            output_path = os.path.join('build', *section_path, base_name + '.html')
         relative_link = output_path[6:] if output_path.startswith('build/') else output_path
         flags = get_conversion_flags(ext)
         if DEBUG_MODE:
-            logging.debug(f"[RECORD-BUILD] title={title}, source_path={rel_source_path}, output_path={output_path}, relative_link={relative_link}, flags={flags}")
+            logging.debug(f"[RECORD-BUILD] title={title}, source_path={rel_source_path}, output_path={output_path}, relative_link={relative_link}, flags={flags}, section_path={section_path}")
         record = {
             'title': title,
             'source_path': rel_source_path,
@@ -193,7 +189,8 @@ def build_content_record(title, file_path, item_slug, menu_context, children, pa
             'order': int(order),
             'relative_link': relative_link,
             'menu_context': menu_context,
-            'level': int(level)
+            'level': int(level),
+            'output_slug': output_slug
         }
         if export_config:
             record['export_types'] = ','.join(export_config.get('types', []))
@@ -202,10 +199,12 @@ def build_content_record(title, file_path, item_slug, menu_context, children, pa
             record['export_output_path'] = export_config.get('output_path', None)
         return record, rel_source_path
     else:
-        output_path = os.path.join('build', item_slug, 'index.html')
+        if section_path is None:
+            section_path = []
+        output_path = os.path.join('build', *section_path, 'index.html')
         relative_link = output_path[6:] if output_path.startswith('build/') else output_path
         if DEBUG_MODE:
-            logging.debug(f"[RECORD-BUILD] (section) title={title}, output_path={output_path}, relative_link={relative_link}")
+            logging.debug(f"[RECORD-BUILD] (section) title={title}, output_path={output_path}, relative_link={relative_link}, section_path={section_path}")
         record = {
             'title': title,
             'source_path': None,
@@ -226,7 +225,8 @@ def build_content_record(title, file_path, item_slug, menu_context, children, pa
             'order': int(order),
             'relative_link': relative_link,
             'menu_context': menu_context,
-            'level': int(level)
+            'level': int(level),
+            'output_slug': output_slug
         }
         if export_config:
             record['export_types'] = ','.join(export_config.get('types', []))
@@ -246,14 +246,18 @@ def merge_export_config(parent, override):
         merged[k] = v
     return merged
 
-def walk_toc(items, file_paths, parent_output_path=None, parent_slug=None, parent_menu_context=None, level=0, parent_export_config=None):
+def walk_toc(items, file_paths, parent_output_path=None, parent_slug=None, parent_menu_context=None, level=0, parent_export_config=None, section_path=None):
     """Recursively walk the TOC and build content records, merging export configs."""
     content_records = []
+    if section_path is None:
+        section_path = []
     for idx, item in enumerate(items):
         title = item.get('title', None)
         file_path = item.get('file')
         order = int(idx)
         item_slug = item.get('slug', re.sub(r'[^a-zA-Z0-9]+', '_', title.lower()).strip('_')) if title else f'section_{idx}'
+        # Propagate output_slug: if parent_slug exists, use it for all descendants; else use this item's slug if present
+        output_slug = parent_slug if parent_slug else item_slug if 'slug' in item else None
         menu_context = item.get('menu_context', parent_menu_context if parent_menu_context else 'main')
         children = item.get('children', [])
 
@@ -271,11 +275,14 @@ def walk_toc(items, file_paths, parent_output_path=None, parent_slug=None, paren
         item_export = item.get('export', None)
         merged_export = merge_export_config(parent_export_config, item_export)
 
+        # Build new section_path for this item
+        this_section_path = section_path + [item_slug]
+
         if DEBUG_MODE:
-            logging.debug(f"[TOC] Entering item: title={title}, slug={item_slug}, file={file_path}, children={len(children)}, level={level}, export={merged_export}")
+            logging.debug(f"[TOC] Entering item: title={title}, slug={item_slug}, file={file_path}, children={len(children)}, level={level}, export={merged_export}, section_path={this_section_path}")
         record, source_path = build_content_record(
             title, file_path, item_slug, menu_context, children,
-            parent_output_path, parent_slug, order, level, export_config=merged_export
+            parent_output_path, output_slug, order, level, export_config=merged_export, section_path=this_section_path
         )
         content_records.append(record)
         if source_path:
@@ -288,10 +295,11 @@ def walk_toc(items, file_paths, parent_output_path=None, parent_slug=None, paren
                 children,
                 file_paths,
                 parent_output_path=record['output_path'],
-                parent_slug=record['slug'],
+                parent_slug=output_slug,
                 parent_menu_context=menu_context,
                 level=int(level)+1,
-                parent_export_config=merged_export
+                parent_export_config=merged_export,
+                section_path=this_section_path
             )
             content_records.extend(child_records)
     return content_records

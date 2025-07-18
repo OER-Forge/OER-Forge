@@ -21,7 +21,7 @@ footer:
 export:
   types: [html, docx, pdf, tex, txt, epub]      # Global default export types
   force: false                  # Global default: do not force conversion
-  output_path: "build/{slug}"   # Global output path template
+  output_path: "build/{slug}/files"   # Global output path template
 
 toc:
   - title: "Home"
@@ -30,7 +30,6 @@ toc:
     export:
       types: [html, docx, pdf]    # Override global export types for this page
       force: true                 # Force conversion for this page
-      output_path: "build/home"   # Custom output path for this page
   - title: "Sample"
     menu: true
     slug: sample-resources
