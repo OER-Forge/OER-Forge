@@ -28,7 +28,7 @@ toc:
     menu: true
     file: index.md
     export:
-      types: [html, docx, pdf]    # Override global export types for this page
+      types: [html, md, docx, pdf]    # Override global export types for this page
       force: true                 # Force conversion for this page
   - title: "Sample"
     menu: true
@@ -37,9 +37,11 @@ toc:
     children:
       - title: "Introduction to Newton's Laws"
         file: sample/newton.md
+        slug: newton
         menu: false
-      - title: "Activities"
+      - title: "Sample Activities"
         file: sample/activities.md
+        slug: activities
         menu: false
   - title: "About"
     menu: true
