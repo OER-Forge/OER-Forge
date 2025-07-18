@@ -86,26 +86,45 @@ def convert_file(input_path, output_path, input_ext, output_ext, db_path, log_qu
     Returns a dict: {input, output, status, reason, start_time, end_time}
     """
     start = datetime.now().isoformat()
+    logging.debug(f"[convert_file] Attempting: {input_path} ({input_ext}) -> {output_path} ({output_ext})")
     try:
-        # Example dispatch pattern
-        if input_ext == ".md" and output_ext == ".pdf":
+        # Dispatch for all real Markdown converters
+        if input_ext == ".md" and output_ext == ".txt":
+            logging.debug(f"[convert_file] Dispatch: convert_md_to_txt")
+            result = convert_md_to_txt(input_path, output_path)
+        elif input_ext == ".md" and output_ext == ".md":
+            logging.debug(f"[convert_file] Dispatch: convert_md_to_md")
+            result = convert_md_to_md(input_path, output_path)
+        elif input_ext == ".md" and output_ext == ".tex":
+            logging.debug(f"[convert_file] Dispatch: convert_md_to_tex")
+            result = convert_md_to_tex(input_path, output_path)
+        elif input_ext == ".md" and output_ext == ".pdf":
+            logging.debug(f"[convert_file] Dispatch: convert_md_to_pdf")
             result = convert_md_to_pdf(input_path, output_path)
+        elif input_ext == ".md" and output_ext == ".docx":
+            logging.debug(f"[convert_file] Dispatch: convert_md_to_docx")
+            result = convert_md_to_docx(input_path, output_path)
         elif input_ext == ".docx" and output_ext == ".md":
+            logging.debug(f"[convert_file] Dispatch: convert_docx_to_md")
             result = convert_docx_to_md(input_path, output_path)
         elif input_ext == ".ipynb" and output_ext == ".epub":
+            logging.debug(f"[convert_file] Dispatch: convert_ipynb_to_epub")
             result = convert_ipynb_to_epub(input_path, output_path)
-        # ... add more converters ...
+        elif input_ext == ".md" and output_ext == ".epub":
+            logging.debug(f"[convert_file] Dispatch: convert_md_to_epub")
+            result = convert_md_to_epub(input_path, output_path)
         else:
             msg = f"No converter for {input_ext} -> {output_ext}"
             logging.warning(msg)
             return {"input": input_path, "output": output_path, "status": "skipped", "reason": msg, "start_time": start, "end_time": datetime.now().isoformat()}
         status = "success" if result else "failed"
+        logging.info(f"[convert_file] {input_path} -> {output_path}: {status}")
         return {"input": input_path, "output": output_path, "status": status, "reason": None, "start_time": start, "end_time": datetime.now().isoformat()}
     except Exception as e:
-        logging.error(f"Conversion failed: {input_path} -> {output_path}: {e}")
+        logging.error(f"[convert_file] Conversion failed: {input_path} -> {output_path}: {e}")
         return {"input": input_path, "output": output_path, "status": "failed", "reason": str(e), "start_time": start, "end_time": datetime.now().isoformat()}
 
-# --- Converters ---
+# --- Markdown Converters ---
 def convert_md_to_txt(input_path, output_path):
     """
     Convert Markdown to plain text using Pandoc.
@@ -113,12 +132,16 @@ def convert_md_to_txt(input_path, output_path):
     """
     import subprocess
     try:
-        subprocess.run([
+        os.makedirs(os.path.dirname(output_path), exist_ok=True)
+        result = subprocess.run([
             "pandoc", input_path, "-t", "plain", "-o", output_path
-        ], check=True)
+        ], check=True, capture_output=True, text=True)
         return True
+    except subprocess.CalledProcessError as e:
+        logging.error(f"Pandoc failed for TXT: {e}\nSTDOUT: {e.stdout}\nSTDERR: {e.stderr}")
+        return False
     except Exception as e:
-        logging.error(f"Pandoc failed for TXT: {e}")
+        logging.error(f"Pandoc failed for TXT (unexpected): {e}")
         return False
 
 def convert_md_to_md(input_path, output_path):
@@ -128,24 +151,25 @@ def convert_md_to_md(input_path, output_path):
     """
     import shutil
     try:
+        os.makedirs(os.path.dirname(output_path), exist_ok=True)
         shutil.copy2(input_path, output_path)
         return True
     except Exception as e:
         logging.error(f"Copy failed for MD: {e}")
         return False
 
-def convert_md_to_marp(input_path, output_path):
-    """
-    Convert Markdown to Marp Markdown (for slides). Assumes Marp-compatible input.
-    This is a simple copy; for real conversion, use Marp CLI.
-    """
-    import shutil
-    try:
-        shutil.copy2(input_path, output_path)
-        return True
-    except Exception as e:
-        logging.error(f"Copy failed for MARP: {e}")
-        return False
+# def convert_md_to_marp(input_path, output_path):
+#     """
+#     Convert Markdown to Marp Markdown (for slides). Assumes Marp-compatible input.
+#     This is a simple copy; for real conversion, use Marp CLI.
+#     """
+#     import shutil
+#     try:
+#         shutil.copy2(input_path, output_path)
+#         return True
+#     except Exception as e:
+#         logging.error(f"Copy failed for MARP: {e}")
+#         return False
 
 def convert_md_to_tex(input_path, output_path):
     """
@@ -154,27 +178,52 @@ def convert_md_to_tex(input_path, output_path):
     """
     import subprocess
     try:
-        subprocess.run([
+        os.makedirs(os.path.dirname(output_path), exist_ok=True)
+        result = subprocess.run([
             "pandoc", input_path, "-o", output_path
-        ], check=True)
+        ], check=True, capture_output=True, text=True)
         return True
+    except subprocess.CalledProcessError as e:
+        logging.error(f"Pandoc failed for LaTeX: {e}\nSTDOUT: {e.stdout}\nSTDERR: {e.stderr}")
+        return False
     except Exception as e:
-        logging.error(f"Pandoc failed for LaTeX: {e}")
+        logging.error(f"Pandoc failed for LaTeX (unexpected): {e}")
         return False
 
 def convert_md_to_pdf(input_path, output_path):
     """
-    Convert Markdown to PDF using Pandoc.
-    Images are embedded in the PDF if accessible.
+    Convert Markdown to PDF using Pandoc, removing emoji characters before conversion.
     """
     import subprocess
+    import tempfile
     try:
-        subprocess.run([
-            "pandoc", input_path, "-o", output_path
-        ], check=True)
+        os.makedirs(os.path.dirname(output_path), exist_ok=True)
+        import emoji
+    except ImportError:
+        logging.error("The 'emoji' package is required for emoji removal in PDF export. Please install it.")
+        return False
+    try:
+        # Read and clean the input file
+        with open(input_path, "r", encoding="utf-8") as f:
+            md_text = f.read()
+        # Remove all emojis using the emoji package
+        md_text_clean = emoji.replace_emoji(md_text, replace="")
+        # Write to a temporary file
+        with tempfile.NamedTemporaryFile("w", delete=False, suffix=".md", encoding="utf-8") as tmp:
+            tmp.write(md_text_clean)
+            tmp_path = tmp.name
+        # Use a static LaTeX template for improved PDF appearance
+        template_path = os.path.join(os.path.dirname(__file__), "oerforge-pdf-template.tex")
+        result = subprocess.run([
+            "pandoc", tmp_path, "-o", output_path,
+            "--template", template_path
+        ], check=True, capture_output=True, text=True)
         return True
+    except subprocess.CalledProcessError as e:
+        logging.error(f"Pandoc failed for PDF (emoji removed): {e}\nSTDOUT: {e.stdout}\nSTDERR: {e.stderr}")
+        return False
     except Exception as e:
-        logging.error(f"Pandoc failed for PDF: {e}")
+        logging.error(f"Pandoc failed for PDF (unexpected): {e}")
         return False
 
 def convert_md_to_docx(input_path, output_path):
@@ -184,45 +233,76 @@ def convert_md_to_docx(input_path, output_path):
     import subprocess
     import os
     try:
+        os.makedirs(os.path.dirname(output_path), exist_ok=True)
         media_dir = os.path.splitext(output_path)[0] + "_media"
-        subprocess.run([
+        result = subprocess.run([
             "pandoc", input_path, "-o", output_path,
             "--extract-media", media_dir
-        ], check=True)
+        ], check=True, capture_output=True, text=True)
         return True
+    except subprocess.CalledProcessError as e:
+        logging.error(f"Pandoc failed for DOCX: {e}\nSTDOUT: {e.stdout}\nSTDERR: {e.stderr}")
+        return False
     except Exception as e:
-        logging.error(f"Pandoc failed for DOCX: {e}")
+        logging.error(f"Pandoc failed for DOCX (unexpected): {e}")
         return False
 
-def convert_md_to_ppt(input_path, output_path):
+def convert_md_to_epub(input_path, output_path):
     """
-    Convert Markdown to PowerPoint (PPTX) using Pandoc.
-    Images are embedded if accessible.
+    Convert Markdown to EPUB using Pandoc.
     """
     import subprocess
     try:
-        subprocess.run([
+        os.makedirs(os.path.dirname(output_path), exist_ok=True)
+        result = subprocess.run([
             "pandoc", input_path, "-o", output_path
-        ], check=True)
+        ], check=True, capture_output=True, text=True)
         return True
-    except Exception as e:
-        logging.error(f"Pandoc failed for PPTX: {e}")
+    except subprocess.CalledProcessError as e:
+        logging.error(f"Pandoc failed for EPUB: {e}\nSTDOUT: {e.stdout}\nSTDERR: {e.stderr}")
         return False
-
-def convert_md_to_jupyter(input_path, output_path):
-    """
-    Convert Markdown to Jupyter Notebook (.ipynb) using Pandoc.
-    Images are included as notebook attachments if possible.
-    """
-    import subprocess
-    try:
-        subprocess.run([
-            "pandoc", input_path, "-o", output_path
-        ], check=True)
-        return True
     except Exception as e:
+        logging.error(f"Pandoc failed for EPUB (unexpected): {e}")
+        return False
+    
+# ----- .ipynb converters ------
         logging.error(f"Pandoc failed for Jupyter: {e}")
         return False
+
+def convert_ipynb_to_txt(input_path, output_path):
+    """Convert .ipynb to .txt (stub)."""
+    logging.info(f"[STUB] convert_ipynb_to_txt called: {input_path} -> {output_path}")
+    return False
+
+def convert_ipynb_to_md(input_path, output_path):
+    """Convert .ipynb to .md (stub)."""
+    logging.info(f"[STUB] convert_ipynb_to_md called: {input_path} -> {output_path}")
+    return False
+
+def convert_ipynb_to_tex(input_path, output_path):
+    """Convert .ipynb to .tex (stub)."""
+    logging.info(f"[STUB] convert_ipynb_to_tex called: {input_path} -> {output_path}")
+    return False
+
+def convert_ipynb_to_pdf(input_path, output_path):
+    """Convert .ipynb to .pdf (stub)."""
+    logging.info(f"[STUB] convert_ipynb_to_pdf called: {input_path} -> {output_path}")
+    return False
+
+def convert_ipynb_to_docx(input_path, output_path):
+    """Convert .ipynb to .docx (stub)."""
+    logging.info(f"[STUB] convert_ipynb_to_docx called: {input_path} -> {output_path}")
+    return False
+
+def convert_ipynb_to_jupyter(input_path, output_path):
+    """Convert .ipynb to .jupyter (stub)."""
+    logging.info(f"[STUB] convert_ipynb_to_jupyter called: {input_path} -> {output_path}")
+    return False
+
+def convert_ipynb_to_ipynb(input_path, output_path):
+    """Convert .ipynb to .ipynb (stub)."""
+    logging.info(f"[STUB] convert_ipynb_to_ipynb called: {input_path} -> {output_path}")
+    return False
 
 def convert_ipynb_to_epub(input_path, output_path):
     """
@@ -238,45 +318,34 @@ def convert_ipynb_to_epub(input_path, output_path):
     # TODO: Implement with nbconvert or other tool
     return False
 
-def convert_md_to_txt(input_path, output_path):
-    """Convert .md to .txt (stub)."""
-    logging.info(f"[STUB] convert_md_to_txt called: {input_path} -> {output_path}")
+# ---- docx converters ---
+
+def convert_docx_to_txt(input_path, output_path):
+    """Convert .docx to .txt (stub)."""
+    logging.info(f"[STUB] convert_docx_to_txt called: {input_path} -> {output_path}")
     return False
 
-def convert_md_to_md(input_path, output_path):
-    """Convert .md to .md (stub)."""
-    logging.info(f"[STUB] convert_md_to_md called: {input_path} -> {output_path}")
+def convert_docx_to_md(input_path, output_path):
+    """Convert .docx to .md (already implemented as stub)."""
+    # TODO: Implement with Pandoc or other tool
     return False
 
-def convert_md_to_marp(input_path, output_path):
-    """Convert .md to .marp (stub)."""
-    logging.info(f"[STUB] convert_md_to_marp called: {input_path} -> {output_path}")
+def convert_docx_to_tex(input_path, output_path):
+    """Convert .docx to .tex (stub)."""
+    logging.info(f"[STUB] convert_docx_to_tex called: {input_path} -> {output_path}")
     return False
 
-def convert_md_to_tex(input_path, output_path):
-    """Convert .md to .tex (stub)."""
-    logging.info(f"[STUB] convert_md_to_tex called: {input_path} -> {output_path}")
+def convert_docx_to_pdf(input_path, output_path):
+    """Convert .docx to .pdf (stub)."""
+    logging.info(f"[STUB] convert_docx_to_pdf called: {input_path} -> {output_path}")
     return False
 
-def convert_md_to_pdf(input_path, output_path):
-    """Convert .md to .pdf (already implemented)."""
-    import subprocess
-    try:
-        subprocess.run(["pandoc", input_path, "-o", output_path], check=True)
-        return True
-    except Exception as e:
-        logging.error(f"Pandoc failed: {e}")
-        return False
-
-def convert_md_to_ppt(input_path, output_path):
-    """Convert .md to .ppt (stub)."""
-    logging.info(f"[STUB] convert_md_to_ppt called: {input_path} -> {output_path}")
+def convert_docx_to_docx(input_path, output_path):
+    """Convert .docx to .docx (stub)."""
+    logging.info(f"[STUB] convert_docx_to_docx called: {input_path} -> {output_path}")
     return False
 
-def convert_md_to_jupyter(input_path, output_path):
-    """Convert .md to .jupyter (stub)."""
-    logging.info(f"[STUB] convert_md_to_jupyter called: {input_path} -> {output_path}")
-    return False
+# --- unused convertors ---
 
 def convert_marp_to_txt(input_path, output_path):
     """Convert .marp to .txt (stub)."""
@@ -328,34 +397,7 @@ def convert_tex_to_docx(input_path, output_path):
     """Convert .tex to .docx (stub)."""
     logging.info(f"[STUB] convert_tex_to_docx called: {input_path} -> {output_path}")
     return False
-def convert_ipynb_to_txt(input_path, output_path):
-    """Convert .ipynb to .txt (stub)."""
-    logging.info(f"[STUB] convert_ipynb_to_txt called: {input_path} -> {output_path}")
-    return False
-def convert_ipynb_to_md(input_path, output_path):
-    """Convert .ipynb to .md (stub)."""
-    logging.info(f"[STUB] convert_ipynb_to_md called: {input_path} -> {output_path}")
-    return False
-def convert_ipynb_to_tex(input_path, output_path):
-    """Convert .ipynb to .tex (stub)."""
-    logging.info(f"[STUB] convert_ipynb_to_tex called: {input_path} -> {output_path}")
-    return False
-def convert_ipynb_to_pdf(input_path, output_path):
-    """Convert .ipynb to .pdf (stub)."""
-    logging.info(f"[STUB] convert_ipynb_to_pdf called: {input_path} -> {output_path}")
-    return False
-def convert_ipynb_to_docx(input_path, output_path):
-    """Convert .ipynb to .docx (stub)."""
-    logging.info(f"[STUB] convert_ipynb_to_docx called: {input_path} -> {output_path}")
-    return False
-def convert_ipynb_to_jupyter(input_path, output_path):
-    """Convert .ipynb to .jupyter (stub)."""
-    logging.info(f"[STUB] convert_ipynb_to_jupyter called: {input_path} -> {output_path}")
-    return False
-def convert_ipynb_to_ipynb(input_path, output_path):
-    """Convert .ipynb to .ipynb (stub)."""
-    logging.info(f"[STUB] convert_ipynb_to_ipynb called: {input_path} -> {output_path}")
-    return False
+
 def convert_jupyter_to_md(input_path, output_path):
     """Convert .jupyter to .md (stub)."""
     logging.info(f"[STUB] convert_jupyter_to_md called: {input_path} -> {output_path}")
@@ -380,26 +422,7 @@ def convert_jupyter_to_ipynb(input_path, output_path):
     """Convert .jupyter to .ipynb (stub)."""
     logging.info(f"[STUB] convert_jupyter_to_ipynb called: {input_path} -> {output_path}")
     return False
-def convert_docx_to_txt(input_path, output_path):
-    """Convert .docx to .txt (stub)."""
-    logging.info(f"[STUB] convert_docx_to_txt called: {input_path} -> {output_path}")
-    return False
-def convert_docx_to_md(input_path, output_path):
-    """Convert .docx to .md (already implemented as stub)."""
-    # TODO: Implement with Pandoc or other tool
-    return False
-def convert_docx_to_tex(input_path, output_path):
-    """Convert .docx to .tex (stub)."""
-    logging.info(f"[STUB] convert_docx_to_tex called: {input_path} -> {output_path}")
-    return False
-def convert_docx_to_pdf(input_path, output_path):
-    """Convert .docx to .pdf (stub)."""
-    logging.info(f"[STUB] convert_docx_to_pdf called: {input_path} -> {output_path}")
-    return False
-def convert_docx_to_docx(input_path, output_path):
-    """Convert .docx to .docx (stub)."""
-    logging.info(f"[STUB] convert_docx_to_docx called: {input_path} -> {output_path}")
-    return False
+
 def convert_ppt_to_txt(input_path, output_path):
     """Convert .ppt to .txt (stub)."""
     logging.info(f"[STUB] convert_ppt_to_txt called: {input_path} -> {output_path}")
@@ -433,13 +456,16 @@ print("Total converter stubs defined: 44")
 # --- Orchestrator ---
 def batch_convert_all_content(db_path=DB_PATH, force=False, summary_json_path=SUMMARY_JSON):
     configure_logging()
+    logging.info("[batch_convert_all_content] Starting batch conversion...")
     conversions = get_enabled_conversions(db_path)
+    logging.debug(f"[batch_convert_all_content] Enabled conversions: {conversions}")
     files = get_content_files_to_convert(db_path)
+    logging.debug(f"[batch_convert_all_content] Content files to convert: {len(files)}")
     jobs = []
     # Debug: print keys of first few file dicts
     for i, file in enumerate(files):
         if i < 5:
-            print(f"DEBUG file dict {i}: keys={list(file.keys())}, file={file}")
+            logging.debug(f"[batch_convert_all_content] file dict {i}: keys={list(file.keys())}, file={file}")
     for file in files:
         input_path = file["source_path"]
         input_ext = file.get("mime_type")
@@ -450,14 +476,17 @@ def batch_convert_all_content(db_path=DB_PATH, force=False, summary_json_path=SU
                 continue
             output_path = os.path.join(BUILD_DIR, os.path.splitext(os.path.basename(input_path))[0] + tgt_ext)
             if not should_convert(input_path, output_path, force=force):
-                logging.info(f"Skipping up-to-date: {input_path} -> {output_path}")
+                logging.info(f"[batch_convert_all_content] Skipping up-to-date: {input_path} -> {output_path}")
                 continue
+            logging.debug(f"[batch_convert_all_content] Adding job: {input_path} ({input_ext}) -> {output_path} ({tgt_ext})")
             jobs.append((input_path, output_path, input_ext, tgt_ext, db_path))
+    logging.info(f"[batch_convert_all_content] Total jobs queued: {len(jobs)}")
     results = []
     with concurrent.futures.ThreadPoolExecutor() as executor:
         future_to_job = {executor.submit(convert_file, *job): job for job in jobs}
         for future in concurrent.futures.as_completed(future_to_job):
             result = future.result()
+            logging.debug(f"[batch_convert_all_content] Job result: {result}")
             results.append(result)
     # Write summary JSON
     os.makedirs(BUILD_DIR, exist_ok=True)
