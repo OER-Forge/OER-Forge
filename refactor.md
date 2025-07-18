@@ -8,39 +8,30 @@
 - Validate and merge global/per-file settings.
 
 ### 2. Conversion Orchestration
-- For each file, determine requested conversions.
-- Attempt conversions, including forced ones.
-- Log all attempts, successes, failures, and reasons in the database (with timestamps).
-- Only keep current outputs in build/.
 
 ### 3. HTML Generation
-- Generate download buttons for existing outputs, using custom labels or inferred text.
-- Ensure ARIA labels and accessibility compliance.
-- Use existing CSS/JS for styling and behavior.
-
+  - Add WCAG compliance badges/labels to pages.
+  - Optionally generate individual accessibility reports per page.
+  - Ensure accessibility info is included in admin/build reports.
 ### 4. CLI & Reporting
 - Add CLI options for dry-run, force, and admin reporting.
-- Generate build/admin/index.html summarizing the build (successes, failures, missing, etc.).
-
+  - Generate build/admin/index.html summarizing the build (successes, failures, missing, accessibility, etc.).
+  - Integrate accessibility summary from verify.py into admin report.
 ---
 
-## Module-by-Module Refactor Elements
-
-### oerforge/make.py
+  - Ensure accessibility results are written to `accessibility_results` and related tables.
+  - Provide functions to inject badges/labels into generated HTML pages.
+  - Generate individual accessibility reports per page if desired.
+  - Generate an administrative accessibility summary for build/admin/index.html.
 - **Function:** Orchestrates the build process.
 - **Refactor:**
-  - Parse _content.yml (global + per-file export).
-  - For each file, determine requested conversions and pass to convert.py.
-  - Clean up build/ (remove obsolete outputs).
-  - Collect build results for reporting.
-  - Pass custom labels/paths to HTML generation.
+  - Render WCAG/accessibility badges/labels as provided by verify.py.
   - Support CLI flags (dry-run, force, report).
 - **Testable Chunks:**
-  - Parsing/merging export config.
-  - Build directory cleanup.
-  - CLI argument handling.
-
-### oerforge/convert.py
+  - Include accessibility summary from verify.py (WCAG compliance, issues, etc.).
+  - Include timestamps, reasons, and links to outputs.
+  - Link to or embed individual page accessibility reports if generated.
+  - Accessible and easy to scan.
 - **Function:** Handles file conversions.
 - **Refactor:**
   - Accept list of requested conversions (type, output path, force, label).
@@ -50,6 +41,9 @@
 - **Testable Chunks:**
   - Conversion logic per type.
   - Logging and DB updates.
+ 5. Runs accessibility checks with verify.py, logs results, and injects badges/labels.
+ 6. Generates HTML pages with accessible download buttons and accessibility badges/labels.
+ 7. Writes build/admin/index.html with build and accessibility summary, and links to per-page accessibility reports.
   - Forced/unsupported conversion handling.
 
 ### oerforge/db_utils.py
