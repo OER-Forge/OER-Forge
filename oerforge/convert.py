@@ -212,12 +212,13 @@ def convert_md_to_pdf(input_path, output_path):
         with tempfile.NamedTemporaryFile("w", delete=False, suffix=".md", encoding="utf-8") as tmp:
             tmp.write(md_text_clean)
             tmp_path = tmp.name
-        # Use a static LaTeX template for improved PDF appearance
-        template_path = os.path.join(os.path.dirname(__file__), "oerforge-pdf-template.tex")
-        result = subprocess.run([
-            "pandoc", tmp_path, "-o", output_path,
-            "--template", template_path
-        ], check=True, capture_output=True, text=True)
+        # Prefer template in templates/tex/oerforge-pdf-template.tex if it exists
+        project_root = os.path.dirname(os.path.dirname(os.path.abspath(__file__)))
+        template_path = os.path.join(project_root, "templates", "tex", "oerforge-pdf-template.tex")
+        pandoc_cmd = ["pandoc", tmp_path, "-o", output_path]
+        if os.path.exists(template_path):
+            pandoc_cmd += ["--template", template_path]
+        result = subprocess.run(pandoc_cmd, check=True, capture_output=True, text=True)
         return True
     except subprocess.CalledProcessError as e:
         logging.error(f"Pandoc failed for PDF (emoji removed): {e}\nSTDOUT: {e.stdout}\nSTDERR: {e.stderr}")

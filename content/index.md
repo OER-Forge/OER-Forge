@@ -12,9 +12,9 @@ OER-Forge is an open source Python toolkit for building, organizing, and publish
 
 - **Accessible by design:** All templates and outputs aim for [WCAG compliance](https://www.w3.org/WAI/standards-guidelines/wcag/).
 - **Database-driven navigation:** Section indices, menus, and hierarchy are managed in SQLite for robust, extensible site structure.
-- **Multi-format input:** Write content in Markdown ✅, DOCX ⏳, and Jupyter Notebooks ⏳.
-- **Multi-format export:** Markdown ✅, DOCX ✅, PDF ✅, LaTeX ✅, and TXT ✅.
-- (optional) **Validation using Pa11y:** Automated checks ✅ and open reporting ⏳ during and after build to ensure compliance. [Pa11y on GitHub](https://github.com/pa11y/pa11y)
+- **Multi-format input:** Write content in Markdown, DOCX, and Jupyter Notebooks.
+- **Multi-format export:** Markdown, DOCX, PDF, LaTeX, and TXT.
+- (optional) **Validation using Pa11y:** Automated checks and open reporting during and after build to ensure compliance. [Pa11y on GitHub](https://github.com/pa11y/pa11y)
 
 ## Get Started
 
@@ -48,35 +48,35 @@ OER-Forge is an open source Python toolkit for building, organizing, and publish
 ## Features
 
 ### Accessibility & Usability
-- **Accessible by design:** ARIA labels, alt text, color contrast, and keyboard navigation. ✅
-- **Adjustable interface:** User controls for text size, spacing, and layout. ✅
-- **Dark mode:** Toggle theme for better readability. ✅
-- **Responsive design:** Mobile-friendly layouts and navigation. ✅
+- **Accessible by design:** ARIA labels, alt text, color contrast, and keyboard navigation.
+- **Adjustable interface:** User controls for text size, spacing, and layout.
+- **Dark mode:** Toggle theme for better readability.
+- **Responsive design:** Mobile-friendly layouts and navigation.
 
 ### Content & Input Formats
-- **Multi-format input:** Markdown ✅, DOCX ⏳, Jupyter Notebooks ⏳
-- **Tables & lists:** Advanced Markdown tables, nested lists, and task lists. ✅
-- **Inline figures:** Markdown images with alt text for accessibility. ✅
-- **Math support:** LaTeX-style math rendering with MathJax. ✅
-- **Syntax highlighting:** Beautiful code blocks with Pygments. ✅
+- **Multi-format input:** Markdown, DOCX, Jupyter Notebooks
+- **Tables & lists:** Advanced Markdown tables, nested lists, and task lists.
+- **Inline figures:** Markdown images with alt text for accessibility.
+- **Math support:** LaTeX-style math rendering with MathJax.
+- **Syntax highlighting:** Beautiful code blocks with Pygments.
 
 ### Navigation & Structure
-- **Section indices & navigation:** Database-driven, supports arbitrary hierarchy, top-level and nested menus. ✅
-- **Cross-references:** Link sections, figures, tables, and listings easily. ⏳
-- **Footnotes & endnotes:** Standard Markdown syntax for notes. ⏳
+- **Section indices & navigation:** Database-driven, supports arbitrary hierarchy, top-level and nested menus.
+- **Cross-references:** Link sections, figures, tables, and listings easily.
+- **Footnotes & endnotes:** Standard Markdown syntax for notes.
 
 ### Export & Download
-- **Download options:** Export pages in multiple formats (PDF, DOCX, TXT, etc.). ✅
+- **Download options:** Export pages in multiple formats (PDF, DOCX, TXT, etc.).
 
 ### Citations & References
-- **Citations & references:** Manage bibliographies with BibTeX. ⏳
+- **Citations & references:** Manage bibliographies with BibTeX.
 
 ### Presentation & Customization
-- **Callouts & alerts:** Styled boxes for tips, warnings, and important info. ✅
-- **Extensible templates:** Jinja2-based, easy to customize. ✅
+- **Callouts & alerts:** Styled boxes for tips, warnings, and important info.
+- **Extensible templates:** Jinja2-based, easy to customize.
 
 ### Build System
-- **Robust build system:** Automated, logs to `log/` for debugging. ✅
+- **Robust build system:** Automated, logs to `log/` for debugging.
 
 ## Documentation
 

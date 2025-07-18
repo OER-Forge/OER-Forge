@@ -6,7 +6,17 @@
 \usepackage{hyperref}
 \usepackage{graphicx}
 \usepackage{fancyhdr}
+\usepackage{color}
+\usepackage{fancyvrb}
+\usepackage{listings}
 \usepackage{framed}
+$if(highlighting-macros)$
+$highlighting-macros$
+$endif$
+$if(pandocbounded)$
+$pandocbounded$
+$endif$
+\providecommand{\pandocbounded}[1]{#1}
 \pagestyle{fancy}
 \fancyhead{}
 \fancyfoot{}
