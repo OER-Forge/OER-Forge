@@ -25,18 +25,17 @@ from oerforge.db_utils import (
     db_log
 )
 
-
-# --- Configurable Environment ---
-DEBUG_MODE = os.environ.get("DEBUG", "0") == "1"
-LOG_LEVEL = os.environ.get("LOG_LEVEL", "INFO").upper()
+# --- Constants and Logging Setup ---
 PROJECT_ROOT = os.path.dirname(os.path.dirname(os.path.abspath(__file__)))
 BUILD_LOG_PATH = os.path.join(PROJECT_ROOT, 'log', 'build.log')
 DB_PATH = os.path.join(PROJECT_ROOT, 'db', 'sqlite.db')
+DEBUG_MODE = os.environ.get("DEBUG", "0") == "1"
+LOG_LEVEL = os.environ.get("LOG_LEVEL", "INFO").upper()
 
-def configure_logging():
-    """Configure logging to file and stream."""
+def configure_logging(overwrite=False):
     log_level = logging.DEBUG if DEBUG_MODE else getattr(logging, LOG_LEVEL, logging.INFO)
-    file_handler = logging.FileHandler(BUILD_LOG_PATH, mode='a', encoding='utf-8')
+    file_mode = 'w' if overwrite else 'a'
+    file_handler = logging.FileHandler(BUILD_LOG_PATH, mode=file_mode, encoding='utf-8')
     file_handler.setLevel(logging.DEBUG)
     stream_handler = logging.StreamHandler()
     stream_handler.setLevel(log_level)
@@ -63,7 +62,6 @@ def initialize_db():
             print("ERROR: Database schema mismatch detected. Please remove db/sqlite.db and rerun for a clean build.")
             raise SystemExit(1)
 
-
 def batch_read_files(file_paths):
     """Reads multiple files and returns their contents as a dict: {path: content}."""
     contents = {}
@@ -86,7 +84,6 @@ def batch_read_files(file_paths):
             contents[path] = None
     return contents
 
-
 def read_markdown_file(path):
     """Read markdown file content."""
     try:
@@ -99,7 +96,6 @@ def read_markdown_file(path):
             logging.error(traceback.format_exc())
         return None
 
-
 def read_notebook_file(path):
     """Read Jupyter notebook file content."""
     try:
@@ -111,7 +107,6 @@ def read_notebook_file(path):
             import traceback
             logging.error(traceback.format_exc())
         return None
-
 
 def read_docx_file(path):
     """Read docx file content."""
@@ -128,7 +123,6 @@ def read_docx_file(path):
             import traceback
             logging.error(traceback.format_exc())
         return None
-
 
 def get_conversion_flags(extension):
     """Get conversion flags for a given file extension using the DB."""
@@ -147,7 +141,6 @@ def get_conversion_flags(extension):
         if t in flag_map:
             flags[flag_map[t]] = True
     return flags
-
 
 def build_content_record(title, file_path, item_slug, menu_context, children, parent_output_path, parent_slug, order, level):
     """Build a content record for the database."""
@@ -178,6 +171,8 @@ def build_content_record(title, file_path, item_slug, menu_context, children, pa
             output_path = os.path.join('build', item_slug, base_name + '.html')
         relative_link = output_path[6:] if output_path.startswith('build/') else output_path
         flags = get_conversion_flags(ext)
+        if DEBUG_MODE:
+            logging.debug(f"[RECORD-BUILD] title={title}, source_path={rel_source_path}, output_path={output_path}, relative_link={relative_link}, flags={flags}")
         return {
             'title': title,
             'source_path': rel_source_path,
@@ -203,6 +198,8 @@ def build_content_record(title, file_path, item_slug, menu_context, children, pa
     else:
         output_path = os.path.join('build', item_slug, 'index.html')
         relative_link = output_path[6:] if output_path.startswith('build/') else output_path
+        if DEBUG_MODE:
+            logging.debug(f"[RECORD-BUILD] (section) title={title}, output_path={output_path}, relative_link={relative_link}")
         return {
             'title': title,
             'source_path': None,
@@ -239,7 +236,6 @@ def walk_toc(items, file_paths, parent_output_path=None, parent_slug=None, paren
 
         # --- Auto-detect _index.md for section landing pages if not explicitly set ---
         if not file_path and children:
-            # Try to find _index.md in the section directory
             section_dir = os.path.join('content', item_slug)
             index_md_path = os.path.join(section_dir, '_index.md')
             abs_index_md_path = os.path.join(PROJECT_ROOT, index_md_path)
@@ -357,7 +353,6 @@ def scan_toc_and_populate_db(config_path):
         if content_text:
             extract_and_register_images(content_path, content_text, db_path=DB_PATH)
     conn.close()
-
 
 def main():
     """Main entry point for scan.py."""

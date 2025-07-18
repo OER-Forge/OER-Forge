@@ -1,39 +1,90 @@
-# OER-Forge: Recent Changes and Improvements
+# OERForge Codebase: Module-by-Module Summary (with Database Usage)
 
-## Overview
-This document summarizes the key changes, enhancements, and fixes made to the OER-Forge static site generator and its supporting Python package during the recent development and debugging sessions.
-
----
-
-## 1. Section Index File Handling (`_index.md`)
-- **Problem:** Section landing pages (`_index.md`) were not being processed unless explicitly referenced in the TOC (`_content.yml`).
-- **Solution:** Enhanced the TOC scanning logic in `scan.py` to automatically detect and include `_index.md` files for any section with children, even if not referenced in the TOC. This ensures all section landing pages are built and included in the site.
-- **Benefit:** Reduces TOC duplication, follows the Principle of Least Surprise, and keeps content organization DRY and maintainable.
-
-## 2. Internal Markdown Link Rewriting
-- **Problem:** Internal links like `[Page](page.md)` in Markdown did not always work in the generated HTML, as they pointed to `.md` files instead of `.html`.
-- **Solution:** Added robust link rewriting to the Markdown-to-HTML conversion pipeline in `make.py` using `markdown-it-py`. All internal links to `.md` files are now automatically rewritten to `.html` in the output.
-- **Benefit:** Ensures navigation always works in the generated site, regardless of how links are written in the Markdown source.
-
-## 3. Markdown Conversion with `markdown-it-py`
-- **Upgrade:** The build pipeline now uses the `markdown-it-py` library for Markdown parsing and rendering, supporting CommonMark, footnotes, and math plugins.
-- **Customization:** Custom image rendering and accessibility improvements (e.g., ARIA roles for tables, lists, navigation, etc.) are included in the HTML output.
-
-## 4. Best Practices and Documentation Guidance
-- **Internal Links:** Documented the best practice of always linking to `.md` files in Markdown. The build system will handle rewriting for the target output format.
-- **Section Indexes:** Documented the new behavior for section landing pages and how to structure the TOC and content directories for clean, maintainable builds.
-
-## 5. General Debugging and Build Pipeline Improvements
-- **Database Initialization:** Ensured the database and tables are always created and up-to-date before scanning or building.
-- **Logging:** Improved logging for easier debugging and traceability of build steps and asset registration.
-- **Error Handling:** Added or improved error handling for missing dependencies, files, and schema mismatches.
+## Task Overview
+This section provides a detailed summary of every major module in the OERForge codebase. For each module, we describe its primary function, how it interacts with the database (if at all), and note opportunities for future extensibility. This is intended to aid maintainers, contributors, and users in understanding the architecture and data flow of OERForge.
 
 ---
 
-## Next Steps
-- Optionally extend link rewriting to support `.ipynb` output for Jupyter conversion.
-- Continue to test and document edge cases for navigation, asset management, and content conversion.
+## Step-by-Step Module Summaries
+
+### oerforge/make.py
+- **Function:** Main build orchestrator. Scans content, triggers conversions, generates HTML, and manages download link/button creation.
+- **Database Usage:** Heavy. Uses `db_utils` to fetch content, file, and conversion records; updates page-file mappings; logs build steps.
+- **Extensibility:** Could further modularize page generation and download button logic for easier customization.
+
+### oerforge/convert.py
+- **Function:** Handles all file conversions (Markdown to DOCX, PDF, LaTeX, TXT, etc.).
+- **Database Usage:** Inserts/updates records in `files` and `conversion_results` tables; logs conversion outcomes.
+- **Extensibility:** Could support more formats or conversion backends; add richer error tracking in DB.
+
+### oerforge/copyfile.py
+- **Function:** Copies static assets and content files to the build directory; manages `.nojekyll` for GitHub Pages.
+- **Database Usage:** Records image and asset usage in DB via `db_utils`.
+- **Extensibility:** Could track more asset metadata or support asset versioning.
+
+### oerforge/db_utils.py
+- **Function:** Centralizes all database schema, connection, and query logic. Defines tables: `content`, `files`, `conversion_results`, `conversion_capabilities`, `pages_files`, `accessibility_results`, `site_info`.
+- **Database Usage:** Core. All DB operations go through here.
+- **Extensibility:** Add migrations, richer schema validation, or support for other DB engines.
+
+### oerforge/scan.py
+- **Function:** Scans content/ for Markdown and asset files; populates DB with discovered content and asset records; extracts images.
+- **Database Usage:** Inserts/updates in `content`, `files`, and related tables.
+- **Extensibility:** Could add support for more content types or richer metadata extraction.
+
+### oerforge/export_all.py
+- **Function:** Batch export orchestrator. Runs all conversions and asset copies in bulk; logs to export.log.
+- **Database Usage:** Indirect, via `convert.py` and `copyfile.py`.
+- **Extensibility:** Could add selective export, parallelization, or export presets.
+
+### oerforge/verify.py
+- **Function:** Runs accessibility checks (e.g., via Pa11y), stores results, injects badges, and generates accessibility reports.
+- **Database Usage:** Writes to `accessibility_results` and related tables.
+- **Extensibility:** Could support more accessibility tools or richer reporting.
+
+### oerforge/section.html (Jinja2 template)
+- **Function:** Template for section pages; renders content, download buttons, and accessibility badges.
+- **Database Usage:** None directly, but expects DB-driven context from `make.py`.
+- **Extensibility:** Can be extended for custom layouts or theming.
+
+### oerforge/__init__.py
+- **Function:** Package docstring and version.
+- **Database Usage:** None.
+- **Extensibility:** N/A.
+
+### oerforge_admin/export_db_html.py
+- **Function:** Admin tool to export DB tables as HTML for inspection or documentation.
+- **Database Usage:** Reads all tables, generates HTML views.
+- **Extensibility:** Could add CSV/JSON export, filtering, or search.
+
+### oerforge_admin/generate_docs_index_html.py
+- **Function:** Generates a docs index HTML from README.md using a template; copies CSS/JS/image assets.
+- **Database Usage:** None.
+- **Extensibility:** Could support more doc sources or richer templating.
 
 ---
 
-*This document is auto-generated to help track recent development and ensure clarity for all contributors.*
+## Documentation Template
+For new modules, use this template:
+
+```
+### <module path>
+- **Function:** <What does this module do?>
+- **Database Usage:** <How does it use the DB?>
+- **Extensibility:** <How could it be extended in the future?>
+```
+
+---
+
+## Example (from codebase)
+
+```
+### oerforge/convert.py
+- **Function:** Handles all file conversions (Markdown to DOCX, PDF, LaTeX, TXT, etc.).
+- **Database Usage:** Inserts/updates records in `files` and `conversion_results` tables; logs conversion outcomes.
+- **Extensibility:** Could support more formats or conversion backends; add richer error tracking in DB.
+```
+
+---
+
+# End of Module Summary

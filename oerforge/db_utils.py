@@ -1,21 +1,3 @@
-# --- Image DB Helper ---
-def get_image_record(referenced_page, filename, db_path):
-    """
-    Query the files table for an image matching referenced_page and filename.
-    Returns a dict or None.
-    """
-    import sqlite3
-    with sqlite3.connect(db_path) as conn:
-        cursor = conn.cursor()
-        cursor.execute(
-            "SELECT * FROM files WHERE referenced_page=? AND filename=?",
-            (referenced_page, filename)
-        )
-        row = cursor.fetchone()
-        if row:
-            columns = [desc[0] for desc in cursor.description]
-            return dict(zip(columns, row))
-        return None
 """
 OERForge Database Utilities
 ==========================
@@ -39,7 +21,7 @@ import os
 import logging
 import sys
 
-# Setup logging to log/db.log
+# --- Logging Setup ---
 PROJECT_ROOT = os.path.dirname(os.path.dirname(os.path.abspath(__file__)))
 LOG_DIR = os.path.join(PROJECT_ROOT, 'log')
 os.makedirs(LOG_DIR, exist_ok=True)
@@ -69,9 +51,6 @@ def drop_tables(cursor):
         db_log(f"Dropped table: {table}")
 
 def create_tables(cursor):
-    """
-    Create all required tables.
-    """
     """Create all required tables."""
     cursor.execute("""
         CREATE TABLE IF NOT EXISTS conversion_results (
@@ -183,7 +162,6 @@ def create_tables(cursor):
     """)
     db_log("Created table: conversion_capabilities")
 
-
 def insert_default_conversion_capabilities(cursor):
     """Insert default conversion capabilities if table is empty."""
     default_conversion_matrix = {
@@ -196,7 +174,6 @@ def insert_default_conversion_capabilities(cursor):
         '.ppt':    ['.txt','.ppt'],
         '.txt':    ['.txt','.md','.tex','.docx','.pdf']
     }
-    # Only insert if table is empty
     cursor.execute("SELECT COUNT(*) FROM conversion_capabilities")
     if cursor.fetchone()[0] == 0:
         for source, targets in default_conversion_matrix.items():
@@ -232,7 +209,6 @@ def get_db_connection(db_path=None):
         db_path = os.path.join(PROJECT_ROOT, 'db', 'sqlite.db')
     db_log(f"Opening DB connection to {db_path}.")
     return sqlite3.connect(db_path)
-
 
 def get_descendants_for_parent(parent_output_path, db_path):
     """
@@ -271,16 +247,11 @@ def get_descendants_for_parent(parent_output_path, db_path):
 # --- Section Index & Navigation Utilities ---
 
 def get_remote_images(db_path=None):
-    """
-    Fetch all remote images from the files table.
-    Returns list of dicts.
-    """
+    """Fetch all remote images from the files table."""
     return get_records('files', where_clause="is_image=1 AND is_remote=1", db_path=db_path)
+
 def get_top_level_sections(db_path=None):
-    """
-    Fetch all top-level section indices (parent_slug IS NULL and is_section_index=1).
-    Returns list of dicts.
-    """
+    """Fetch all top-level section indices (parent_slug IS NULL and is_section_index=1)."""
     conn = get_db_connection(db_path)
     cursor = conn.cursor()
     cursor.execute("SELECT * FROM content WHERE parent_slug IS NULL AND is_section_index=1 ORDER BY \"order\";")
@@ -290,10 +261,7 @@ def get_top_level_sections(db_path=None):
     return [dict(zip(col_names, row)) for row in rows]
 
 def get_children_for_section(parent_slug, db_path=None):
-    """
-    Fetch all direct children for a given parent_slug.
-    Returns list of dicts.
-    """
+    """Fetch all direct children for a given parent_slug."""
     conn = get_db_connection(db_path)
     cursor = conn.cursor()
     cursor.execute("SELECT * FROM content WHERE parent_slug=? ORDER BY \"order\";", (parent_slug,))
@@ -303,10 +271,7 @@ def get_children_for_section(parent_slug, db_path=None):
     return [dict(zip(col_names, row)) for row in rows]
 
 def get_section_by_slug(slug, db_path=None):
-    """
-    Fetch a section record by slug.
-    Returns dict or None.
-    """
+    """Fetch a section record by slug."""
     conn = get_db_connection(db_path)
     cursor = conn.cursor()
     cursor.execute("SELECT * FROM content WHERE slug=?;", (slug,))
@@ -314,7 +279,7 @@ def get_section_by_slug(slug, db_path=None):
     col_names = [desc[0] for desc in cursor.description]
     conn.close()
     return dict(zip(col_names, row)) if row else None
-    
+
 def get_records(table_name, where_clause=None, params=None, db_path=None, conn=None, cursor=None):
     """
     Fetch records from a table with optional WHERE clause and parameters.
@@ -499,6 +464,25 @@ def get_available_conversions_for_page(output_path, db_path=None):
     ]
     conn.close()
     return results
+
+# --- Image DB Helper ---
+def get_image_record(referenced_page, filename, db_path):
+    """
+    Query the files table for an image matching referenced_page and filename.
+    Returns a dict or None.
+    """
+    import sqlite3
+    with sqlite3.connect(db_path) as conn:
+        cursor = conn.cursor()
+        cursor.execute(
+            "SELECT * FROM files WHERE referenced_page=? AND filename=?",
+            (referenced_page, filename)
+        )
+        row = cursor.fetchone()
+        if row:
+            columns = [desc[0] for desc in cursor.description]
+            return dict(zip(columns, row))
+        return None
 
 if __name__ == "__main__":
     import sys
