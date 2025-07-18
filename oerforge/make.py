@@ -437,6 +437,14 @@ def build_all_markdown_files():
             'mime_type': mime_type,
         }
         db_utils.insert_records('content', [record], db_path=db_path)
+        # Populate downloads with available conversions for this page
+        downloads = db_utils.get_available_conversions_for_page(rel_output_path, db_path=db_path)
+        # Map to template-friendly structure: url, extension
+        download_links = []
+        for d in downloads:
+            ext = d['target_format']
+            url = os.path.relpath(d['output_path'], BUILD_HTML_DIR)
+            download_links.append({'url': url, 'extension': ext})
         context = {
             'Title': page_title,
             'Content': html_body,
@@ -446,7 +454,7 @@ def build_all_markdown_files():
             'footer_text': footer_text,
             'output_file': os.path.basename(out_path),
             'rel_path': rel_path,
-            'downloads': [],
+            'downloads': download_links,
         }
         context = add_asset_paths(context, rel_path)
         try:
