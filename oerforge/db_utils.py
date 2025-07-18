@@ -61,6 +61,10 @@ def create_tables(cursor):
             output_path TEXT,
             conversion_time TEXT,
             status TEXT,
+            reason TEXT,
+            forced BOOLEAN,
+            custom_label TEXT,
+            created_at TEXT,
             FOREIGN KEY(content_id) REFERENCES content(id)
         )
     """)
@@ -76,9 +80,47 @@ def create_tables(cursor):
             warning_count INTEGER,
             notice_count INTEGER,
             checked_at TEXT,
+            status TEXT,
+            reason TEXT,
+            custom_label TEXT,
+            forced BOOLEAN,
+            created_at TEXT,
             FOREIGN KEY(content_id) REFERENCES content(id)
         )
     """)
+# --- Schema Migration for Existing DBs ---
+def migrate_tables(cursor):
+    """Add new columns to existing tables if they do not exist."""
+    # For conversion_results
+    columns = [row[1] for row in cursor.execute("PRAGMA table_info(conversion_results)")]
+    alter_cmds = []
+    if 'reason' not in columns:
+        alter_cmds.append("ALTER TABLE conversion_results ADD COLUMN reason TEXT")
+    if 'forced' not in columns:
+        alter_cmds.append("ALTER TABLE conversion_results ADD COLUMN forced BOOLEAN")
+    if 'custom_label' not in columns:
+        alter_cmds.append("ALTER TABLE conversion_results ADD COLUMN custom_label TEXT")
+    if 'created_at' not in columns:
+        alter_cmds.append("ALTER TABLE conversion_results ADD COLUMN created_at TEXT")
+    for cmd in alter_cmds:
+        cursor.execute(cmd)
+        db_log(f"Migrated conversion_results: {cmd}")
+    # For accessibility_results
+    columns = [row[1] for row in cursor.execute("PRAGMA table_info(accessibility_results)")]
+    alter_cmds = []
+    if 'status' not in columns:
+        alter_cmds.append("ALTER TABLE accessibility_results ADD COLUMN status TEXT")
+    if 'reason' not in columns:
+        alter_cmds.append("ALTER TABLE accessibility_results ADD COLUMN reason TEXT")
+    if 'custom_label' not in columns:
+        alter_cmds.append("ALTER TABLE accessibility_results ADD COLUMN custom_label TEXT")
+    if 'forced' not in columns:
+        alter_cmds.append("ALTER TABLE accessibility_results ADD COLUMN forced BOOLEAN")
+    if 'created_at' not in columns:
+        alter_cmds.append("ALTER TABLE accessibility_results ADD COLUMN created_at TEXT")
+    for cmd in alter_cmds:
+        cursor.execute(cmd)
+        db_log(f"Migrated accessibility_results: {cmd}")
     db_log("Created table: accessibility_results")
     cursor.execute("""
         CREATE TABLE IF NOT EXISTS files (
@@ -197,6 +239,19 @@ def initialize_database():
     conn.commit()
     conn.close()
     db_log("Closed DB connection after initialization.")
+
+# --- Migration Entrypoint ---
+def migrate_database(db_path=None):
+    """Run schema migration for existing database."""
+    if db_path is None:
+        db_dir = os.path.join(PROJECT_ROOT, 'db')
+        db_path = os.path.join(db_dir, 'sqlite.db')
+    conn = sqlite3.connect(db_path)
+    cursor = conn.cursor()
+    migrate_tables(cursor)
+    conn.commit()
+    conn.close()
+    db_log("Closed DB connection after migration.")
 
 # --- General Purpose DB Functions ---
 
