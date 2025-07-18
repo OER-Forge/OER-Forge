@@ -143,7 +143,11 @@ def create_tables(cursor):
         can_convert_ipynb BOOLEAN DEFAULT 0,
         relative_link TEXT DEFAULT NULL,
         menu_context TEXT DEFAULT NULL,
-        level INTEGER DEFAULT 0
+        level INTEGER DEFAULT 0,
+        export_types TEXT DEFAULT NULL,
+        export_force INTEGER DEFAULT 0,
+        export_custom_label TEXT DEFAULT NULL,
+        export_output_path TEXT DEFAULT NULL
     )
     """)
     db_log("Created table: content")

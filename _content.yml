@@ -19,40 +19,32 @@ footer:
 
 # Global export configuration for testing
 export:
-  types: [html, docx, pdf, tex, txt]      # Global default export types
+  types: [html, docx, pdf, tex, txt, epub]      # Global default export types
   force: false                  # Global default: do not force conversion
-  custom_label: "Download"      # Global default label for download buttons
   output_path: "build/{slug}"   # Global output path template
 
 toc:
   - title: "Home"
     menu: true
     file: index.md
-    export:                      # Per-file override (for testing)
-      types: [html]
-      force: true
-      custom_label: "Get Home"
-      output_path: "build/home"
+    export:
+      types: [html, docx, pdf]    # Override global export types for this page
+      force: true                 # Force conversion for this page
+      output_path: "build/home"   # Custom output path for this page
   - title: "Sample"
     menu: true
     slug: sample-resources
-    file: sample/_index.md
-    export:                      # Per-file override (partial)
-      types: [html, docx]
+    file: sample/index.md
     children:
       - title: "Introduction to Newton's Laws"
         file: sample/newton.md
         menu: false
-        # No export block: should inherit from parent/global
       - title: "Activities"
         file: sample/activities.md
         menu: false
-        export:                  
-          types: [pdf]           
   - title: "About"
     menu: true
     file: about.md
-    # No export block: should use global defaults
 
 # Optional (needs pa11y installed)
 # Defaults:

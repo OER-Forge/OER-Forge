@@ -142,7 +142,7 @@ def get_conversion_flags(extension):
             flags[flag_map[t]] = True
     return flags
 
-def build_content_record(title, file_path, item_slug, menu_context, children, parent_output_path, parent_slug, order, level):
+def build_content_record(title, file_path, item_slug, menu_context, children, parent_output_path, parent_slug, order, level, export_config=None):
     """Build a content record for the database."""
     md_is_section_index = bool(file_path and os.path.basename(file_path) == '_index.md')
     is_section_index = 1 if children or md_is_section_index else 0
@@ -173,7 +173,7 @@ def build_content_record(title, file_path, item_slug, menu_context, children, pa
         flags = get_conversion_flags(ext)
         if DEBUG_MODE:
             logging.debug(f"[RECORD-BUILD] title={title}, source_path={rel_source_path}, output_path={output_path}, relative_link={relative_link}, flags={flags}")
-        return {
+        record = {
             'title': title,
             'source_path': rel_source_path,
             'output_path': output_path,
@@ -194,13 +194,19 @@ def build_content_record(title, file_path, item_slug, menu_context, children, pa
             'relative_link': relative_link,
             'menu_context': menu_context,
             'level': int(level)
-        }, rel_source_path
+        }
+        if export_config:
+            record['export_types'] = ','.join(export_config.get('types', []))
+            record['export_force'] = export_config.get('force', False)
+            record['export_custom_label'] = export_config.get('custom_label', None)
+            record['export_output_path'] = export_config.get('output_path', None)
+        return record, rel_source_path
     else:
         output_path = os.path.join('build', item_slug, 'index.html')
         relative_link = output_path[6:] if output_path.startswith('build/') else output_path
         if DEBUG_MODE:
             logging.debug(f"[RECORD-BUILD] (section) title={title}, output_path={output_path}, relative_link={relative_link}")
-        return {
+        record = {
             'title': title,
             'source_path': None,
             'output_path': output_path,
@@ -221,10 +227,27 @@ def build_content_record(title, file_path, item_slug, menu_context, children, pa
             'relative_link': relative_link,
             'menu_context': menu_context,
             'level': int(level)
-        }, None
+        }
+        if export_config:
+            record['export_types'] = ','.join(export_config.get('types', []))
+            record['export_force'] = export_config.get('force', False)
+            record['export_custom_label'] = export_config.get('custom_label', None)
+            record['export_output_path'] = export_config.get('output_path', None)
+        return record, None
 
-def walk_toc(items, file_paths, parent_output_path=None, parent_slug=None, parent_menu_context=None, level=0):
-    """Recursively walk the TOC and build content records."""
+def merge_export_config(parent, override):
+    """Merge two export config dicts, with override taking precedence."""
+    if not parent:
+        return dict(override) if override else {}
+    if not override:
+        return dict(parent)
+    merged = dict(parent)
+    for k, v in override.items():
+        merged[k] = v
+    return merged
+
+def walk_toc(items, file_paths, parent_output_path=None, parent_slug=None, parent_menu_context=None, level=0, parent_export_config=None):
+    """Recursively walk the TOC and build content records, merging export configs."""
     content_records = []
     for idx, item in enumerate(items):
         title = item.get('title', None)
@@ -244,11 +267,15 @@ def walk_toc(items, file_paths, parent_output_path=None, parent_slug=None, paren
                 if DEBUG_MODE:
                     logging.info(f"[AUTO-INDEX] Using _index.md for section '{item_slug}': {file_path}")
 
+        # Merge export config: parent_export_config (from parent) and item.get('export')
+        item_export = item.get('export', None)
+        merged_export = merge_export_config(parent_export_config, item_export)
+
         if DEBUG_MODE:
-            logging.debug(f"[TOC] Entering item: title={title}, slug={item_slug}, file={file_path}, children={len(children)}, level={level}")
+            logging.debug(f"[TOC] Entering item: title={title}, slug={item_slug}, file={file_path}, children={len(children)}, level={level}, export={merged_export}")
         record, source_path = build_content_record(
             title, file_path, item_slug, menu_context, children,
-            parent_output_path, parent_slug, order, level
+            parent_output_path, parent_slug, order, level, export_config=merged_export
         )
         content_records.append(record)
         if source_path:
@@ -263,7 +290,8 @@ def walk_toc(items, file_paths, parent_output_path=None, parent_slug=None, paren
                 parent_output_path=record['output_path'],
                 parent_slug=record['slug'],
                 parent_menu_context=menu_context,
-                level=int(level)+1
+                level=int(level)+1,
+                parent_export_config=merged_export
             )
             content_records.extend(child_records)
     return content_records
@@ -321,6 +349,7 @@ def scan_toc_and_populate_db(config_path, db_path=DB_PATH):
     with open(full_config_path, 'r', encoding='utf-8') as f:
         config = yaml.safe_load(f)
     toc = config.get('toc', [])
+    global_export = config.get('export', {})
 
     conn = get_db_connection(db_path)
     cursor = conn.cursor()
@@ -331,7 +360,7 @@ def scan_toc_and_populate_db(config_path, db_path=DB_PATH):
         conn.commit()
 
     file_paths = []
-    all_content_records = walk_toc(toc, file_paths)
+    all_content_records = walk_toc(toc, file_paths, parent_export_config=global_export)
     # Deduplicate records
     unique_records = {}
     for rec in all_content_records:
