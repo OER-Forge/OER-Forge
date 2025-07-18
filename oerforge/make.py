@@ -15,11 +15,13 @@ Debug mode and logging level are controlled via environment variables:
 import os
 import logging
 import yaml
+import copy
 import re
 import sqlite3
 import shutil
 import base64
 from PIL import Image
+from typing import Any, Dict, List, Tuple, Optional
 from jinja2 import Environment, FileSystemLoader, select_autoescape
 from markdown_it import MarkdownIt
 from mdit_py_plugins.footnote import footnote_plugin
@@ -49,6 +51,72 @@ def configure_logging(overwrite=False):
         format='%(asctime)s %(levelname)s %(message)s',
         handlers=[file_handler, stream_handler]
     )
+    
+def load_content_yaml(path: str = "_content.yml") -> Dict[str, Any]:
+    """
+    Load and parse the _content.yml file.
+    """
+    with open(path, "r") as f:
+        return yaml.safe_load(f)
+
+def merge_export_config(global_export: Dict[str, Any], local_export: Optional[Dict[str, Any]]) -> Dict[str, Any]:
+    """
+    Merge global export config with a local (per-file/section) override.
+    """
+    merged = copy.deepcopy(global_export)
+    if local_export:
+        merged.update(local_export)
+    return merged
+
+def validate_export_config(export_config: Dict[str, Any]) -> Tuple[bool, List[str]]:
+    """
+    Validate the export config. Returns (is_valid, list_of_errors).
+    """
+    errors = []
+    if not isinstance(export_config.get("types"), list):
+        errors.append("types must be a list")
+    # Add more validation as needed (e.g., required fields)
+    return (len(errors) == 0, errors)
+
+def walk_toc_with_exports(
+    toc: List[Dict[str, Any]],
+    global_export: Dict[str, Any],
+    parent_export: Optional[Dict[str, Any]] = None,
+    parent_slug: Optional[str] = None,
+) -> List[Dict[str, Any]]:
+    """
+    Recursively walk the toc, merging export config and collecting file info.
+    Returns a list of dicts: {title, file, slug, export_config, is_valid, errors}
+    """
+    results = []
+    for entry in toc:
+        local_export = entry.get("export")
+        parent = parent_export or global_export
+        effective_export = merge_export_config(parent, local_export)
+        if "slug" not in entry and "file" in entry:
+            entry["slug"] = entry["file"].replace(".md", "")
+        is_valid, errors = validate_export_config(effective_export)
+        results.append({
+            "title": entry.get("title"),
+            "file": entry.get("file"),
+            "slug": entry.get("slug"),
+            "export_config": effective_export,
+            "is_valid": is_valid,
+            "errors": errors,
+        })
+        if "children" in entry:
+            results.extend(
+                walk_toc_with_exports(entry["children"], global_export, effective_export, entry.get("slug"))
+            )
+    return results
+
+def get_all_exports(content_dict: Dict[str, Any]) -> List[Dict[str, Any]]:
+    """
+    Entry point: returns all files with their effective export config and validation.
+    """
+    global_export = content_dict.get("export", {})
+    toc = content_dict.get("toc", [])
+    return walk_toc_with_exports(toc, global_export)
 
 def extract_title_and_body(md_text, default_title="Untitled"):
     lines = md_text.splitlines()
@@ -273,10 +341,11 @@ def add_asset_paths(context, rel_path):
 
 def build_all_markdown_files():
     config_path = os.path.join(PROJECT_ROOT, '_content.yml')
-    config = load_yaml_config(config_path)
-    site = config.get('site', {})
-    toc = config.get('toc', [])
-    footer_text = config.get('footer', {}).get('text', '')
+    content = load_content_yaml(config_path)
+    site = content.get('site', {})
+    footer_text = content.get('footer', {}).get('text', '')
+    db_path = os.path.join(PROJECT_ROOT, 'db', 'sqlite.db')
+    all_exports = get_all_exports(content)
     db_path = os.path.join(PROJECT_ROOT, 'db', 'sqlite.db')
     if DEBUG_MODE:
         logging.debug(f"[MAKE] build_all_markdown_files: site={site}, toc={toc}, footer={footer_text}")
@@ -349,73 +418,23 @@ def build_all_markdown_files():
                     logging.debug(f"[MAKE] Recursing into children for slug={slug}")
                 yield from walk_toc_for_files(children, parent_dir=slug)
 
-    for src_path, out_path, title, rel_path in walk_toc_for_files(toc):
-        if DEBUG_MODE:
-            logging.debug(f"[MAKE] Building file: src={src_path}, out={out_path}, title={title}, rel_path={rel_path}")
-        if not os.path.exists(src_path):
-            logging.warning(f"Source markdown not found: {src_path}")
+    for item in all_exports:
+        if not item["is_valid"]:
+            logging.warning(f"Skipping {item['file']}: invalid export config: {item['errors']}")
             continue
-        try:
-            with open(src_path, 'r', encoding='utf-8') as f:
-                md_text = f.read()
-        except Exception as e:
-            logging.error(f"Failed to read markdown file {src_path}: {e}")
-            if DEBUG_MODE:
-                import traceback
-                logging.error(traceback.format_exc())
+        file = item["file"]
+        if not file:
             continue
-        page_title, body_text = extract_title_and_body(md_text, title or "Untitled")
-        html_body = convert_markdown_to_html_text(body_text, src_path, rel_path)
-        top_menu = generate_nav_menu({'rel_path': rel_path, 'toc': toc}) or []
-        md_basename = os.path.splitext(os.path.basename(src_path))[0]
-        mime_type = 'section' if md_basename == '_index' else 'text/markdown'
-        rel_source_path = os.path.relpath(src_path, PROJECT_ROOT)
-        rel_output_path = os.path.relpath(out_path, PROJECT_ROOT)
-        record = {
-            'source_path': rel_source_path,
-            'output_path': rel_output_path,
-            'title': page_title,
-            'mime_type': mime_type,
-        }
-        db_utils.insert_records('content', [record], db_path=db_path)
-        downloads = db_utils.get_available_conversions_for_page(rel_output_path, db_path=db_path)
-        download_links = []
-        for d in downloads:
-            ext = d['target_format']
-            url = os.path.relpath(d['output_path'], BUILD_HTML_DIR)
-            download_links.append({'url': url, 'extension': ext})
-            logging.debug(f"[DOWNLOAD LINK] {rel_output_path} -> {url} ({ext})")
-        context = {
-            'Title': page_title,
-            'Content': html_body,
-            'toc': toc,
-            'top_menu': top_menu,
-            'site': site,
-            'footer_text': footer_text,
-            'output_file': os.path.basename(out_path),
-            'rel_path': rel_path,
-            'downloads': download_links,
-        }
-        context = add_asset_paths(context, rel_path)
-        try:
-            html_output = render_page(context, 'single.html')
-        except Exception as render_err:
-            logging.error(f"[ERROR] Template rendering failed for {src_path}: {render_err}")
-            if DEBUG_MODE:
-                import traceback
-                logging.error(traceback.format_exc())
-            html_output = None
-        if html_output:
-            os.makedirs(os.path.dirname(out_path), exist_ok=True)
-            try:
-                with open(out_path, 'w', encoding='utf-8') as f:
-                    f.write(html_output)
-                logging.info(f"[HTML] Wrote file: {out_path}")
-            except Exception as e:
-                logging.error(f"Failed to write HTML file {out_path}: {e}")
-                if DEBUG_MODE:
-                    import traceback
-                    logging.error(traceback.format_exc())
+        src_path = os.path.join(PROJECT_ROOT, 'content', file)
+        slug = item.get("slug")
+        export_config = item["export_config"]
+        # Compute output path using export_config['output_path'] or fallback logic
+        output_path_template = export_config.get("output_path", "build/{slug}/{file}")
+        file_stem = os.path.splitext(os.path.basename(file))[0]
+        out_path = output_path_template.format(slug=slug or "", file=file_stem)
+        out_path = os.path.join(PROJECT_ROOT, out_path)
+        rel_path = os.path.relpath(out_path, BUILD_HTML_DIR)
+    
     copy_static_assets_to_build()
     copy_db_images_to_build()
     logging.info("[AUTO] All markdown files built.")
