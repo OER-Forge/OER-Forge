@@ -35,16 +35,16 @@ def run() -> None:
     logging.info("Step 3: Batch converting all content...")
     batch_convert_all_content()
     
-    logging.info("Step 4: Exporting all content to build/...")
-    export_all()
+    # logging.info("Step 4: Exporting all content to build/...")
+    # export_all()
 
-    logging.info("Step 5: Building HTML and section indexes...")
-    build_all_markdown_files()
+    # logging.info("Step 5: Building HTML and section indexes...")
+    # build_all_markdown_files()
 
-    logging.info("Step 6: Copying build/ to docs/ for publishing...")
-    copy_build_to_docs()
+    # logging.info("Step 6: Copying build/ to docs/ for publishing...")
+    # copy_build_to_docs()
 
-    logging.info("Workflow complete. Please check the build/, docs/, and logs directories for results.")
+    # logging.info("Workflow complete. Please check the build/, docs/, and logs directories for results.")
 
 if __name__ == "__main__":
     run()
