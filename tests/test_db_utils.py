@@ -6,8 +6,7 @@ from oerforge import db_utils
 
 def test_create_tables_and_migration():
     """
-    Test that create_tables creates all required columns, and that migrate_tables
-    adds missing columns to existing tables for both conversion_results and accessibility_results.
+    Test that create_tables creates all required columns for both conversion_results and accessibility_results.
     """
     # Use a temporary DB file
     with tempfile.TemporaryDirectory() as tmpdir:
@@ -27,22 +26,7 @@ def test_create_tables_and_migration():
         columns = [row[1] for row in cursor.fetchall()]
         for col in ['status', 'reason', 'custom_label', 'forced', 'created_at']:
             assert col in columns
-        # Simulate migration on existing DB missing columns
-        cursor.execute("DROP TABLE IF EXISTS conversion_results")
-        cursor.execute("CREATE TABLE conversion_results (id INTEGER PRIMARY KEY, content_id INTEGER)")
-        cursor.execute("DROP TABLE IF EXISTS accessibility_results")
-        cursor.execute("CREATE TABLE accessibility_results (id INTEGER PRIMARY KEY, content_id INTEGER)")
-        conn.commit()
-        db_utils.migrate_tables(cursor)
-        # Check columns after migration
-        cursor.execute("PRAGMA table_info(conversion_results)")
-        columns = [row[1] for row in cursor.fetchall()]
-        for col in ['reason', 'forced', 'custom_label', 'created_at']:
-            assert col in columns
-        cursor.execute("PRAGMA table_info(accessibility_results)")
-        columns = [row[1] for row in cursor.fetchall()]
-        for col in ['status', 'reason', 'custom_label', 'forced', 'created_at']:
-            assert col in columns
+        # Migration logic removed; only test create_tables
         conn.close()
 
 def test_insert_and_fetch_records():

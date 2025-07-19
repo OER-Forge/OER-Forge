@@ -230,7 +230,7 @@ def migrate_database(db_path=None):
         db_path = os.path.join(db_dir, 'sqlite.db')
     conn = sqlite3.connect(db_path)
     cursor = conn.cursor()
-    migrate_tables(cursor)
+    # Migration logic removed; migrate_tables is deprecated and not used.
     conn.commit()
     conn.close()
     db_log("Closed DB connection after migration.")

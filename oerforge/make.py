@@ -1,3 +1,13 @@
+from oerforge.scan import merge_export_config
+
+def slugify(value):
+    """
+    Convert a string to a URL-friendly slug (lowercase, hyphens, alphanum only).
+    """
+    import re
+    value = re.sub(r'[^a-zA-Z0-9]+', '-', value)
+    return value.strip('-').lower()
+
 import os
 from markdown_it import MarkdownIt
 
@@ -73,51 +83,6 @@ def build_all_markdown_files():
     - Copies static assets and images.
     """
 
-    def scan_and_populate_content_table():
-        """Populate DB with Markdown files if content table is empty (SRP, DRY)."""
-        conn = get_db_connection(DB_PATH)
-        cursor = conn.cursor()
-        
-        cursor.execute("SELECT COUNT(*) FROM content")
-        if cursor.fetchone()[0] > 0:
-            conn.close()
-            return
-        # Load TOC for slug lookup
-        content_yml_path = os.path.join(PROJECT_ROOT, '_content.yml')
-        with open(content_yml_path, 'r', encoding='utf-8') as f:
-            content_config = yaml.safe_load(f)
-        toc = content_config.get('toc', [])
-
-        # Build a lookup for top-level files and their slugs
-        top_level_lookup = {}
-        for item in toc:
-            file_path = item.get('file', '')
-            slug = item.get('slug', None)
-            if file_path:
-                top_level_lookup[file_path] = slug
-
-        md_files = []
-        for root, _, files in os.walk(os.path.join(PROJECT_ROOT, 'content')):
-            for item in items:
-                if not item.get('menu', True):
-                    continue
-                file_path = item.get('file', '')
-                slug = item.get('slug', None)
-                # Build the full slug path for this item
-                full_slugs = parent_slugs + [slug] if slug else parent_slugs
-                output_path = content_lookup.get((file_path, slug))
-                if output_path:
-                    link = './' + output_path.replace('build/', '').lstrip('/')
-                elif full_slugs:
-                    link = './' + '/'.join(full_slugs) + '.html'
-                else:
-                    link = './' + file_path.replace('.md', '.html').replace('content/', '').lstrip('/')
-                logging.debug(f"[NAV] title='{item.get('title','')}', file='{file_path}', slug='{slug}', link='{link}'")
-                nav_item = {'title': item.get('title', ''), 'link': link}
-                if 'children' in item and item['children']:
-                    nav_item['children'] = build_nav(item['children'], full_slugs)
-                nav.append(nav_item)
-            conn.close()
 
     def get_asset_path(asset_type, filename, output_path):
         """
@@ -165,19 +130,23 @@ def build_all_markdown_files():
                 continue
             file_path = item.get('file', '')
             slug = item.get('slug', None)
-            # Build the full slug path for this item
-            full_slugs = parent_slugs + [slug] if slug else parent_slugs
-            output_path = content_lookup.get((file_path, slug))
-            if output_path:
-                link = './' + output_path.replace('build/', '').lstrip('/')
-            elif full_slugs:
-                link = './' + '/'.join(full_slugs) + '.html'
+            # Special case: file_path is index.md and slug is main -> index.html in root
+            if (file_path in ("index.md", "content/index.md") and slug == "main"):
+                link = './index.html'
             else:
-                link = './' + file_path.replace('.md', '.html').replace('content/', '').lstrip('/')
+                # Build the full slug path for this item
+                full_slugs = parent_slugs + [slug] if slug else parent_slugs
+                output_path = content_lookup.get((file_path, slug))
+                if output_path:
+                    link = './' + output_path.replace('build/', '').lstrip('/')
+                elif full_slugs:
+                    link = './' + '/'.join(full_slugs) + '.html'
+                else:
+                    link = './' + file_path.replace('.md', '.html').replace('content/', '').lstrip('/')
             logging.debug(f"[NAV] title='{item.get('title','')}', file='{file_path}', slug='{slug}', link='{link}'")
             nav_item = {'title': item.get('title', ''), 'link': link}
             if 'children' in item and item['children']:
-                nav_item['children'] = build_nav(item['children'], full_slugs)
+                nav_item['children'] = build_nav(item['children'], parent_slugs + ([slug] if slug else []))
             nav.append(nav_item)
         return nav
 
