@@ -1,4 +1,7 @@
+import os
 from markdown_it import MarkdownIt
+
+from oerforge.db_utils import initialize_database
 
 def convert_markdown_to_html(md_text):
     """
@@ -61,18 +64,57 @@ def setup_template_env():
     return env
 
 def build_all_markdown_files():
-    def get_asset_path(asset_type, asset_name, abs_output_path):
-        # Compute the relative path from the HTML file to the asset in build/
-        asset_path = os.path.join(BUILD_HTML_DIR, asset_type, asset_name)
-        rel_path = os.path.relpath(asset_path, os.path.dirname(abs_output_path))
-        return rel_path.replace(os.sep, '/')
     """
     Main build routine for the static site generator.
-    Queries the database for Markdown files to build, logs each build action,
-    and (in future steps) will convert and render each file to HTML using Jinja2 templates.
-    Copies static assets and images after building.
-    Handles all error logging and database connection management.
+    - Auto-populates the DB with Markdown files if the content table is empty.
+    - Loads site context from _content.yml.
+    - Syncs site_info table with YAML.
+    - Converts Markdown to HTML and renders with Jinja2.
+    - Copies static assets and images.
     """
+
+    def scan_and_populate_content_table():
+        """Populate DB with Markdown files if content table is empty (SRP, DRY)."""
+        conn = get_db_connection(DB_PATH)
+        cursor = conn.cursor()
+        cursor.execute("SELECT COUNT(*) FROM content")
+        if cursor.fetchone()[0] > 0:
+            conn.close()
+            return
+        md_files = []
+        for root, _, files in os.walk(os.path.join(PROJECT_ROOT, 'content')):
+            for file in files:
+                if file.endswith('.md'):
+                    abs_path = os.path.join(root, file)
+                    rel_path = os.path.relpath(abs_path, PROJECT_ROOT)
+                    slug = os.path.splitext(os.path.basename(file))[0]
+                    output_path = os.path.join('build', os.path.dirname(rel_path).replace('content', '').lstrip(os.sep), slug + '.html')
+                    output_path = output_path.replace('..' + os.sep, '').replace('\\', '/')
+                    md_files.append((rel_path, output_path, slug))
+        for rel_path, output_path, slug in md_files:
+            cursor.execute(
+                "INSERT INTO content (source_path, output_path, title, slug, mime_type, export_types) VALUES (?, ?, ?, ?, ?, ?)",
+                (rel_path, output_path, slug.capitalize(), slug, '.md', 'html,md,docx,pdf,tex,txt,epub')
+            )
+        conn.commit()
+        conn.close()
+
+    def get_asset_path(asset_type, filename, output_path):
+        """
+        Compute the relative path from the output HTML file to the asset.
+        Keeps asset linking robust for static deployment (SRP, DRY).
+        """
+        asset_dir = os.path.join('static', asset_type) if asset_type else 'static'
+        asset_path = os.path.join(asset_dir, filename)
+        rel_path = os.path.relpath(asset_path, os.path.dirname(output_path))
+        return rel_path.replace('\\', '/')
+
+    # Ensure DB exists, or initialize it
+    if not os.path.exists(DB_PATH):
+        logging.warning(f"Database not found at {DB_PATH}. Initializing new database.")
+        initialize_database(DB_PATH)
+
+    scan_and_populate_content_table()
 
     # Load global site context from _content.yml
     content_yml_path = os.path.join(PROJECT_ROOT, '_content.yml')
@@ -85,11 +127,27 @@ def build_all_markdown_files():
     site = content_config.get('site', {})
     footer = content_config.get('footer', {})
     toc = content_config.get('toc', [])
-    # Only include items with menu: true (default true)
-    top_menu = [
-        {'title': item.get('title', ''), 'link': '/' if item.get('file', '') == 'index.md' else ('/' + item.get('slug', item.get('file', '').replace('.md', '').replace('content/', '').replace('sample/', 'sample-resources/')) + '/')}
-        for item in toc if item.get('menu', True)
-    ]
+    top_menu = []
+    content_lookup = {}
+
+    conn = get_db_connection(DB_PATH)
+    cursor = conn.cursor()
+    cursor.execute("SELECT source_path, slug, output_path FROM content WHERE mime_type = '.md'")
+    for row in cursor.fetchall():
+        source_path, slug, output_path = row
+        content_lookup[(source_path, slug)] = output_path
+
+    for item in toc:
+        if not item.get('menu', True):
+            continue
+        file_path = item.get('file', '')
+        slug = item.get('slug', None)
+        output_path = content_lookup.get((file_path, slug))
+        if output_path:
+            link = './' + output_path.replace('build/', '').lstrip('/')
+        else:
+            link = './' + file_path.replace('.md', '.html').replace('content/', '').lstrip('/')
+        top_menu.append({'title': item.get('title', ''), 'link': link})
 
     # --- Sync site_info table with _content.yml ---
     def fetch_site_info_from_db(cursor):
@@ -101,11 +159,10 @@ def build_all_markdown_files():
         return dict(zip(columns, row))
 
     def upsert_site_info(cursor, site, footer):
-        # Only insert if table is empty
         cursor.execute('SELECT COUNT(*) FROM site_info')
         count = cursor.fetchone()[0]
         if count == 0:
-            cursor.execute('''INSERT INTO site_info \
+            cursor.execute('''INSERT INTO site_info
                 (title, author, description, logo, favicon, theme_default, theme_light, theme_dark, language, github_url, footer_text, header)
                 VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)''', (
                 site.get('title', ''),
@@ -123,132 +180,93 @@ def build_all_markdown_files():
             ))
             logging.info("Populated site_info table from _content.yml.")
 
-    # --- End sync helpers ---
+    db_site_info = fetch_site_info_from_db(cursor)
+    upsert_site_info(cursor, site, footer)
+    conn.commit()
+    db_site_info = fetch_site_info_from_db(cursor)
+    if db_site_info:
+        mismatch = []
+        def check(key, yaml_val, db_val):
+            if (yaml_val or '') != (db_val or ''):
+                mismatch.append(f"{key}: YAML='{yaml_val}' DB='{db_val}'")
+        check('title', site.get('title', ''), db_site_info.get('title', ''))
+        check('author', site.get('author', ''), db_site_info.get('author', ''))
+        check('description', site.get('description', ''), db_site_info.get('description', ''))
+        check('logo', site.get('logo', ''), db_site_info.get('logo', ''))
+        check('favicon', site.get('favicon', ''), db_site_info.get('favicon', ''))
+        check('theme_default', site.get('theme', {}).get('default', ''), db_site_info.get('theme_default', ''))
+        check('theme_light', site.get('theme', {}).get('light', ''), db_site_info.get('theme_light', ''))
+        check('theme_dark', site.get('theme', {}).get('dark', ''), db_site_info.get('theme_dark', ''))
+        check('language', site.get('language', ''), db_site_info.get('language', ''))
+        check('github_url', site.get('github_url', ''), db_site_info.get('github_url', ''))
+        check('footer_text', footer.get('text', ''), db_site_info.get('footer_text', ''))
+        check('header', site.get('header', ''), db_site_info.get('header', ''))
+        if mismatch:
+            logging.warning("Site info mismatch between _content.yml and site_info table:\n" + "\n".join(mismatch))
 
-    if not os.path.exists(DB_PATH):
-        logging.error(f"Database not found at {DB_PATH}. Aborting build.")
-        return
-    try:
-        conn = get_db_connection(DB_PATH)
-        cursor = conn.cursor()
-
-        # Sync site_info table with _content.yml
-        db_site_info = fetch_site_info_from_db(cursor)
-        upsert_site_info(cursor, site, footer)
-        conn.commit()
-        db_site_info = fetch_site_info_from_db(cursor)
-        # Compare YAML and DB, warn if mismatch
-        if db_site_info:
-            mismatch = []
-            def check(key, yaml_val, db_val):
-                if (yaml_val or '') != (db_val or ''):
-                    mismatch.append(f"{key}: YAML='{yaml_val}' DB='{db_val}'")
-            check('title', site.get('title', ''), db_site_info.get('title', ''))
-            check('author', site.get('author', ''), db_site_info.get('author', ''))
-            check('description', site.get('description', ''), db_site_info.get('description', ''))
-            check('logo', site.get('logo', ''), db_site_info.get('logo', ''))
-            check('favicon', site.get('favicon', ''), db_site_info.get('favicon', ''))
-            check('theme_default', site.get('theme', {}).get('default', ''), db_site_info.get('theme_default', ''))
-            check('theme_light', site.get('theme', {}).get('light', ''), db_site_info.get('theme_light', ''))
-            check('theme_dark', site.get('theme', {}).get('dark', ''), db_site_info.get('theme_dark', ''))
-            check('language', site.get('language', ''), db_site_info.get('language', ''))
-            check('github_url', site.get('github_url', ''), db_site_info.get('github_url', ''))
-            check('footer_text', footer.get('text', ''), db_site_info.get('footer_text', ''))
-            check('header', site.get('header', ''), db_site_info.get('header', ''))
-            if mismatch:
-                logging.warning("Site info mismatch between _content.yml and site_info table:\n" + "\n".join(mismatch))
-
-        cursor.execute("SELECT source_path, output_path, title, slug, export_types FROM content WHERE mime_type = '.md'")
-        records = cursor.fetchall()
-        if not records:
-            logging.warning("No Markdown files found in database. Nothing to build.")
-            return
-        env = setup_template_env()
-        for row in records:
-            source_path, output_path, title, slug, export_types = row
-            abs_source_path = os.path.join(PROJECT_ROOT, source_path) if not os.path.isabs(source_path) else source_path
-            # Special case: if this is the main index page, write to build/index.html
-            is_main_index = False
-            if os.path.normpath(source_path) in ["content/index.md", "index.md"] or slug == "home":
-                abs_output_path = os.path.join(BUILD_HTML_DIR, "index.html")
-                is_main_index = True
-            else:
-                abs_output_path = os.path.join(PROJECT_ROOT, output_path) if not os.path.isabs(output_path) else output_path
-            logging.info(f"[BUILD] {source_path} -> {abs_output_path} (title: {title}, exports: {export_types})")
-            if not os.path.exists(abs_source_path):
-                logging.warning(f"Source file not found: {abs_source_path}. Skipping.")
-                continue
-            try:
-                with open(abs_source_path, 'r', encoding='utf-8') as f:
-                    md_text = f.read()
-            except Exception as e:
-                logging.error(f"Failed to read {abs_source_path}: {e}")
-                continue
-            # --- Markdown to HTML conversion ---
-            html_body = convert_markdown_to_html(md_text)
-            # --- Render with Jinja2 template ---
-            try:
-                # Compute asset paths relative to this page
-                css_path = get_asset_path('css', 'theme-dark.css', abs_output_path)
-                js_path = get_asset_path('js', 'main.js', abs_output_path)
-                logo_file = site.get('logo', 'logo.png')
-                logo_name = os.path.basename(logo_file)
-                logo_path = get_asset_path('images', logo_name, abs_output_path)
-                favicon_file = site.get('favicon', 'favicon.ico')
-                favicon_name = os.path.basename(favicon_file)
-                favicon_path = get_asset_path('images', favicon_name, abs_output_path)
-                # Additional icons and manifest paths
-                favicon16_file = 'favicon-16x16.png'
-                favicon32_file = 'favicon-32x32.png'
-                apple_touch_icon_file = 'apple-touch-icon.png'
-                android192_file = 'android-chrome-192x192.png'
-                android512_file = 'android-chrome-512x512.png'
-                manifest_file = 'site.webmanifest'
-
-                favicon16_path = get_asset_path('images', favicon16_file, abs_output_path)
-                favicon32_path = get_asset_path('images', favicon32_file, abs_output_path)
-                apple_touch_icon_path = get_asset_path('images', apple_touch_icon_file, abs_output_path)
-                android192_path = get_asset_path('images', android192_file, abs_output_path)
-                android512_path = get_asset_path('images', android512_file, abs_output_path)
-                manifest_path = get_asset_path('', manifest_file, abs_output_path)
-
-                context = {
-                    'title': title,
-                    'body': html_body,
-                    'slug': slug,
-                    'site': site,
-                    'footer': footer,
-                    'css_path': css_path,
-                    'js_path': js_path,
-                    'logo_path': logo_path,
-                    'favicon_path': favicon_path,
-                    'favicon16_path': favicon16_path,
-                    'favicon32_path': favicon32_path,
-                    'apple_touch_icon_path': apple_touch_icon_path,
-                    'android192_path': android192_path,
-                    'android512_path': android512_path,
-                    'manifest_path': manifest_path,
-                    'top_menu': top_menu,
-                    # Add more context as needed (navigation, etc.)
-                }
-                page_html = env.get_template('base.html').render(**context)
-            except Exception as e:
-                logging.error(f"Template rendering failed for {source_path}: {e}")
-                continue
-            # --- Ensure output directory exists ---
-            ensure_dir(os.path.dirname(abs_output_path))
-            # --- Write output ---
-            try:
-                with open(abs_output_path, 'w', encoding='utf-8') as outf:
-                    outf.write(page_html)
-                logging.info(f"Wrote HTML: {abs_output_path}")
-            except Exception as e:
-                logging.error(f"Failed to write output for {source_path}: {e}")
+    cursor.execute("SELECT source_path, output_path, title, slug, export_types FROM content WHERE mime_type = '.md'")
+    records = cursor.fetchall()
+    if not records:
+        logging.warning("No Markdown files found in database. Nothing to build.")
         conn.close()
-    except Exception as e:
-        logging.error(f"Error during build: {e}")
+        return
 
-    # Copy static assets and images
+    env = setup_template_env()
+    for row in records:
+        source_path, output_path, title, slug, export_types = row
+        abs_source_path = os.path.join(PROJECT_ROOT, source_path) if not os.path.isabs(source_path) else source_path
+        is_main_index = os.path.normpath(source_path) in ["content/index.md", "index.md"] or slug == "home"
+        abs_output_path = os.path.join(BUILD_HTML_DIR, "index.html") if is_main_index else (
+            os.path.join(PROJECT_ROOT, output_path) if not os.path.isabs(output_path) else output_path
+        )
+        logging.info(f"[BUILD] {source_path} -> {abs_output_path} (title: {title}, exports: {export_types})")
+        if not os.path.exists(abs_source_path):
+            logging.warning(f"Source file not found: {abs_source_path}. Skipping.")
+            continue
+        try:
+            with open(abs_source_path, 'r', encoding='utf-8') as f:
+                md_text = f.read()
+        except Exception as e:
+            logging.error(f"Failed to read {abs_source_path}: {e}")
+            continue
+        html_body = convert_markdown_to_html(md_text)
+        try:
+            # DRY: asset path computation
+            def asset(name, typ=''):
+                return get_asset_path(typ, name, abs_output_path)
+            logo_file = site.get('logo', 'logo.png')
+            favicon_file = site.get('favicon', 'favicon.ico')
+            context = {
+                'title': title,
+                'body': html_body,
+                'slug': slug,
+                'site': site,
+                'footer': footer,
+                'css_path': asset('theme-dark.css', 'css'),
+                'js_path': asset('main.js', 'js'),
+                'logo_path': asset(os.path.basename(logo_file), 'images'),
+                'favicon_path': asset(os.path.basename(favicon_file), 'images'),
+                'favicon16_path': asset('favicon-16x16.png', 'images'),
+                'favicon32_path': asset('favicon-32x32.png', 'images'),
+                'apple_touch_icon_path': asset('apple-touch-icon.png', 'images'),
+                'android192_path': asset('android-chrome-192x192.png', 'images'),
+                'android512_path': asset('android-chrome-512x192.png', 'images'),
+                'manifest_path': asset('site.webmanifest'),
+                'top_menu': top_menu,
+            }
+            page_html = env.get_template('base.html').render(**context)
+        except Exception as e:
+            logging.error(f"Template rendering failed for {source_path}: {e}")
+            continue
+        ensure_dir(os.path.dirname(abs_output_path))
+        try:
+            with open(abs_output_path, 'w', encoding='utf-8') as outf:
+                outf.write(page_html)
+            logging.info(f"Wrote HTML: {abs_output_path}")
+        except Exception as e:
+            logging.error(f"Failed to write output for {source_path}: {e}")
+    conn.close()
+
     copy_static_assets_to_build()
     copy_db_images_to_build()
     logging.info("[AUTO] All markdown files built.")

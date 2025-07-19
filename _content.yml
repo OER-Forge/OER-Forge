@@ -43,6 +43,7 @@ toc:
   - title: "About"
     menu: true
     file: about.md
+    slug: about
 
 # Optional (needs pa11y installed)
 # Defaults:
