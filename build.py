@@ -38,8 +38,8 @@ def run() -> None:
     # logging.info("Step 4: Exporting all content to build/...")
     # export_all()
 
-    # logging.info("Step 5: Building HTML and section indexes...")
-    # build_all_markdown_files()
+    logging.info("Step 4: Building HTML...")
+    build_all_markdown_files()
 
     # logging.info("Step 6: Copying build/ to docs/ for publishing...")
     # copy_build_to_docs()

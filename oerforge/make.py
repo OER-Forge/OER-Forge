@@ -61,6 +61,11 @@ def setup_template_env():
     return env
 
 def build_all_markdown_files():
+    def get_asset_path(asset_type, asset_name, abs_output_path):
+        # Compute the relative path from the HTML file to the asset in build/
+        asset_path = os.path.join(BUILD_HTML_DIR, asset_type, asset_name)
+        rel_path = os.path.relpath(asset_path, os.path.dirname(abs_output_path))
+        return rel_path.replace(os.sep, '/')
     """
     Main build routine for the static site generator.
     Queries the database for Markdown files to build, logs each build action,
@@ -177,12 +182,26 @@ def build_all_markdown_files():
             html_body = convert_markdown_to_html(md_text)
             # --- Render with Jinja2 template ---
             try:
+                # Compute asset paths relative to this page
+                css_path = get_asset_path('css', 'theme-dark.css', abs_output_path)
+                js_path = get_asset_path('js', 'main.js', abs_output_path)
+                logo_file = site.get('logo', 'logo.png')
+                logo_name = os.path.basename(logo_file)
+                logo_path = get_asset_path('images', logo_name, abs_output_path)
+                favicon_file = site.get('favicon', 'favicon.ico')
+                favicon_name = os.path.basename(favicon_file)
+                favicon_path = get_asset_path('images', favicon_name, abs_output_path)
+                # Add more icons as needed
                 context = {
                     'title': title,
                     'body': html_body,
                     'slug': slug,
                     'site': site,
                     'footer': footer,
+                    'css_path': css_path,
+                    'js_path': js_path,
+                    'logo_path': logo_path,
+                    'favicon_path': favicon_path,
                     # Add more context as needed (navigation, etc.)
                 }
                 page_html = env.get_template('base.html').render(**context)
