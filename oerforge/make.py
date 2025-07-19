@@ -191,7 +191,21 @@ def build_all_markdown_files():
                 favicon_file = site.get('favicon', 'favicon.ico')
                 favicon_name = os.path.basename(favicon_file)
                 favicon_path = get_asset_path('images', favicon_name, abs_output_path)
-                # Add more icons as needed
+                # Additional icons and manifest paths
+                favicon16_file = 'favicon-16x16.png'
+                favicon32_file = 'favicon-32x32.png'
+                apple_touch_icon_file = 'apple-touch-icon.png'
+                android192_file = 'android-chrome-192x192.png'
+                android512_file = 'android-chrome-512x512.png'
+                manifest_file = 'site.webmanifest'
+
+                favicon16_path = get_asset_path('images', favicon16_file, abs_output_path)
+                favicon32_path = get_asset_path('images', favicon32_file, abs_output_path)
+                apple_touch_icon_path = get_asset_path('images', apple_touch_icon_file, abs_output_path)
+                android192_path = get_asset_path('images', android192_file, abs_output_path)
+                android512_path = get_asset_path('images', android512_file, abs_output_path)
+                manifest_path = get_asset_path('', manifest_file, abs_output_path)
+
                 context = {
                     'title': title,
                     'body': html_body,
@@ -202,6 +216,12 @@ def build_all_markdown_files():
                     'js_path': js_path,
                     'logo_path': logo_path,
                     'favicon_path': favicon_path,
+                    'favicon16_path': favicon16_path,
+                    'favicon32_path': favicon32_path,
+                    'apple_touch_icon_path': apple_touch_icon_path,
+                    'android192_path': android192_path,
+                    'android512_path': android512_path,
+                    'manifest_path': manifest_path,
                     # Add more context as needed (navigation, etc.)
                 }
                 page_html = env.get_template('base.html').render(**context)

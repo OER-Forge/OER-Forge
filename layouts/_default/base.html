@@ -4,28 +4,28 @@
   <meta charset="UTF-8">
   <title>{% block title %}{{ Title }}{% endblock %}</title>
   {% block meta %}{% endblock %}
-  <link rel="icon" href="{{ site.favicon }}">
+  <link rel="icon" href="{{ favicon_path }}">
   <link rel="stylesheet" href="{{ css_path }}" id="theme-css">
   <script src="{{ js_path }}" defer></script>
-  <!-- Favicons and Mobile Icons -->
-<link rel="icon" type="image/png" sizes="16x16" href="/static/images/favicon-16x16.png">
-<link rel="icon" type="image/png" sizes="32x32" href="/static/images/favicon-32x32.png">
-<link rel="icon" type="image/x-icon" href="/static/images/favicon.ico">
-<link rel="apple-touch-icon" sizes="180x180" href="/static/images/apple-touch-icon.png">
-<link rel="icon" type="image/png" sizes="192x192" href="/static/images/android-chrome-192x192.png">
-<link rel="icon" type="image/png" sizes="512x512" href="/static/images/android-chrome-512x512.png">
+  <!-- Favicons and Mobile Icons (all paths are relative and injected by make.py) -->
+  <link rel="icon" type="image/png" sizes="16x16" href="{{ favicon16_path }}">
+  <link rel="icon" type="image/png" sizes="32x32" href="{{ favicon32_path }}">
+  <link rel="icon" type="image/x-icon" href="{{ favicon_path }}">
+  <link rel="apple-touch-icon" sizes="180x180" href="{{ apple_touch_icon_path }}">
+  <link rel="icon" type="image/png" sizes="192x192" href="{{ android192_path }}">
+  <link rel="icon" type="image/png" sizes="512x512" href="{{ android512_path }}">
   <!-- Web Manifest (optional, for PWA) -->
-  <link rel="manifest" href="/static/images/site.webmanifest">
+  <link rel="manifest" href="{{ manifest_path }}">
   <!-- Open Graph Meta Tags for Sharing -->
   <meta property="og:title" content="OER-Forge: WCAG-Compliant OER Build System">
   <meta property="og:description" content="OER-Forge is a suite of tools to help authors create WCAG-compliant Open Educational Resources (OERs).">
-  <meta property="og:image" content="/static/images/logo.png">
+  <meta property="og:image" content="{{ logo_path }}">
   <meta property="og:url" content="https://open-physics-ed-org.github.io/oer-forge">
   <!-- Twitter Card Meta Tags -->
   <meta name="twitter:card" content="summary_large_image">
   <meta name="twitter:title" content="OER-Forge: WCAG-Compliant OER Build System">
   <meta name="twitter:description" content="OER-Forge is a suite of tools to help authors create WCAG-compliant Open Educational Resources (OERs).">
-  <meta name="twitter:image" content="/static/images/logo.png">
+  <meta name="twitter:image" content="{{ logo_path }}">
 </head>
 <body>
   {% include 'header.html' %}
@@ -35,6 +35,7 @@
         <span class="visually-hidden">Toggle dark/light theme</span>
       </button>
       <span id="accessibility-report-placeholder"></span>
+      {{ body|safe }}
       {% block main %}{% endblock %}
     </div>
   </main>
