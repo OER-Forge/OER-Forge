@@ -27,6 +27,7 @@ toc:
   - title: "Home"
     menu: true
     file: index.md
+    slug: main
   - title: "Sample"
     menu: true
     slug: sample-resources
@@ -43,7 +44,7 @@ toc:
   - title: "About"
     menu: true
     file: about.md
-    slug: about
+    slug: main
 
 # Optional (needs pa11y installed)
 # Defaults:

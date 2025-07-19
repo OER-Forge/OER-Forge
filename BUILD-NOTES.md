@@ -9,6 +9,7 @@ _Last updated: 2025-07-18_
 - [x] Ensure all outputs are placed in the correct section-local directories (next to `index.html` and in `files/` as needed). Main `index.html` is now always in the build root.
 - [ ] Remove any duplicate or stub converter functions in `convert.py`.
 - [ ] Clean up debug prints and stub counters in production code.
+
 ## 1a. Static Asset Path Robustness (2025-07-18)
 
 - [ ] Review and fix all CSS, JS, and image paths in generated HTML to ensure they are correct relative links from every page (including subdirectories) to the assets in `build/`.

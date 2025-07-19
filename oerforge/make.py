@@ -77,27 +77,47 @@ def build_all_markdown_files():
         """Populate DB with Markdown files if content table is empty (SRP, DRY)."""
         conn = get_db_connection(DB_PATH)
         cursor = conn.cursor()
+        
         cursor.execute("SELECT COUNT(*) FROM content")
         if cursor.fetchone()[0] > 0:
             conn.close()
             return
+        # Load TOC for slug lookup
+        content_yml_path = os.path.join(PROJECT_ROOT, '_content.yml')
+        with open(content_yml_path, 'r', encoding='utf-8') as f:
+            content_config = yaml.safe_load(f)
+        toc = content_config.get('toc', [])
+
+        # Build a lookup for top-level files and their slugs
+        top_level_lookup = {}
+        for item in toc:
+            file_path = item.get('file', '')
+            slug = item.get('slug', None)
+            if file_path:
+                top_level_lookup[file_path] = slug
+
         md_files = []
         for root, _, files in os.walk(os.path.join(PROJECT_ROOT, 'content')):
-            for file in files:
-                if file.endswith('.md'):
-                    abs_path = os.path.join(root, file)
-                    rel_path = os.path.relpath(abs_path, PROJECT_ROOT)
-                    slug = os.path.splitext(os.path.basename(file))[0]
-                    output_path = os.path.join('build', os.path.dirname(rel_path).replace('content', '').lstrip(os.sep), slug + '.html')
-                    output_path = output_path.replace('..' + os.sep, '').replace('\\', '/')
-                    md_files.append((rel_path, output_path, slug))
-        for rel_path, output_path, slug in md_files:
-            cursor.execute(
-                "INSERT INTO content (source_path, output_path, title, slug, mime_type, export_types) VALUES (?, ?, ?, ?, ?, ?)",
-                (rel_path, output_path, slug.capitalize(), slug, '.md', 'html,md,docx,pdf,tex,txt,epub')
-            )
-        conn.commit()
-        conn.close()
+            for item in items:
+                if not item.get('menu', True):
+                    continue
+                file_path = item.get('file', '')
+                slug = item.get('slug', None)
+                # Build the full slug path for this item
+                full_slugs = parent_slugs + [slug] if slug else parent_slugs
+                output_path = content_lookup.get((file_path, slug))
+                if output_path:
+                    link = './' + output_path.replace('build/', '').lstrip('/')
+                elif full_slugs:
+                    link = './' + '/'.join(full_slugs) + '.html'
+                else:
+                    link = './' + file_path.replace('.md', '.html').replace('content/', '').lstrip('/')
+                logging.debug(f"[NAV] title='{item.get('title','')}', file='{file_path}', slug='{slug}', link='{link}'")
+                nav_item = {'title': item.get('title', ''), 'link': link}
+                if 'children' in item and item['children']:
+                    nav_item['children'] = build_nav(item['children'], full_slugs)
+                nav.append(nav_item)
+            conn.close()
 
     def get_asset_path(asset_type, filename, output_path):
         """
@@ -114,7 +134,6 @@ def build_all_markdown_files():
         logging.warning(f"Database not found at {DB_PATH}. Initializing new database.")
         initialize_database(DB_PATH)
 
-    scan_and_populate_content_table()
 
     # Load global site context from _content.yml
     content_yml_path = os.path.join(PROJECT_ROOT, '_content.yml')
@@ -128,8 +147,8 @@ def build_all_markdown_files():
     footer = content_config.get('footer', {})
     toc = content_config.get('toc', [])
     top_menu = []
+    # --- Build nav recursively, respecting slugs and children ---
     content_lookup = {}
-
     conn = get_db_connection(DB_PATH)
     cursor = conn.cursor()
     cursor.execute("SELECT source_path, slug, output_path FROM content WHERE mime_type = '.md'")
@@ -137,17 +156,32 @@ def build_all_markdown_files():
         source_path, slug, output_path = row
         content_lookup[(source_path, slug)] = output_path
 
-    for item in toc:
-        if not item.get('menu', True):
-            continue
-        file_path = item.get('file', '')
-        slug = item.get('slug', None)
-        output_path = content_lookup.get((file_path, slug))
-        if output_path:
-            link = './' + output_path.replace('build/', '').lstrip('/')
-        else:
-            link = './' + file_path.replace('.md', '.html').replace('content/', '').lstrip('/')
-        top_menu.append({'title': item.get('title', ''), 'link': link})
+    def build_nav(items, parent_slugs=None):
+        """Recursively build nav structure from TOC, using full slug path. Adds debug logging for each menu item."""
+        nav = []
+        parent_slugs = parent_slugs or []
+        for item in items:
+            if not item.get('menu', True):
+                continue
+            file_path = item.get('file', '')
+            slug = item.get('slug', None)
+            # Build the full slug path for this item
+            full_slugs = parent_slugs + [slug] if slug else parent_slugs
+            output_path = content_lookup.get((file_path, slug))
+            if output_path:
+                link = './' + output_path.replace('build/', '').lstrip('/')
+            elif full_slugs:
+                link = './' + '/'.join(full_slugs) + '.html'
+            else:
+                link = './' + file_path.replace('.md', '.html').replace('content/', '').lstrip('/')
+            logging.debug(f"[NAV] title='{item.get('title','')}', file='{file_path}', slug='{slug}', link='{link}'")
+            nav_item = {'title': item.get('title', ''), 'link': link}
+            if 'children' in item and item['children']:
+                nav_item['children'] = build_nav(item['children'], full_slugs)
+            nav.append(nav_item)
+        return nav
+
+    top_menu = build_nav(toc)
 
     # --- Sync site_info table with _content.yml ---
     def fetch_site_info_from_db(cursor):
