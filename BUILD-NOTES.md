@@ -1,3 +1,38 @@
+
+# BUILD-NOTES.md
+
+## Current Status (2025-07-19)
+
+### What Works
+- **Static site build process**: Markdown files are converted to HTML using Jinja2 templates and markdown-it-py.
+- **Navigation**: Top-level and nested navigation is generated from `_content.yml` and slugs, with special-casing for the home page (`index.md` with slug `main`).
+- **Asset copying**: Static assets and images are copied to the build directory.
+- **Database**: SQLite database is used for content, files, and site info. Initialization and population from content files works.
+- **Tests**: Some tests pass, including slugify and export config merging.
+
+### Outstanding Issues (Test Failures)
+1. **Migration logic**
+   - `test_migrate_database_entrypoint` fails: migration function does not add expected columns (`reason`, `forced`, `custom_label`, `created_at`) to `conversion_results` and `accessibility_results` tables.
+   - **Action needed**: Implement a `migrate_database` function in `db_utils.py` that adds missing columns if not present.
+
+2. **Files table registration**
+   - `test_files_table_registration` fails: referenced assets (e.g., `sample.png`) are not registered in the `files` table during scan.
+   - **Action needed**: Update scan logic to ensure all referenced files (especially images in markdown) are inserted into the `files` table.
+
+3. **Navigation link for About page**
+   - `test_top_level_nav_links` fails: About page (slug `main`, file `about.md`) should link to `./about.html`, but currently links to `./main.html`.
+   - **Action needed**: Adjust nav logic to only special-case the home page (`index.md` with slug `main` → `index.html`). For other files with slug `main`, use the filename (e.g., `about.md` → `about.html`).
+
+### Next Steps
+- [ ] Implement `migrate_database` in `db_utils.py` and ensure it is called in tests and/or build process.
+- [ ] Update scan logic to register all referenced assets in the `files` table.
+- [ ] Refine nav link logic in `make.py` to match test expectations for About and similar pages.
+- [ ] Re-run tests after each fix to confirm resolution.
+
+---
+
+**Reference:** See `make.py`, `db_utils.py`, `scan.py`, and the test suite in `tests/` for details on current logic and test expectations.
+
 # OER-Forge Build & Robustness Checklist
 
 _Last updated: 2025-07-18_
