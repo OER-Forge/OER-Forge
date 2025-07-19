@@ -9,7 +9,7 @@ from oerforge.db_utils import initialize_database
 def run_scan_and_get_files(tmp_path, config_file):
     db_path = tmp_path / "sqlite.db"
     initialize_database(db_path=str(db_path))
-    scan.scan_toc_and_populate_db(config_path=config_file, db_path=str(db_path))
+    scan.scan_toc_and_populate_db(config_path=config_file, db_path=str(db_path), root_dir=tmp_path)
     conn = sqlite3.connect(db_path)
     cursor = conn.cursor()
     cursor.execute("SELECT filename, extension, mime_type, is_image, is_remote, has_local_copy FROM files")

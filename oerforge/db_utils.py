@@ -230,7 +230,29 @@ def migrate_database(db_path=None):
         db_path = os.path.join(db_dir, 'sqlite.db')
     conn = sqlite3.connect(db_path)
     cursor = conn.cursor()
-    # Migration logic removed; migrate_tables is deprecated and not used.
+    # Migration logic: add missing columns to conversion_results and accessibility_results
+    migrations = {
+        "conversion_results": [
+            ("reason", "TEXT"),
+            ("forced", "BOOLEAN"),
+            ("custom_label", "TEXT"),
+            ("created_at", "TEXT")
+        ],
+        "accessibility_results": [
+            ("status", "TEXT"),
+            ("reason", "TEXT"),
+            ("custom_label", "TEXT"),
+            ("forced", "BOOLEAN"),
+            ("created_at", "TEXT")
+        ]
+    }
+    for table, columns in migrations.items():
+        cursor.execute(f"PRAGMA table_info({table})")
+        existing = {row[1] for row in cursor.fetchall()}
+        for col, coltype in columns:
+            if col not in existing:
+                cursor.execute(f"ALTER TABLE {table} ADD COLUMN {col} {coltype}")
+                db_log(f"Added column '{col}' to {table}")
     conn.commit()
     conn.close()
     db_log("Closed DB connection after migration.")

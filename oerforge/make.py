@@ -133,6 +133,9 @@ def build_all_markdown_files():
             # Special case: file_path is index.md and slug is main -> index.html in root
             if (file_path in ("index.md", "content/index.md") and slug == "main"):
                 link = './index.html'
+            elif slug == "main" and file_path.endswith(".md"):
+                # For non-home pages with slug 'main', use the filename (e.g., about.md -> about.html)
+                link = './' + os.path.splitext(os.path.basename(file_path))[0] + '.html'
             else:
                 # Build the full slug path for this item
                 full_slugs = parent_slugs + [slug] if slug else parent_slugs

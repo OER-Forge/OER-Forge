@@ -246,7 +246,7 @@ def merge_export_config(parent, override):
         merged[k] = v
     return merged
 
-def walk_toc(items, file_paths, parent_output_path=None, parent_slug=None, parent_menu_context=None, level=0, parent_export_config=None, section_path=None):
+def walk_toc(items, file_paths, parent_output_path=None, parent_slug=None, parent_menu_context=None, level=0, parent_export_config=None, section_path=None, root_dir=PROJECT_ROOT):
     """Recursively walk the TOC and build content records, merging export configs."""
     content_records = []
     if section_path is None:
@@ -265,7 +265,7 @@ def walk_toc(items, file_paths, parent_output_path=None, parent_slug=None, paren
         if not file_path and children:
             section_dir = os.path.join('content', item_slug)
             index_md_path = os.path.join(section_dir, '_index.md')
-            abs_index_md_path = os.path.join(PROJECT_ROOT, index_md_path)
+            abs_index_md_path = os.path.join(root_dir, index_md_path)
             if os.path.exists(abs_index_md_path):
                 file_path = os.path.relpath(index_md_path, 'content')
                 if DEBUG_MODE:
@@ -286,7 +286,7 @@ def walk_toc(items, file_paths, parent_output_path=None, parent_slug=None, paren
         )
         content_records.append(record)
         if source_path:
-            abs_path = os.path.join(PROJECT_ROOT, source_path)
+            abs_path = os.path.join(root_dir, source_path)
             file_paths.append(abs_path)
             if DEBUG_MODE:
                 logging.debug(f"[FILE-PATH] Added file for scan: {abs_path}")
@@ -304,8 +304,11 @@ def walk_toc(items, file_paths, parent_output_path=None, parent_slug=None, paren
             content_records.extend(child_records)
     return content_records
 
-def extract_and_register_images(content_path, content_text, db_path):
-    """Extract image paths from content and register in DB."""
+def extract_and_register_images(content_path, content_text, db_path, root_dir=PROJECT_ROOT):
+    """
+    Extract image paths from content and register in DB. 
+    root_dir allows test override for test environments.
+    """
     md_image_paths = re.findall(r'!\[.*?\]\((.*?)\)', content_text)
     soup = BeautifulSoup(content_text, "html.parser")
     from bs4 import Tag
@@ -314,8 +317,8 @@ def extract_and_register_images(content_path, content_text, db_path):
     for img in image_paths:
         filename = os.path.basename(img)
         is_remote = img.startswith('http://') or img.startswith('https://')
-        abs_img_path = img if is_remote else os.path.abspath(os.path.join(os.path.dirname(os.path.join(PROJECT_ROOT, content_path)), img))
-        rel_content_path = os.path.relpath(content_path, PROJECT_ROOT)
+        abs_img_path = img if is_remote else os.path.abspath(os.path.join(os.path.dirname(os.path.join(root_dir, content_path)), img))
+        rel_content_path = os.path.relpath(content_path, root_dir)
         logging.info(f"[ASSET] Checking image: {img} (resolved as {abs_img_path}) in {rel_content_path}")
         if not is_remote and not os.path.exists(abs_img_path):
             logging.warning(f"[ASSET] Local image not found: {img} (resolved as {abs_img_path}) in {rel_content_path}")
@@ -344,16 +347,17 @@ def extract_and_register_images(content_path, content_text, db_path):
             else:
                 logging.info(f"[ASSET] Image already registered: {filename}")
 
-def scan_toc_and_populate_db(config_path, db_path=DB_PATH):
+def scan_toc_and_populate_db(config_path, db_path=DB_PATH, root_dir=PROJECT_ROOT):
     """
     Walk the TOC from the config YAML, read each file, extract assets/images, and populate the DB with content and asset records.
     Maintains TOC hierarchy and section relationships.
     Args:
         config_path (str): Path to the config YAML file.
         db_path (str): Path to the SQLite database file.
+        root_dir (str): Root directory for resolving relative paths (default: PROJECT_ROOT).
     """
     import yaml
-    full_config_path = os.path.join(PROJECT_ROOT, config_path)
+    full_config_path = os.path.join(root_dir, config_path)
     with open(full_config_path, 'r', encoding='utf-8') as f:
         config = yaml.safe_load(f)
     toc = config.get('toc', [])
@@ -368,7 +372,7 @@ def scan_toc_and_populate_db(config_path, db_path=DB_PATH):
         conn.commit()
 
     file_paths = []
-    all_content_records = walk_toc(toc, file_paths, parent_export_config=global_export)
+    all_content_records = walk_toc(toc, file_paths, parent_export_config=global_export, root_dir=root_dir)
     # Deduplicate records
     unique_records = {}
     for rec in all_content_records:
@@ -385,7 +389,7 @@ def scan_toc_and_populate_db(config_path, db_path=DB_PATH):
         if not DEBUG_MODE:
             raise
     import mimetypes
-    rel_file_paths = [os.path.relpath(p, PROJECT_ROOT) for p in file_paths if os.path.exists(p)]
+    rel_file_paths = [os.path.relpath(p, root_dir) for p in file_paths if os.path.exists(p)]
     contents = batch_read_files(rel_file_paths)
 
     # Register all files (not just images) in files table
@@ -406,7 +410,7 @@ def scan_toc_and_populate_db(config_path, db_path=DB_PATH):
             'is_remote': is_remote,
             'url': None,
             'referenced_page': None,
-            'relative_path': os.path.relpath(abs_path, PROJECT_ROOT),
+            'relative_path': os.path.relpath(abs_path, root_dir),
             'absolute_path': abs_path,
             'has_local_copy': 1  # New field for tracking local copy
         }], db_path=db_path, conn=conn, cursor=cursor)
@@ -414,7 +418,7 @@ def scan_toc_and_populate_db(config_path, db_path=DB_PATH):
     # Asset extraction (images)
     for content_path, content_text in contents.items():
         if content_text:
-            extract_and_register_images(content_path, content_text, db_path=db_path)
+            extract_and_register_images(content_path, content_text, db_path=db_path, root_dir=root_dir)
 
     # Stub: extract and register videos (e.g., YouTube)
     for content_path, content_text in contents.items():
