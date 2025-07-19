@@ -84,6 +84,12 @@ def build_all_markdown_files():
         content_config = yaml.safe_load(f)
     site = content_config.get('site', {})
     footer = content_config.get('footer', {})
+    toc = content_config.get('toc', [])
+    # Only include items with menu: true (default true)
+    top_menu = [
+        {'title': item.get('title', ''), 'link': '/' if item.get('file', '') == 'index.md' else ('/' + item.get('slug', item.get('file', '').replace('.md', '').replace('content/', '').replace('sample/', 'sample-resources/')) + '/')}
+        for item in toc if item.get('menu', True)
+    ]
 
     # --- Sync site_info table with _content.yml ---
     def fetch_site_info_from_db(cursor):
@@ -222,6 +228,7 @@ def build_all_markdown_files():
                     'android192_path': android192_path,
                     'android512_path': android512_path,
                     'manifest_path': manifest_path,
+                    'top_menu': top_menu,
                     # Add more context as needed (navigation, etc.)
                 }
                 page_html = env.get_template('base.html').render(**context)
