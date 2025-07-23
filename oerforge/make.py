@@ -36,6 +36,7 @@ from jinja2 import Environment, FileSystemLoader, select_autoescape
 from oerforge.db_utils import get_db_connection, db_log
 from oerforge.copyfile import ensure_dir, copy_static_assets_to_build, copy_db_images_to_build
 
+
 # --- Constants ---
 PROJECT_ROOT = os.path.dirname(os.path.dirname(os.path.abspath(__file__)))
 DB_PATH = os.path.join(PROJECT_ROOT, 'db', 'sqlite.db')
@@ -43,24 +44,40 @@ BUILD_HTML_DIR = os.path.join(PROJECT_ROOT, 'build')
 LAYOUTS_DIR = os.path.join(PROJECT_ROOT, 'layouts')
 LOG_PATH = os.path.join(PROJECT_ROOT, 'log', 'build.log')
 
+# Ensure logging is configured and log file path is printed at import/build start
+
+
+# --- Early logging setup ---
+from pathlib import Path
+import logging
+import sys
+
+
+log_dir = Path(LOG_PATH).parent
+log_dir.mkdir(parents=True, exist_ok=True)
+print(f"[LOGGING] Build log will be written to: {LOG_PATH}")
 def configure_logging(overwrite=False):
     """
-    Configure logging to both file and console for the build process.
-    If overwrite is True, the log file is truncated; otherwise, logs are appended.
-    Sets log level to INFO for console and DEBUG for file.
+    Configure logging to file and console. If overwrite is True, the log file is truncated.
     """
-    log_level = logging.INFO
-    file_mode = 'w' if overwrite else 'a'
-    file_handler = logging.FileHandler(LOG_PATH, mode=file_mode, encoding='utf-8')
-    file_handler.setLevel(logging.DEBUG)
-    stream_handler = logging.StreamHandler()
-    stream_handler.setLevel(log_level)
+    log_mode = 'w' if overwrite else 'a'
+    handlers = [
+        logging.FileHandler(LOG_PATH, mode=log_mode, encoding='utf-8'),
+        logging.StreamHandler(sys.stdout)
+    ]
     logging.basicConfig(
-        level=log_level,
+        level=logging.DEBUG,
         format='%(asctime)s %(levelname)s %(message)s',
-        handlers=[file_handler, stream_handler]
+        handlers=handlers
     )
 
+log_dir = Path(LOG_PATH).parent
+log_dir.mkdir(parents=True, exist_ok=True)
+print(f"[LOGGING] Build log will be written to: {LOG_PATH}")
+try:
+    configure_logging(overwrite=True)
+except Exception as e:
+    print(f"[LOGGING] Failed to configure logging: {e}")
 def setup_template_env():
     """
     Set up and return a Jinja2 Environment for rendering HTML templates.
@@ -130,23 +147,29 @@ def build_all_markdown_files():
                 continue
             file_path = item.get('file', '')
             slug = item.get('slug', None)
-            # Special case: file_path is index.md and slug is main -> index.html in root
-            if (file_path in ("index.md", "content/index.md") and slug == "main"):
-                link = './index.html'
-            elif slug == "main" and file_path.endswith(".md"):
-                # For non-home pages with slug 'main', use the filename (e.g., about.md -> about.html)
-                link = './' + os.path.splitext(os.path.basename(file_path))[0] + '.html'
+            # Always use the DB output_path if available
+            output_path = content_lookup.get((file_path, slug))
+            debug_msg = f"[NAV-DEBUG] file_path='{file_path}', slug='{slug}', "
+            if output_path:
+                link = './' + output_path.replace('build/', '').lstrip('/')
+                debug_msg += f"db_output_path='{output_path}', link='{link}' (DB match)"
             else:
-                # Build the full slug path for this item
-                full_slugs = parent_slugs + [slug] if slug else parent_slugs
-                output_path = content_lookup.get((file_path, slug))
-                if output_path:
-                    link = './' + output_path.replace('build/', '').lstrip('/')
-                elif full_slugs:
-                    link = './' + '/'.join(full_slugs) + '.html'
+                # Fallbacks for legacy/edge cases
+                if (file_path in ("index.md", "content/index.md") and slug == "main"):
+                    link = './index.html'
+                    debug_msg += f"fallback=index.html, link='{link}'"
+                elif slug == "main" and file_path.endswith(".md"):
+                    link = './' + os.path.splitext(os.path.basename(file_path))[0] + '.html'
+                    debug_msg += f"fallback=basename.html, link='{link}'"
                 else:
-                    link = './' + file_path.replace('.md', '.html').replace('content/', '').lstrip('/')
-            logging.debug(f"[NAV] title='{item.get('title','')}', file='{file_path}', slug='{slug}', link='{link}'")
+                    full_slugs = parent_slugs + [slug] if slug else parent_slugs
+                    if full_slugs:
+                        link = './' + '/'.join(full_slugs) + '.html'
+                        debug_msg += f"fallback=slug.html, link='{link}'"
+                    else:
+                        link = './' + file_path.replace('.md', '.html').replace('content/', '').lstrip('/')
+                        debug_msg += f"fallback=file.html, link='{link}'"
+            logging.debug(debug_msg)
             nav_item = {'title': item.get('title', ''), 'link': link}
             if 'children' in item and item['children']:
                 nav_item['children'] = build_nav(item['children'], parent_slugs + ([slug] if slug else []))
