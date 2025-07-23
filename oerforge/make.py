@@ -138,7 +138,7 @@ def build_all_markdown_files():
         source_path, slug, output_path = row
         content_lookup[(source_path, slug)] = output_path
 
-    def build_nav(items, parent_slugs=None):
+    def build_nav(items, current_output_dir, parent_slugs=None):
         """Recursively build nav structure from TOC, using full slug path. Adds debug logging for each menu item."""
         nav = []
         parent_slugs = parent_slugs or []
@@ -147,17 +147,21 @@ def build_all_markdown_files():
                 continue
             file_path = item.get('file', '')
             slug = item.get('slug', None)
-            # Try both file_path and 'content/' + file_path for DB lookup
+            # Try file_path, 'content/' + file_path, and 'content/' + '/'.join(parent_slugs) + '/' + file_path
             output_path = content_lookup.get((file_path, slug))
             if not output_path and not file_path.startswith('content/'):
                 output_path = content_lookup.get(('content/' + file_path, slug))
+            if not output_path and parent_slugs:
+                parent_path = '/'.join(parent_slugs)
+                output_path = content_lookup.get((f'content/{parent_path}/{file_path}', slug))
             debug_msg = f"[NAV-DEBUG] file_path='{file_path}', slug='{slug}', "
             if output_path:
-                link = './' + output_path.replace('build/', '').lstrip('/')
-                debug_msg += f"db_output_path='{output_path}', link='{link}' (DB match)"
-                nav_item = {'title': item.get('title', ''), 'link': link, 'file': file_path, 'slug': slug}
+                # Compute relative link from current_output_dir to output_path
+                rel_link = os.path.relpath(output_path, current_output_dir).replace('\\', '/')
+                debug_msg += f"db_output_path='{output_path}', rel_link='{rel_link}' (DB match)"
+                nav_item = {'title': item.get('title', ''), 'link': rel_link, 'file': file_path, 'slug': slug}
                 if 'children' in item and item['children']:
-                    nav_item['children'] = build_nav(item['children'], parent_slugs + ([slug] if slug else []))
+                    nav_item['children'] = build_nav(item['children'], current_output_dir, parent_slugs + ([slug] if slug else []))
                 nav.append(nav_item)
             else:
                 logging.warning(f"[NAV-OMIT] No DB output path for nav item '{item.get('title', '')}' (file: '{file_path}', slug: '{slug}'). Skipping.")
@@ -165,7 +169,6 @@ def build_all_markdown_files():
             logging.debug(debug_msg)
         return nav
 
-    top_menu = build_nav(toc)
 
     # --- Sync site_info table with _content.yml ---
     def fetch_site_info_from_db(cursor):
@@ -254,6 +257,9 @@ def build_all_markdown_files():
                 return get_asset_path(typ, name, abs_output_path)
             logo_file = site.get('logo', 'logo.png')
             favicon_file = site.get('favicon', 'favicon.ico')
+            # Compute nav relative to this page's output dir
+            current_output_dir = os.path.dirname(output_path)
+            nav_menu = build_nav(toc, current_output_dir)
             context = {
                 'title': title,
                 'body': html_body,
@@ -268,9 +274,9 @@ def build_all_markdown_files():
                 'favicon32_path': asset('favicon-32x32.png', 'images'),
                 'apple_touch_icon_path': asset('apple-touch-icon.png', 'images'),
                 'android192_path': asset('android-chrome-192x192.png', 'images'),
-                'android512_path': asset('android-chrome-512x192.png', 'images'),
+                'android512_path': asset('android-chrome-512x192x192.png', 'images'),
                 'manifest_path': asset('site.webmanifest'),
-                'top_menu': top_menu,
+                'top_menu': nav_menu,
             }
             page_html = env.get_template('base.html').render(**context)
         except Exception as e:
