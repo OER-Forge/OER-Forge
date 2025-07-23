@@ -25,7 +25,8 @@ BUILD_HTML_DIR = os.path.join(PROJECT_ROOT, BUILD_DIR)
 
 def run() -> None:
     """Runs the complete OERForge build workflow."""
-    
+    from oerforge.db_utils import migrate_database
+    migrate_database()
     logging.info("Step 1: Initializing database...")
     initialize_database()
 
@@ -34,7 +35,6 @@ def run() -> None:
 
     logging.info("Step 3: Batch converting all content...")
     batch_convert_all_content()
-    
     # logging.info("Step 4: Exporting all content to build/...")
     # export_all()
 

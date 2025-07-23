@@ -163,6 +163,8 @@ def build_content_record(title, file_path, item_slug, menu_context, children, pa
         # If this is a section index (_index.md), output to .../slug/index.html
         if os.path.basename(source_path) == '_index.md':
             output_path = os.path.join('build', *section_path, 'index.html')
+        elif item_slug == "main":
+            output_path = os.path.join('build', base_name + '.html')
         else:
             output_path = os.path.join('build', *section_path, base_name + '.html')
         relative_link = output_path[6:] if output_path.startswith('build/') else output_path

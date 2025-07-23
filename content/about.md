@@ -1,8 +1,6 @@
-<img src="images/logo.png" alt="OER-Forge Logo" width="400" />
-  
 # About OER-Forge
 
-![SAMPLE](images/sample.png)
+<img src="images/logo.png" alt="OER-Forge Logo" width="400" />
 
 [**Jump to Font Controls**](#font-controls)
 
