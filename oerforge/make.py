@@ -147,33 +147,22 @@ def build_all_markdown_files():
                 continue
             file_path = item.get('file', '')
             slug = item.get('slug', None)
-            # Always use the DB output_path if available
+            # Try both file_path and 'content/' + file_path for DB lookup
             output_path = content_lookup.get((file_path, slug))
+            if not output_path and not file_path.startswith('content/'):
+                output_path = content_lookup.get(('content/' + file_path, slug))
             debug_msg = f"[NAV-DEBUG] file_path='{file_path}', slug='{slug}', "
             if output_path:
                 link = './' + output_path.replace('build/', '').lstrip('/')
                 debug_msg += f"db_output_path='{output_path}', link='{link}' (DB match)"
+                nav_item = {'title': item.get('title', ''), 'link': link, 'file': file_path, 'slug': slug}
+                if 'children' in item and item['children']:
+                    nav_item['children'] = build_nav(item['children'], parent_slugs + ([slug] if slug else []))
+                nav.append(nav_item)
             else:
-                # Fallbacks for legacy/edge cases
-                if (file_path in ("index.md", "content/index.md") and slug == "main"):
-                    link = './index.html'
-                    debug_msg += f"fallback=index.html, link='{link}'"
-                elif slug == "main" and file_path.endswith(".md"):
-                    link = './' + os.path.splitext(os.path.basename(file_path))[0] + '.html'
-                    debug_msg += f"fallback=basename.html, link='{link}'"
-                else:
-                    full_slugs = parent_slugs + [slug] if slug else parent_slugs
-                    if full_slugs:
-                        link = './' + '/'.join(full_slugs) + '.html'
-                        debug_msg += f"fallback=slug.html, link='{link}'"
-                    else:
-                        link = './' + file_path.replace('.md', '.html').replace('content/', '').lstrip('/')
-                        debug_msg += f"fallback=file.html, link='{link}'"
+                logging.warning(f"[NAV-OMIT] No DB output path for nav item '{item.get('title', '')}' (file: '{file_path}', slug: '{slug}'). Skipping.")
+                debug_msg += "NO DB output path, item skipped."
             logging.debug(debug_msg)
-            nav_item = {'title': item.get('title', ''), 'link': link}
-            if 'children' in item and item['children']:
-                nav_item['children'] = build_nav(item['children'], parent_slugs + ([slug] if slug else []))
-            nav.append(nav_item)
         return nav
 
     top_menu = build_nav(toc)

@@ -42,20 +42,11 @@ def build_nav_links(items, content_lookup, parent_slugs=None):
             continue
         file_path = item.get('file', '')
         slug = item.get('slug', None)
-        # Logic mirrors make.py build_nav
-        if (file_path in ("index.md", "content/index.md") and slug == "main"):
-            link = './index.html'
-        elif slug == "main" and file_path.endswith(".md"):
-            link = './' + os.path.splitext(os.path.basename(file_path))[0] + '.html'
+        output_path = content_lookup.get((file_path, slug))
+        if output_path:
+            link = './' + output_path.replace('build/', '').lstrip('/')
         else:
-            full_slugs = parent_slugs + [slug] if slug else parent_slugs
-            output_path = content_lookup.get((file_path, slug))
-            if output_path:
-                link = './' + output_path.replace('build/', '').lstrip('/')
-            elif full_slugs:
-                link = './' + '/'.join(full_slugs) + '.html'
-            else:
-                link = './' + file_path.replace('.md', '.html').replace('content/', '').lstrip('/')
+            link = None  # No fallback: report as missing
         nav_links.append({'title': item.get('title', ''), 'link': link, 'file': file_path, 'slug': slug})
         if 'children' in item and item['children']:
             nav_links.extend(build_nav_links(item['children'], content_lookup, parent_slugs + ([slug] if slug else [])))
@@ -71,6 +62,10 @@ def main():
     print("\n--- Navigation Menu Audit ---\n")
     errors = 0
     for nav in nav_links:
+        if nav['link'] is None:
+            print(f"[MISSING] No DB output path for nav item '{nav['title']}' (file: '{nav['file']}', slug: '{nav['slug']}').")
+            errors += 1
+            continue
         # Remove leading './' for comparison
         nav_path = nav['link'][2:] if nav['link'].startswith('./') else nav['link']
         if nav_path not in all_output_paths:
@@ -89,18 +84,18 @@ def main():
             # Find all DB entries for any variant of this file
             db_matches = [(f, s, v) for (f, s), v in content_lookup.items() if f in file_variants]
             if db_output:
-                suggestion = f"Resolution: Update your TOC or nav logic to use './{db_output.replace('build/', '').lstrip('/')}' for this menu item."
+                suggestion = f"Resolution: Update your TOC or nav logic to use './{db_output.replace('build/', '').lstrip('/')}'' for this menu item."
             elif db_matches:
                 print(f"[MISSING] Nav link '{nav['link']}' (title: '{nav['title']}', file: '{file}', slug: '{slug}') not found in DB output paths.")
                 print(f"         Potential matches in DB for this file (any slug):")
                 for match_file, match_slug, match_path in db_matches:
-                    print(f"           source_path: '{match_file}', slug: '{match_slug}' -> './{match_path.replace('build/', '').lstrip('/')}'")
+                    print(f"           source_path: '{match_file}', slug: '{match_slug}' -> './{match_path.replace('build/', '').lstrip('/')}')")
                 suggestion = "Resolution: Check the slug and file path in your TOC and match it to one of the above output paths."
             else:
                 print(f"[MISSING] Nav link '{nav['link']}' (title: '{nav['title']}', file: '{file}', slug: '{slug}') not found in DB output paths.")
                 suggestion = "Resolution: Check that the file exists and is included in your build/database."
             if db_output:
-                print(f"         DB output path: './{db_output.replace('build/', '').lstrip('/')}'")
+                print(f"         DB output path: './{db_output.replace('build/', '').lstrip('/')}')")
             print(f"         {suggestion}")
             errors += 1
     if errors == 0:
