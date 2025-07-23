@@ -57,18 +57,39 @@ This document tracks the investigation, debugging, and resolution of navigation 
 
 ---
 
-## Example: Nav Menu Output
-For a nested page (e.g., `build/sample-resources/newton/newton.html`), the nav menu now renders as:
+
+## Example: Nav Menu Output (After Relative Link Fix)
+For a nested page (e.g., `build/sample-resources/index.html`), the nav menu now renders as:
 
 ```html
 <nav class="site-nav" role="navigation" aria-label="Main menu">
   <ul class="nav-menu">
-      <li><a href="./index.html">Home</a></li>
-      <li><a href="./sample-resources/index.html">Sample</a></li>
-      <li><a href="./about.html">About</a></li>
+      <li><a href="../index.html">Home</a></li>
+      <li><a href="index.html">Sample</a></li>
+      <li><a href="../about.html">About</a></li>
   </ul>
 </nav>
 ```
+
+This confirms that nav links are now always relative to the current page, and navigation works from all nested/section root pages.
+
+---
+
+## 2025-07-23: Success & Next Steps
+
+- **Status:**
+    - The nav menu is now present and correct on all pages, with links that are always relative to the current page's directory.
+    - This resolves the long-standing issue with incorrect nav links for nested/section root pages (see above for example).
+
+- **Next Steps:**
+    - The next priority is to ensure that the links to child pages (e.g., activities, newton, etc.) within the sample-resources section are also correct and relative.
+    - Review and update the logic for generating links to child pages in section index pages (e.g., `sample-resources/index.html`).
+    - Consider using the same `os.path.relpath` approach for all intra-section links.
+
+- **Note:**
+    - The nav menu logic and audit script are now robust and in sync. Future nav regressions should be easy to catch and fix.
+
+---
 
 ---
 
