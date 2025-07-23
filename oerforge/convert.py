@@ -39,7 +39,11 @@ def copy_and_update_assets_for_non_html(input_path, output_path, db_path):
     img_paths = [p for tup in img_links for p in tup if p]
     if not img_paths:
         return
-    page_files_dir = get_page_files_dir(output_path)
+    # Determine the correct PAGE_files dir (avoid nesting)
+    if output_path.endswith('_files') or os.path.basename(os.path.dirname(output_path)).endswith('_files'):
+        page_files_dir = os.path.dirname(output_path)
+    else:
+        page_files_dir = get_page_files_dir(output_path)
     os.makedirs(page_files_dir, exist_ok=True)
     # Copy each asset and update DB
     for rel_path in img_paths:
