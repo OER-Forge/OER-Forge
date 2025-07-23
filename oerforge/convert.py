@@ -1,3 +1,5 @@
+import shutil
+import re
 import os
 import logging
 import json
@@ -16,16 +18,62 @@ LOG_PATH = os.path.join(PROJECT_ROOT, 'log', 'build.log')
 SUMMARY_JSON = os.path.join(BUILD_DIR, 'conversion_summary.json')
 DEBUG_MODE = os.environ.get("DEBUG", "0") == "1"
 
+def get_page_files_dir(output_path):
+    """
+    Given an output file path (e.g., build/about.html), return the associated files directory (e.g., build/about_files/).
+    """
+    base, _ = os.path.splitext(output_path)
+    return f"{base}_files"
+
+# --- Asset Copy and DB Update for Non-HTML Conversions ---
+def copy_and_update_assets_for_non_html(input_path, output_path, db_path):
+    """
+    For non-HTML conversions, copy all referenced assets to PAGE_files/ and update their DB paths.
+    """
+    # Find all image references in the Markdown file
+    with open(input_path, "r", encoding="utf-8") as f:
+        md = f.read()
+    # Regex for Markdown and HTML image links
+    img_links = re.findall(r'!\[[^\]]*\]\(([^)]+)\)|<img [^>]*src=["\']([^"\']+)["\']', md)
+    # Flatten and filter
+    img_paths = [p for tup in img_links for p in tup if p]
+    if not img_paths:
+        return
+    page_files_dir = get_page_files_dir(output_path)
+    os.makedirs(page_files_dir, exist_ok=True)
+    # Copy each asset and update DB
+    for rel_path in img_paths:
+        # Remove any URL params/fragments
+        rel_path_clean = rel_path.split('?')[0].split('#')[0]
+        src_path = os.path.join(PROJECT_ROOT, 'content', rel_path_clean)
+        if os.path.exists(src_path):
+            dst_path = os.path.join(page_files_dir, os.path.basename(rel_path_clean))
+            shutil.copy2(src_path, dst_path)
+            # Update DB: files.relative_path and pages_files.page_path
+            try:
+                import sqlite3
+                conn = sqlite3.connect(db_path)
+                cursor = conn.cursor()
+                # Update files table
+                cursor.execute("UPDATE files SET relative_path=? WHERE relative_path=?", (os.path.join(os.path.basename(page_files_dir), os.path.basename(rel_path_clean)), rel_path_clean))
+                # Update pages_files table (if used for this asset)
+                cursor.execute("UPDATE pages_files SET page_path=? WHERE page_path=?", (os.path.join(os.path.basename(page_files_dir), os.path.basename(rel_path_clean)), rel_path_clean))
+                conn.commit()
+                conn.close()
+            except Exception as e:
+                logging.error(f"[ASSET-DB] Failed to update DB for asset {rel_path_clean}: {e}")
+        else:
+            logging.warning(f"[ASSET] Referenced asset not found: {src_path}")
+
 def get_section_files_dir(content_row):
     """
-    Given a content row, return the absolute path to the section-local files/ directory.
-    E.g., for build/section/index.html, returns build/section/files/
+    Given a content row, return the absolute path to the page-local files/ directory using PAGE_files convention.
+    E.g., for build/about.html, returns build/about_files/
     """
     output_path = content_row.get("output_path")
     if not output_path:
         return None
-    section_dir = os.path.dirname(output_path)
-    return os.path.join(section_dir, "files")
+    return get_page_files_dir(output_path)
     logging.basicConfig(
         level=log_level,
         format='%(asctime)s %(levelname)s %(message)s',
@@ -79,30 +127,39 @@ def convert_file(input_path, output_path, input_ext, output_ext, db_path, log_qu
     logging.debug(f"[convert_file] Attempting: {input_path} ({input_ext}) -> {output_path} ({output_ext})")
     try:
         # Dispatch for all real Markdown converters
+        non_html_exts = [".txt", ".md", ".tex", ".pdf", ".docx", ".epub"]
         if input_ext == ".md" and output_ext == ".txt":
             logging.debug(f"[convert_file] Dispatch: convert_md_to_txt")
             result = convert_md_to_txt(input_path, output_path)
+            copy_and_update_assets_for_non_html(input_path, output_path, db_path)
         elif input_ext == ".md" and output_ext == ".md":
             logging.debug(f"[convert_file] Dispatch: convert_md_to_md")
             result = convert_md_to_md(input_path, output_path)
+            copy_and_update_assets_for_non_html(input_path, output_path, db_path)
         elif input_ext == ".md" and output_ext == ".tex":
             logging.debug(f"[convert_file] Dispatch: convert_md_to_tex")
             result = convert_md_to_tex(input_path, output_path)
+            copy_and_update_assets_for_non_html(input_path, output_path, db_path)
         elif input_ext == ".md" and output_ext == ".pdf":
             logging.debug(f"[convert_file] Dispatch: convert_md_to_pdf")
             result = convert_md_to_pdf(input_path, output_path)
+            copy_and_update_assets_for_non_html(input_path, output_path, db_path)
         elif input_ext == ".md" and output_ext == ".docx":
             logging.debug(f"[convert_file] Dispatch: convert_md_to_docx")
             result = convert_md_to_docx(input_path, output_path)
+            copy_and_update_assets_for_non_html(input_path, output_path, db_path)
         elif input_ext == ".docx" and output_ext == ".md":
             logging.debug(f"[convert_file] Dispatch: convert_docx_to_md")
             result = convert_docx_to_md(input_path, output_path)
+            copy_and_update_assets_for_non_html(input_path, output_path, db_path)
         elif input_ext == ".ipynb" and output_ext == ".epub":
             logging.debug(f"[convert_file] Dispatch: convert_ipynb_to_epub")
             result = convert_ipynb_to_epub(input_path, output_path)
+            copy_and_update_assets_for_non_html(input_path, output_path, db_path)
         elif input_ext == ".md" and output_ext == ".epub":
             logging.debug(f"[convert_file] Dispatch: convert_md_to_epub")
             result = convert_md_to_epub(input_path, output_path)
+            copy_and_update_assets_for_non_html(input_path, output_path, db_path)
         else:
             msg = f"No converter for {input_ext} -> {output_ext}"
             logging.warning(msg)
@@ -225,7 +282,8 @@ def convert_md_to_docx(input_path, output_path):
     import os
     try:
         os.makedirs(os.path.dirname(output_path), exist_ok=True)
-        media_dir = os.path.splitext(output_path)[0] + "_media"
+        from .convert import get_page_files_dir
+        media_dir = get_page_files_dir(output_path)
         result = subprocess.run([
             "pandoc", input_path, "-o", output_path,
             "--extract-media", media_dir
@@ -488,18 +546,24 @@ def batch_convert_all_content(db_path=DB_PATH, force=False, summary_json_path=SU
             if input_ext != src_ext:
                 continue
             tgt_fmt = tgt_ext.lstrip(".")
+            # Determine output path: HTML in build/, others in PAGE_files/
+            if tgt_ext == ".html":
+                output_path = os.path.join(base_dir, base_name + tgt_ext)
+            else:
+                page_files_dir = get_page_files_dir(os.path.join(base_dir, base_name + ".html"))
+                os.makedirs(page_files_dir, exist_ok=True)
+                output_path = os.path.join(page_files_dir, base_name + tgt_ext)
+
             # Identity conversion: e.g., md->md, docx->docx, etc.
             if input_ext == tgt_ext:
                 if export_types_list and tgt_fmt not in export_types_list:
                     logging.debug(f"[batch_convert_all_content] SKIP: identity conversion {input_ext}->{tgt_ext} excluded by export_types_list {export_types_list}")
                     continue
-                # Output file: same as base_output_path (no double extension)
-                output_path = os.path.join(base_dir, base_name + tgt_ext)
                 did_identity = True
             else:
                 if export_types_list and tgt_fmt not in export_types_list:
                     continue
-                output_path = os.path.join(base_dir, base_name + tgt_ext)
+
             # Prevent overwriting the source file in-place (never copy to same path)
             if os.path.abspath(input_path) == os.path.abspath(output_path):
                 logging.info(f"[batch_convert_all_content] Skipping identity conversion to avoid overwriting source: {input_path} -> {output_path}")
@@ -524,12 +588,3 @@ def batch_convert_all_content(db_path=DB_PATH, force=False, summary_json_path=SU
         json.dump(results, f, indent=2)
     # Print plain text summary
     print("\nConversion Summary:")
-    for r in results:
-        print(f"{r['input']} -> {r['output']}: {r['status']} ({r.get('reason', '')})")
-
-# --- CLI ---
-def cli():
-    import argparse
-    parser = argparse.ArgumentParser(description="OERForge Batch Conversion Pipeline")
-    parser.add_argument("--force", action="store_true", help="Force all conversions (ignore cache)")
-    parser.add_argument("--summary-json", type=str, default=SUMMARY_JSON, help="Path to summary JSON output")

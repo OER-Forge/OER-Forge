@@ -2,7 +2,7 @@
 Module to copy project content and static assets into build directories for deployment.
 
 Features:
-- Copies all contents of 'content/' to 'build/files/'
+- Copies all contents of 'content/' to 'build/PAGE_files/' for each page (PAGE = base filename)
 - Copies 'static/css/' to 'build/css/' and 'static/js/' to 'build/js/'
 - Creates target directories if they do not exist
 - Overwrites files each time it is called

@@ -1,7 +1,7 @@
-<img src="images/logo.png" alt="OER-Forge Logo" width="400" />
-  
 # OER-Forge
-  
+
+<img src="images/logo.png" alt="OER-Forge Logo" width="400" />
+
 **Build, share, and improve WCAG-compliant Open Educational Resources with Python!**
 
 [**Jump to Font Controls**](#font-controls)

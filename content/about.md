@@ -1,9 +1,5 @@
 # About OER-Forge
 
-<img src="images/logo.png" alt="OER-Forge Logo" width="400" />
-
-[**Jump to Font Controls**](#font-controls)
-
 OER-Forge is an open-source project dedicated to building accessible, high-quality, and modern educational resources for physics and computational science. Our mission is to empower educators, students, and lifelong learners by providing free, adaptable, and open materials—while supporting a transparent, collaborative, and sustainable approach to educational publishing.
 
 Below is a plot of the rising cost of textbooks over time. It shows a 2.8 times the rate of inflation increase in textbooks costs. And it shows a nearly 1400% increase in real dollars over the time time. 
