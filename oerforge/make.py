@@ -437,7 +437,9 @@ def build_all_markdown_files():
     conn.close()
     copy_static_assets_to_build()
     copy_db_images_to_build()
-    logging.info("[AUTO] All markdown files built.")
+    from oerforge.copyfile import copy_build_to_docs
+    copy_build_to_docs()
+    logging.info("[AUTO] All markdown files built and copied to docs/.")
 
 def main():
     """

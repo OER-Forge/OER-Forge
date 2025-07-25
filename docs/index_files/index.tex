@@ -1,0 +1,230 @@
+\section{OER-Forge}\label{oer-forge}
+
+\textbf{Build, share, and improve WCAG-compliant Open Educational
+Resources with Python!}
+
+\hyperref[font-controls]{\textbf{Jump to Font Controls}}
+
+\subsection{Welcome}\label{welcome}
+
+OER-Forge is an open source Python toolkit for building, organizing, and
+publishing accessible Open Educational Resources (OERs). Our goal: make
+it easy and fun to create sites and documents that meet
+\href{https://www.w3.org/WAI/standards-guidelines/wcag/}{WCAG}
+standards.
+
+\begin{itemize}
+\tightlist
+\item
+  \textbf{Accessible by design:} All templates and outputs aim for
+  \href{https://www.w3.org/WAI/standards-guidelines/wcag/}{WCAG
+  compliance}.
+\item
+  \textbf{Database-driven navigation:} Section indices, menus, and
+  hierarchy are managed in SQLite for robust, extensible site structure.
+\item
+  \textbf{Multi-format input:} Write content in Markdown, DOCX, and
+  Jupyter Notebooks.
+\item
+  \textbf{Multi-format export:} Markdown, DOCX, PDF, LaTeX, and TXT.
+\item
+  (optional) \textbf{Validation using Pa11y:} Automated checks and open
+  reporting during and after build to ensure compliance.
+  \href{https://github.com/pa11y/pa11y}{Pa11y on GitHub}
+\end{itemize}
+
+\subsection{Get Started}\label{get-started}
+
+\begin{enumerate}
+\def\labelenumi{\arabic{enumi}.}
+\item
+  \textbf{Clone the repo:}
+
+\begin{Shaded}
+\begin{Highlighting}[]
+\FunctionTok{git}\NormalTok{ clone https://github.com/OER{-}Forge/OER{-}Forge.git}
+\BuiltInTok{cd}\NormalTok{ OER{-}Forge}
+\end{Highlighting}
+\end{Shaded}
+\item
+  (optional) \textbf{Create a virtual environment and activate it:}
+
+\begin{Shaded}
+\begin{Highlighting}[]
+\ExtensionTok{python} \AttributeTok{{-}m}\NormalTok{ venv venv}
+\BuiltInTok{source}\NormalTok{ venv/bin/activate}
+\end{Highlighting}
+\end{Shaded}
+
+  \textbf{On Windows use:}
+
+\begin{Shaded}
+\begin{Highlighting}[]
+\ExtensionTok{python} \AttributeTok{{-}m}\NormalTok{ venv venv}
+\ExtensionTok{venv\textbackslash{}Scripts\textbackslash{}activate}
+\end{Highlighting}
+\end{Shaded}
+\item
+  \textbf{Install dependencies:}
+
+\begin{Shaded}
+\begin{Highlighting}[]
+\ExtensionTok{pip}\NormalTok{ install }\AttributeTok{{-}r}\NormalTok{ requirements.txt}
+\end{Highlighting}
+\end{Shaded}
+\item
+  \textbf{Build the sample site:}
+
+\begin{Shaded}
+\begin{Highlighting}[]
+\ExtensionTok{python}\NormalTok{ build.py}
+\end{Highlighting}
+\end{Shaded}
+\item
+  \textbf{View your site:} Open \texttt{build/index.html} or
+  \texttt{docs/index.html} in your browser.
+\end{enumerate}
+
+\subsection{Features}\label{features}
+
+\subsubsection{Accessibility \&
+Usability}\label{accessibility-usability}
+
+\begin{itemize}
+\tightlist
+\item
+  \textbf{Accessible by design:} ARIA labels, alt text, color contrast,
+  and keyboard navigation.
+\item
+  \textbf{Adjustable interface:} User controls for text size, spacing,
+  and layout.
+\item
+  \textbf{Dark mode:} Toggle theme for better readability.
+\item
+  \textbf{Responsive design:} Mobile-friendly layouts and navigation.
+\end{itemize}
+
+\subsubsection{Content \& Input Formats}\label{content-input-formats}
+
+\begin{itemize}
+\tightlist
+\item
+  \textbf{Multi-format input:} Markdown, DOCX, Jupyter Notebooks
+\item
+  \textbf{Tables \& lists:} Advanced Markdown tables, nested lists, and
+  task lists.
+\item
+  \textbf{Inline figures:} Markdown images with alt text for
+  accessibility.
+\item
+  \textbf{Math support:} LaTeX-style math rendering with MathJax.
+\item
+  \textbf{Syntax highlighting:} Beautiful code blocks with Pygments.
+\end{itemize}
+
+\subsubsection{Navigation \& Structure}\label{navigation-structure}
+
+\begin{itemize}
+\tightlist
+\item
+  \textbf{Section indices \& navigation:} Database-driven, supports
+  arbitrary hierarchy, top-level and nested menus.
+\item
+  \textbf{Cross-references:} Link sections, figures, tables, and
+  listings easily.
+\item
+  \textbf{Footnotes \& endnotes:} Standard Markdown syntax for notes.
+\end{itemize}
+
+\subsubsection{Export \& Download}\label{export-download}
+
+\begin{itemize}
+\tightlist
+\item
+  \textbf{Download options:} Export pages in multiple formats (PDF,
+  DOCX, TXT, etc.).
+\end{itemize}
+
+\subsubsection{Citations \& References}\label{citations-references}
+
+\begin{itemize}
+\tightlist
+\item
+  \textbf{Citations \& references:} Manage bibliographies with BibTeX.
+\end{itemize}
+
+\subsubsection{Presentation \&
+Customization}\label{presentation-customization}
+
+\begin{itemize}
+\tightlist
+\item
+  \textbf{Callouts \& alerts:} Styled boxes for tips, warnings, and
+  important info.
+\item
+  \textbf{Extensible templates:} Jinja2-based, easy to customize.
+\end{itemize}
+
+\subsubsection{Build System}\label{build-system}
+
+\begin{itemize}
+\tightlist
+\item
+  \textbf{Robust build system:} Automated, logs to \texttt{log/} for
+  debugging.
+\end{itemize}
+
+\subsection{Documentation}\label{documentation}
+
+\href{https://oer-forge.github.io/docs/}{Comprehensive documentation} is
+available and hosted on
+\href{https://github.com/OER-Forge/docs}{GitHub}.
+
+\subsection{Get Involved}\label{get-involved}
+
+We welcome your feedback, suggestions, and contributions! Please use
+\href{https://github.com/OER-Forge/OER-Forge/issues}{GitHub Issues} to
+report bugs, request features, or ask questions.
+
+\begin{itemize}
+\tightlist
+\item
+  \textbf{Contribute a Pull Request:}
+  \href{https://github.com/OER-Forge/OER-Forge/labels/help\%20wanted}{Help
+  wanted}
+\item
+  \textbf{Report a bug:}
+  \href{https://github.com/OER-Forge/OER-Forge/issues/new?labels=bug}{File
+  an issue}
+\item
+  \textbf{Request a feature:}
+  \href{https://github.com/OER-Forge/OER-Forge/issues/new?labels=enhancement}{File
+  an enhancement}
+\item
+  \textbf{Ask a question:}
+  \href{https://github.com/OER-Forge/OER-Forge/issues/new?labels=question}{Open
+  a question}
+\end{itemize}
+
+\subsection{License}\label{license}
+
+Content and code are licensed under CC BY-NC-SA 4.0.
+
+\subsection{Getting OER-Forge}\label{getting-oer-forge}
+
+OER-Forge is hosted on
+\href{https://github.com/OER-Forge/OER-Forge}{GitHub}.
+
+\pandocbounded{\includegraphics[keepaspectratio,alt={Last Commit}]{https://img.shields.io/github/last-commit/OER-Forge/OER-Forge}}
+\pandocbounded{\includegraphics[keepaspectratio,alt={Size}]{https://img.shields.io/github/languages/code-size/OER-Forge/OER-Forge}}
+\pandocbounded{\includegraphics[keepaspectratio,alt={Contributors}]{https://img.shields.io/github/contributors/OER-Forge/OER-Forge}}
+\pandocbounded{\includegraphics[keepaspectratio,alt={Stars}]{https://img.shields.io/github/stars/OER-Forge/OER-Forge}}
+
+\pandocbounded{\includegraphics[keepaspectratio,alt={GitHub Issues}]{https://img.shields.io/github/issues/OER-Forge/OER-Forge}}
+\pandocbounded{\includegraphics[keepaspectratio,alt={Pull Requests}]{https://img.shields.io/github/issues-pr/OER-Forge/OER-Forge}}
+
+\begin{figure}
+\centering
+\pandocbounded{\includesvg[keepaspectratio]{https://img.shields.io/badge/license-CC\%20BY--NC--SA\%204.0-lightgrey.svg}}
+\caption{License}
+\end{figure}

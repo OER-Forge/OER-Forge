@@ -1,0 +1,436 @@
+/* Accessible Download Button Styles (WCAG AAA) */
+.download-buttons {
+  margin: 1.5em 0;
+  display: flex;
+  flex-wrap: wrap;
+  gap: 1em;
+  align-items: center;
+}
+.download-btn {
+  display: inline-block;
+  padding: 0.6em 1.2em;
+  font-size: 1em;
+  font-weight: 600;
+  color: #000;
+  background-color: var(#f5f7fa, #f5f7fa);
+  border: 2px solid var(--color-border, #222);
+  border-radius: 0.4em;
+  text-decoration: none;
+  /* transition: background 0.2s, color 0.2s, border 0.2s;
+  box-shadow: 0 2px 6px rgba(0,0,0,0.08); */
+  cursor: pointer;
+}
+.download-btn:focus, .download-btn:hover {
+  background-color: var(--color-btn-hover, #003366);
+  color: #fff;
+  outline: 2px solid var(--color-btn-hover, #003366);
+  outline-offset: 2px;
+}
+/*
+Theme: Light Theme (light)
+Description: Bright, accessible palette for daylight viewing.
+*/
+
+/* ===========================
+   Color Variables
+=========================== */
+:root {
+  --color-bg: #fff;
+  --color-fg: #1a1a1a;
+  --color-card: #f5f7fa;
+  --color-border: #1a1a1a;
+  --color-menu: #005a9e;
+  --color-menu-hover: #003366;
+  --color-link: #005a9e;
+  --color-link-hover: #003366;
+  --color-title: #005a9e;
+  --color-btn: #005a9e;
+  --color-btn-hover: #003366;
+  --color-btn-text: #fff;
+}
+
+body.dark {
+  --color-btn-text: #000;
+  --font-size: 1.1em;
+  --letter-spacing: 0.03em;
+  --line-height: 1.7;
+}
+
+/* ===========================
+   Typography
+=========================== */
+body, .container, .markdown-body {
+  font-size: var(--font-size);
+  letter-spacing: var(--letter-spacing);
+  line-height: var(--line-height);
+}
+
+/* ===========================
+   Layout & Container
+=========================== */
+html, body {
+  background: var(--color-bg) !important;
+  color: var(--color-fg) !important;
+  font-family: system-ui, sans-serif;
+  margin: 0 !important;
+  padding: 0 !important;
+  height: 100%;
+  transition: background 0.3s, color 0.3s;
+}
+
+body {
+  min-height: 100vh;
+  display: flex;
+  flex-direction: column;
+}
+
+.container {
+  max-width: 900px;
+  margin: 2em auto;
+  padding: 1em;
+  background: var(--color-card) !important;
+  color: var(--color-fg) !important;
+  border-radius: 12px;
+  box-shadow: 0 2px 16px rgba(0,0,0,0.04);
+  box-sizing: border-box;
+  flex: 1 0 auto;
+  transition: background 0.3s, color 0.3s;
+}
+
+.markdown-body {
+  background: var(--color-bg) !important;
+  min-height: 100vh;
+  color: var(--color-fg) !important;
+}
+
+/* ===========================
+   Header & Navigation
+=========================== */
+.site-header {
+  background: var(--color-card);
+  padding: 0.7em 0;
+  border-bottom: 3px solid var(--color-link);
+}
+body.dark .site-header {
+  border-bottom: 3px solid var(--color-link-hover);
+}
+
+.header-flex {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  gap: 1.5em;
+  margin-bottom: 0.5em;
+  width: 100%;
+}
+
+.site-logo {
+  height: 5em;
+  margin-right: 1em;
+  border-radius: 8px;
+  box-shadow: 0 2px 8px rgba(0,0,0,0.07);
+}
+
+.header-titles {
+  display: flex;
+  flex-direction: column;
+  align-items: flex-start;
+  justify-content: center;
+}
+
+.site-title {
+  font-size: 2.2em;
+  font-weight: 700;
+  color: var(--color-link);
+  margin: 0;
+  letter-spacing: 0.02em;
+}
+
+.site-subtitle {
+  font-size: 1.15em;
+  font-weight: 400;
+  color: var(--color-menu);
+  margin: 0.1em 0 0.7em 0;
+  letter-spacing: 0.04em;
+  font-style: italic;
+}
+
+.theme-toggle {
+  margin-left: auto;
+  font-size: 1.5em;
+  background: none;
+  border: none;
+  cursor: pointer;
+  color: var(--color-link);
+}
+
+.site-nav {
+  display: flex;
+  justify-content: center;
+  align-items: center;
+  gap: 2em;
+  background: var(--color-card);
+  position: relative;
+  z-index: 200;
+}
+
+.site-nav ul {
+  display: flex;
+  gap: 3em;
+  list-style: none;
+  margin: 0;
+  padding: 0;
+  align-items: center;
+}
+
+.site-nav li {
+  position: relative;
+}
+
+.site-nav > ul > li > a,
+.site-nav > a,
+.site-nav a {
+  color: var(--color-link);
+  text-decoration: none;
+  font-weight: 500;
+  font-size: 1.65em;
+  border-radius: 6px;
+  transition: background 0.2s, color 0.2s;
+  display: block;
+}
+
+.site-nav > ul > li > a:hover,
+.site-nav > ul > li > a:focus,
+.site-nav a:hover,
+.site-nav a:focus {
+  background: var(--color-menu-hover);
+  color: #fff;
+  outline: none;
+}
+
+.site-nav li ul {
+  display: none;
+  position: absolute;
+  left: 0;
+  top: 100%;
+  min-width: 180px;
+  background: var(--color-card);
+  box-shadow: 0 4px 24px rgba(0,0,0,0.10);
+  border-radius: 8px;
+  z-index: 300;
+  flex-direction: column;
+}
+
+.site-nav li:hover > ul,
+.site-nav li:focus-within > ul,
+.site-nav li.open > ul {
+  display: flex;
+}
+
+.site-nav li ul a {
+  font-size: 1em;
+  border-radius: 0;
+  padding: 0.5em 1em;
+}
+
+.site-nav li ul a:hover,
+.site-nav li ul a:focus {
+  background: var(--color-link);
+  color: #fff;
+}
+
+/* ===========================
+   Main Content Link Styling
+=========================== */
+.container a,
+.markdown-body a {
+  color: var(--color-link);
+  text-decoration: none;
+  border-radius: 4px;
+  font-weight: 500;
+  transition: color 0.2s, background 0.2s;
+}
+
+.container a:hover,
+.container a:focus,
+.markdown-body a:hover,
+.markdown-body a:focus {
+  color: #fff;
+  background: var(--color-menu-hover);
+  outline: none;
+}
+
+/* ===========================
+   Table Styling
+=========================== */
+.table-wrapper {
+  width: 100%;
+  overflow-x: auto;
+}
+
+.table-wrapper table {
+  min-width: 600px;
+  border-collapse: collapse;
+  width: 100%;
+}
+
+.table-wrapper th,
+.table-wrapper td {
+  padding: 0.8em 1.2em;
+}
+
+.table-wrapper tr:nth-child(even) {
+  background-color: #f5f7fa;
+}
+
+.table-wrapper tr:nth-child(odd) {
+  background-color: #fff;
+}
+
+/* ===========================
+   Footer
+=========================== */
+footer {
+  flex-shrink: 0;
+  text-align: center;
+  padding: 2em 0 1em 0;
+  font-size: 0.9em;
+  color: var(--color-border);
+  background: var(--color-card) !important;
+  border-top: 3px solid var(--color-link);
+}
+
+footer a {
+  color: var(--color-link);
+  text-decoration: underline;
+  border-radius: 4px;
+  font-weight: 500;
+  transition: color 0.2s, background 0.2s;
+}
+
+footer a:hover,
+footer a:focus {
+  color: #fff;
+  background: var(--color-menu-hover);
+  outline: none;
+}
+
+.footer-text {
+  font-size: 1em;
+  color: var(--color-fg);
+  margin-top: 2em;
+  text-align: center;
+}
+
+/* ===========================
+   Card Grid & Cards
+=========================== */
+.card-grid {
+  display: block;
+  margin: 2em 0;
+}
+
+.card {
+  background: var(--color-card) !important;
+  color: var(--color-fg) !important;
+  border-radius: 16px;
+  box-shadow: 0 2px 16px rgba(0,0,0,0.04);
+  padding: 2em 2em 1.5em 2em;
+  margin-bottom: 2em;
+  border: 1px solid #e0e0e0;
+  transition: box-shadow 0.2s, border 0.2s, background 0.2s;
+}
+
+.card:focus,
+.card:hover {
+  box-shadow: 0 4px 24px rgba(0,0,0,0.10);
+  border: 1px solid var(--color-link);
+  background: var(--color-card);
+  outline: none;
+}
+
+.card h2 a {
+  color: var(--color-link);
+  text-decoration: none;
+  transition: color 0.2s;
+}
+
+.card h2 a:hover,
+.card h2 a:focus {
+  color: var(--color-link-hover);
+  text-decoration: underline;
+}
+
+.card p {
+  color: var(--color-fg);
+  font-size: 1.08em;
+  margin-top: 0.7em;
+}
+
+/* ===========================
+   Admonitions
+=========================== */
+.admonition {
+  margin: 1.5em 0;
+  padding: 1em 1.5em 1em 2.5em;
+  border-left: 6px solid var(--color-link);
+  border-radius: 8px;
+  background: linear-gradient(90deg, var(--color-card) 85%, var(--color-bg) 100%);
+  color: var(--color-fg);
+  box-shadow: 0 2px 8px rgba(0,0,0,0.06);
+  position: relative;
+  overflow-x: auto;
+  transition: background 0.3s, color 0.3s;
+}
+
+.admonition-title {
+  font-weight: bold;
+  margin-bottom: 0.5em;
+  font-size: 1.08em;
+  display: flex;
+  align-items: center;
+  gap: 0.5em;
+}
+
+/* ...additional rules for .admonition.note, .admonition.tip, etc. ... */
+
+/* ===========================
+   Misc
+=========================== */
+nav {
+  text-align: center;
+}
+
+.theme-btn {
+  position: sticky;
+  top: 1.5em;
+  right: 2em;
+  z-index: 9999;
+  width: 2.2em;
+  height: 2.2em;
+  font-size: 2em;
+  border-radius: 50%;
+  border: 2px solid var(--color-link);
+  background: var(--color-card);
+  color: var(--color-link);
+  box-shadow: 0 2px 12px rgba(0,0,0,0.12);
+  cursor: pointer;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  transition: background 0.2s, color 0.2s, border 0.2s;
+}
+
+/* ===========================
+   Utility Classes
+=========================== */
+.visually-hidden {
+  position: absolute;
+  width: 1px;
+  height: 1px;
+  padding: 0;
+  margin: -1px;
+  overflow: hidden;
+  clip: rect(0,0,0,0);
+  border: 0;
+}

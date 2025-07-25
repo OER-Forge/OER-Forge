@@ -1,0 +1,115 @@
+<!DOCTYPE html>
+
+<html lang="en">
+<head>
+<meta charset="utf-8"/>
+<title></title>
+<link href="/images/favicon.ico" rel="icon"/>
+<link href="/css/theme-dark.css" id="theme-css" rel="stylesheet"/>
+<script defer="" src="/js/main.js"></script>
+<!-- Favicons and Mobile Icons (all paths are relative and injected by make.py) -->
+<link href="/images/favicon-16x16.png" rel="icon" sizes="16x16" type="image/png"/>
+<link href="/images/favicon-32x32.png" rel="icon" sizes="32x32" type="image/png"/>
+<link href="/images/favicon.ico" rel="icon" type="image/x-icon"/>
+<link href="/images/apple-touch-icon.png" rel="apple-touch-icon" sizes="180x180"/>
+<link href="/images/android-chrome-192x192.png" rel="icon" sizes="192x192" type="image/png"/>
+<link href="/images/android-chrome-512x192x192.png" rel="icon" sizes="512x512" type="image/png"/>
+<!-- Web Manifest (optional, for PWA) -->
+<link href="/site.webmanifest" rel="manifest"/>
+<!-- Open Graph Meta Tags for Sharing -->
+<meta content="OER-Forge: WCAG-Compliant OER Build System" property="og:title"/>
+<meta content="OER-Forge is a suite of tools to help authors create WCAG-compliant Open Educational Resources (OERs)." property="og:description"/>
+<meta content="/images/logo.png" property="og:image"/>
+<meta content="https://open-physics-ed-org.github.io/oer-forge" property="og:url"/>
+<!-- Twitter Card Meta Tags -->
+<meta content="summary_large_image" name="twitter:card"/>
+<meta content="OER-Forge: WCAG-Compliant OER Build System" name="twitter:title"/>
+<meta content="OER-Forge is a suite of tools to help authors create WCAG-compliant Open Educational Resources (OERs)." name="twitter:description"/>
+<meta content="/images/logo.png" name="twitter:image"/>
+</head>
+<body>
+<header class="site-header">
+<div class="header-flex">
+<img alt="Site Logo" class="site-logo" src="/images/logo.png"/>
+<div class="header-titles">
+<h1 class="site-title">OER-Forge 🛠️</h1>
+<h2 class="site-subtitle">An open source Python library for building and sharing open educational resources.</h2>
+</div>
+<!-- Theme toggle button moved to main content container in baseof.html -->
+</div>
+<nav aria-label="Main menu" class="site-nav" role="navigation">
+<ul class="nav-menu">
+<li><a href="index.html">Home</a></li>
+<li><a href="sample-resources/index.html">Sample</a></li>
+<li><a href="about.html">About</a></li>
+</ul>
+</nav>
+</header>
+<main id="main-content" tabindex="-1">
+<div class="container">
+<button aria-label="Switch theme" class="theme-toggle" id="theme-toggle">🌙
+        <span class="visually-hidden">Toggle dark/light theme</span>
+</button>
+<span id="accessibility-report-placeholder"></span>
+<h1>About OER-Forge</h1>
+<p>OER-Forge is an open-source project dedicated to building accessible, high-quality, and modern educational resources for physics and computational science. Our mission is to empower educators, students, and lifelong learners by providing free, adaptable, and open materials—while supporting a transparent, collaborative, and sustainable approach to educational publishing.</p>
+<p>Below is a plot of the rising cost of textbooks over time. It shows a 2.8 times the rate of inflation increase in textbooks costs. And it shows a nearly 1400% increase in real dollars over the time time.</p>
+<img alt="Plot of the cost of textbooks over time showing that textbook prices have increased at 2.8X the rate of inflation since 1974" src="./images/textbooks-vs-inflation.webp" width="600"/>
+<p>Full disclosure. This plot is from <a href="https://myelearningworld.com/textbook-prices-vs-inflation/">My eLearning World</a>, which advocates for eLearning solutions. But the costs of those are still borne by students. Both textbooks and eLearning solutions are often behind paywalls, expensive, and not accessible to all students.</p>
+<p>This is where <a href="https://en.wikipedia.org/wiki/Open_educational_resources">Open Educational Resources (OERs)</a> come in. OERs are free, openly licensed educational materials that can be used, adapted, and shared by anyone. They provide an alternative to traditional textbooks and eLearning solutions, making education more affordable and accessible.</p>
+<h2>Our Mission</h2>
+<ul>
+<li><strong>Accessibility:</strong> We design all resources to be usable by everyone, including people with disabilities, and available in multiple formats (HTML, PDF, Markdown, LaTeX, Jupyter, and more).</li>
+<li><strong>Openness:</strong> Everything is <a href="https://github.com/OER-Forge">open source</a> and <a href="https://github.com/OER-Forge/OER-Forge/blob/main/LICENSE">free to use, modify, and share for non-commercial use</a>. We challenge the corporate control of educational content and promote equitable access for all.</li>
+<li><strong>Collaboration:</strong> OER-Forge is a community effort—anyone can contribute, whether you're an educator, student, developer, or enthusiast. <a href="https://github.com/OER-Forge/OER-Forge/pulls">Pull requests</a>, <a href="https://github.com/OER-Forge/OER-Forge/issues">suggestions</a>, and <a href="mailto:hello@oerforge.org">feedback</a> are always welcome.</li>
+<li><strong>Simplicity:</strong> Our sites and materials are intentionally simple, semantic, and easy to use, modify, and distribute, ensuring broad compatibility and accessibility.</li>
+<li><strong>Transparency:</strong> The build process, content, and code are open and documented for contributors and users alike.</li>
+</ul>
+<h2>Who We Are</h2>
+<p>OER-Forge is being developed by <a href="https://dannycab.github.io/">Danny Caballero</a>, professor of physics and computational science at Michigan State University. The project is inspired by years of teaching, learning, and collaborating with others who share a passion for open, equitable education.</p>
+<h2>Projects</h2>
+<ul>
+<li><strong>Modern Classical Mechanics:</strong> The first major course site built with OER-Forge, providing interactive, accessible resources for teaching and learning classical mechanics. <a href="https://dannycaballero.info/modern-classical-mechanics/">Visit Modern Classical Mechanics</a></li>
+<li><strong>Future Courses:</strong> OER-Forge is designed to support many classes and topics. Modern Classical Mechanics is just the beginning—more courses and resources are coming soon.</li>
+</ul>
+<h2>Philosophy &amp; Design Principles</h2>
+<ol>
+<li><strong>Open source and free:</strong> All code and content are open and freely available.</li>
+<li><strong>Accessibility first:</strong> We follow best practices and continually improve to meet WCAG and other standards.</li>
+<li><strong>Community-driven:</strong> Anyone can contribute—suggest changes, add content, or improve materials.</li>
+<li><strong>Simple, semantic, and accessible design:</strong> We use semantic HTML, ARIA roles, and keyboard navigation to ensure usability for all.</li>
+<li><strong>Transparent and documented:</strong> The build process and project management are open for all contributors.</li>
+</ol>
+<h2>Accessibility Commitments</h2>
+<ul>
+<li>Ongoing work to ensure all materials are accessible and usable by people with disabilities</li>
+<li>Keyboard navigation and screen reader compatibility</li>
+<li>High color contrast and readable font sizes</li>
+<li>Descriptive alt text and link text</li>
+<li>Open build process and documentation for contributors</li>
+</ul>
+<h2>How to Contribute</h2>
+<p>We welcome contributions from anyone interested in improving open educational resources:</p>
+<ul>
+<li>Suggest new content or improvements</li>
+<li>Report issues or bugs</li>
+<li>Review or submit pull requests</li>
+<li>Add new activities, simulations, or resources</li>
+<li>Help improve accessibility and design</li>
+</ul>
+<p>You can contribute by creating an issue or pull request on our <a href="https://github.com/open-physics-ed/open-physics-ed-org.github.io">GitHub repository</a>.</p>
+<h2>Contact &amp; Community</h2>
+<ul>
+<li><a href="https://github.com/OER-Forge">OER Forge on GitHub</a></li>
+<li><a href="https://bsky.app/profile/oerforge.org">OER Forge on Bluesky</a></li>
+<li><a href="mailto:hello@oerforge.org">Email</a></li>
+<li><a href="https://www.buymeacoffee.com/dannycab">Buy us a coffee</a></li>
+</ul>
+<hr/>
+<p>OER Forge is open source and always evolving. Join us in building a more accessible, equitable future for physics education and open science.</p>
+</div>
+</main>
+<footer>
+</footer>
+</body>
+</html>

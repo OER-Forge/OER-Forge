@@ -1,0 +1,36 @@
+Introduction to Newton’s Laws of Motion
+
+Physics is the study of matter, energy, and the interactions between
+them. In this lesson, we’ll explore Newton’s Laws of Motion.
+
+------------------------------------------------------------------------
+
+Table of Contents
+
+1.  Newton’s First Law
+2.  Newton’s Second Law
+3.  Newton’s Third Law
+4.  Sample Problems
+5.  References
+
+------------------------------------------------------------------------
+
+Newton’s First Law
+
+  An object at rest stays at rest and an object in motion stays in
+  motion unless acted upon by an external force.
+
+- Also known as the Law of Inertia.
+- Example: A book on a table remains at rest unless pushed.
+
+------------------------------------------------------------------------
+
+Newton’s Second Law
+
+Newton’s Second Law relates force, mass, and acceleration:
+
+F = m ⋅ a
+
+Where: - F = Force (Newtons) - m = Mass (kg) - a = Acceleration (m/s²)
+
+Example Calculation:

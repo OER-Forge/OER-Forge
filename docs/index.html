@@ -1,0 +1,165 @@
+<!DOCTYPE html>
+
+<html lang="en">
+<head>
+<meta charset="utf-8"/>
+<title></title>
+<link href="/images/favicon.ico" rel="icon"/>
+<link href="/css/theme-dark.css" id="theme-css" rel="stylesheet"/>
+<script defer="" src="/js/main.js"></script>
+<!-- Favicons and Mobile Icons (all paths are relative and injected by make.py) -->
+<link href="/images/favicon-16x16.png" rel="icon" sizes="16x16" type="image/png"/>
+<link href="/images/favicon-32x32.png" rel="icon" sizes="32x32" type="image/png"/>
+<link href="/images/favicon.ico" rel="icon" type="image/x-icon"/>
+<link href="/images/apple-touch-icon.png" rel="apple-touch-icon" sizes="180x180"/>
+<link href="/images/android-chrome-192x192.png" rel="icon" sizes="192x192" type="image/png"/>
+<link href="/images/android-chrome-512x192x192.png" rel="icon" sizes="512x512" type="image/png"/>
+<!-- Web Manifest (optional, for PWA) -->
+<link href="/site.webmanifest" rel="manifest"/>
+<!-- Open Graph Meta Tags for Sharing -->
+<meta content="OER-Forge: WCAG-Compliant OER Build System" property="og:title"/>
+<meta content="OER-Forge is a suite of tools to help authors create WCAG-compliant Open Educational Resources (OERs)." property="og:description"/>
+<meta content="/images/logo.png" property="og:image"/>
+<meta content="https://open-physics-ed-org.github.io/oer-forge" property="og:url"/>
+<!-- Twitter Card Meta Tags -->
+<meta content="summary_large_image" name="twitter:card"/>
+<meta content="OER-Forge: WCAG-Compliant OER Build System" name="twitter:title"/>
+<meta content="OER-Forge is a suite of tools to help authors create WCAG-compliant Open Educational Resources (OERs)." name="twitter:description"/>
+<meta content="/images/logo.png" name="twitter:image"/>
+</head>
+<body>
+<header class="site-header">
+<div class="header-flex">
+<img alt="Site Logo" class="site-logo" src="/images/logo.png"/>
+<div class="header-titles">
+<h1 class="site-title">OER-Forge 🛠️</h1>
+<h2 class="site-subtitle">An open source Python library for building and sharing open educational resources.</h2>
+</div>
+<!-- Theme toggle button moved to main content container in baseof.html -->
+</div>
+<nav aria-label="Main menu" class="site-nav" role="navigation">
+<ul class="nav-menu">
+<li><a href="index.html">Home</a></li>
+<li><a href="sample-resources/index.html">Sample</a></li>
+<li><a href="about.html">About</a></li>
+</ul>
+</nav>
+</header>
+<main id="main-content" tabindex="-1">
+<div class="container">
+<button aria-label="Switch theme" class="theme-toggle" id="theme-toggle">🌙
+        <span class="visually-hidden">Toggle dark/light theme</span>
+</button>
+<span id="accessibility-report-placeholder"></span>
+<h1>OER-Forge</h1>
+<img alt="OER-Forge Logo" src="images/logo.png" width="400"/>
+<p><strong>Build, share, and improve WCAG-compliant Open Educational Resources with Python!</strong></p>
+<p><a href="#font-controls"><strong>Jump to Font Controls</strong></a></p>
+<h2>Welcome</h2>
+<p>OER-Forge is an open source Python toolkit for building, organizing, and publishing accessible Open Educational Resources (OERs). Our goal: make it easy and fun to create sites and documents that meet <a href="https://www.w3.org/WAI/standards-guidelines/wcag/">WCAG</a> standards.</p>
+<ul>
+<li><strong>Accessible by design:</strong> All templates and outputs aim for <a href="https://www.w3.org/WAI/standards-guidelines/wcag/">WCAG compliance</a>.</li>
+<li><strong>Database-driven navigation:</strong> Section indices, menus, and hierarchy are managed in SQLite for robust, extensible site structure.</li>
+<li><strong>Multi-format input:</strong> Write content in Markdown, DOCX, and Jupyter Notebooks.</li>
+<li><strong>Multi-format export:</strong> Markdown, DOCX, PDF, LaTeX, and TXT.</li>
+<li>(optional) <strong>Validation using Pa11y:</strong> Automated checks and open reporting during and after build to ensure compliance. <a href="https://github.com/pa11y/pa11y">Pa11y on GitHub</a></li>
+</ul>
+<h2>Get Started</h2>
+<ol>
+<li>
+<p><strong>Clone the repo:</strong></p>
+<pre><code class="language-sh">git clone https://github.com/OER-Forge/OER-Forge.git
+cd OER-Forge
+</code></pre>
+</li>
+<li>
+<p>(optional) <strong>Create a virtual environment and activate it:</strong></p>
+<pre><code class="language-sh">python -m venv venv
+source venv/bin/activate
+</code></pre>
+<p><strong>On Windows use:</strong></p>
+<pre><code class="language-sh">python -m venv venv
+venv\Scripts\activate
+</code></pre>
+</li>
+<li>
+<p><strong>Install dependencies:</strong></p>
+<pre><code class="language-sh">pip install -r requirements.txt
+</code></pre>
+</li>
+<li>
+<p><strong>Build the sample site:</strong></p>
+<pre><code class="language-sh">python build.py
+</code></pre>
+</li>
+<li>
+<p><strong>View your site:</strong>
+Open <code>build/index.html</code> or <code>docs/index.html</code> in your browser.</p>
+</li>
+</ol>
+<h2>Features</h2>
+<h3>Accessibility &amp; Usability</h3>
+<ul>
+<li><strong>Accessible by design:</strong> ARIA labels, alt text, color contrast, and keyboard navigation.</li>
+<li><strong>Adjustable interface:</strong> User controls for text size, spacing, and layout.</li>
+<li><strong>Dark mode:</strong> Toggle theme for better readability.</li>
+<li><strong>Responsive design:</strong> Mobile-friendly layouts and navigation.</li>
+</ul>
+<h3>Content &amp; Input Formats</h3>
+<ul>
+<li><strong>Multi-format input:</strong> Markdown, DOCX, Jupyter Notebooks</li>
+<li><strong>Tables &amp; lists:</strong> Advanced Markdown tables, nested lists, and task lists.</li>
+<li><strong>Inline figures:</strong> Markdown images with alt text for accessibility.</li>
+<li><strong>Math support:</strong> LaTeX-style math rendering with MathJax.</li>
+<li><strong>Syntax highlighting:</strong> Beautiful code blocks with Pygments.</li>
+</ul>
+<h3>Navigation &amp; Structure</h3>
+<ul>
+<li><strong>Section indices &amp; navigation:</strong> Database-driven, supports arbitrary hierarchy, top-level and nested menus.</li>
+<li><strong>Cross-references:</strong> Link sections, figures, tables, and listings easily.</li>
+<li><strong>Footnotes &amp; endnotes:</strong> Standard Markdown syntax for notes.</li>
+</ul>
+<h3>Export &amp; Download</h3>
+<ul>
+<li><strong>Download options:</strong> Export pages in multiple formats (PDF, DOCX, TXT, etc.).</li>
+</ul>
+<h3>Citations &amp; References</h3>
+<ul>
+<li><strong>Citations &amp; references:</strong> Manage bibliographies with BibTeX.</li>
+</ul>
+<h3>Presentation &amp; Customization</h3>
+<ul>
+<li><strong>Callouts &amp; alerts:</strong> Styled boxes for tips, warnings, and important info.</li>
+<li><strong>Extensible templates:</strong> Jinja2-based, easy to customize.</li>
+</ul>
+<h3>Build System</h3>
+<ul>
+<li><strong>Robust build system:</strong> Automated, logs to <code>log/</code> for debugging.</li>
+</ul>
+<h2>Documentation</h2>
+<p><a href="https://oer-forge.github.io/docs/">Comprehensive documentation</a> is available and hosted on <a href="https://github.com/OER-Forge/docs">GitHub</a>.</p>
+<h2>Get Involved</h2>
+<p>We welcome your feedback, suggestions, and contributions! Please use <a href="https://github.com/OER-Forge/OER-Forge/issues">GitHub Issues</a> to report bugs, request features, or ask questions.</p>
+<ul>
+<li><strong>Contribute a Pull Request:</strong> <a href="https://github.com/OER-Forge/OER-Forge/labels/help%20wanted">Help wanted</a></li>
+<li><strong>Report a bug:</strong> <a href="https://github.com/OER-Forge/OER-Forge/issues/new?labels=bug">File an issue</a></li>
+<li><strong>Request a feature:</strong> <a href="https://github.com/OER-Forge/OER-Forge/issues/new?labels=enhancement">File an enhancement</a></li>
+<li><strong>Ask a question:</strong> <a href="https://github.com/OER-Forge/OER-Forge/issues/new?labels=question">Open a question</a></li>
+</ul>
+<h2>License</h2>
+<p>Content and code are licensed under CC BY-NC-SA 4.0.</p>
+<h2>Getting OER-Forge</h2>
+<p>OER-Forge is hosted on <a href="https://github.com/OER-Forge/OER-Forge">GitHub</a>.</p>
+<p><img alt="Last Commit" src="https://img.shields.io/github/last-commit/OER-Forge/OER-Forge"/>
+<img alt="Size" src="https://img.shields.io/github/languages/code-size/OER-Forge/OER-Forge"/>
+<img alt="Contributors" src="https://img.shields.io/github/contributors/OER-Forge/OER-Forge"/>
+<img alt="Stars" src="https://img.shields.io/github/stars/OER-Forge/OER-Forge"/></p>
+<p><img alt="GitHub Issues" src="https://img.shields.io/github/issues/OER-Forge/OER-Forge"/>
+<img alt="Pull Requests" src="https://img.shields.io/github/issues-pr/OER-Forge/OER-Forge"/></p>
+<p><img alt="License" src="https://img.shields.io/badge/license-CC%20BY--NC--SA%204.0-lightgrey.svg"/></p>
+</div>
+</main>
+<footer>
+</footer>
+</body>
+</html>
