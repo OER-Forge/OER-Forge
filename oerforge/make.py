@@ -137,10 +137,11 @@ def get_asset_path(asset_type, filename, output_path):
     Compute the relative path from the output HTML file to the asset.
     Keeps asset linking robust for static deployment.
     """
-    asset_dir = os.path.join('static', asset_type) if asset_type else 'static'
-    asset_path = os.path.join(asset_dir, filename)
-    rel_path = os.path.relpath(asset_path, os.path.dirname(output_path))
-    return rel_path.replace('\\', '/')
+    # Use root-relative paths without 'static/' prefix
+    asset_dir = asset_type if asset_type else ''
+    asset_path = os.path.join(asset_dir, filename) if asset_dir else filename
+    root_path = '/' + asset_path.replace('\\', '/').lstrip('/')
+    return root_path
 
 def fetch_site_info_from_db(cursor):
     """
