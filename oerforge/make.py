@@ -129,9 +129,17 @@ def postprocess_internal_links(html, md_to_html_map, current_output_path=None):
                     print(f"[DEBUG][LINK] Found HTML mapping for variant: {v} -> {target_html}")
                 break
         if target_html:
-            a['href'] = target_html
+            # Always rewrite as relative to the current HTML file
+            if current_output_path:
+                rel_link = os.path.relpath(
+                    os.path.join(os.path.dirname(current_output_path), target_html),
+                    os.path.dirname(current_output_path)
+                ).replace('\\', '/')
+            else:
+                rel_link = target_html
+            a['href'] = rel_link
             if debug_mode:
-                print(f"[DEBUG][LINK] Rewrote href to: {target_html}")
+                print(f"[DEBUG][LINK] Rewrote href to: {rel_link}")
         else:
             in_db = any(v in db_md_status for v in variants)
             if debug_mode:
@@ -398,15 +406,15 @@ def build_all_markdown_files():
             md_to_html_map = {}
             for (src_path, slug_key), out_path in content_lookup.items():
                 if src_path.endswith('.md'):
-                    root_out = '/' + out_path.replace('\\', '/').lstrip('/')
+                    rel_out = out_path.replace('\\', '/').lstrip('/')  # No leading slash!
                     basename = os.path.basename(src_path)
-                    md_to_html_map[basename] = root_out
-                    md_to_html_map[src_path] = root_out
-                    md_to_html_map[out_path] = root_out
+                    md_to_html_map[basename] = rel_out
+                    md_to_html_map[src_path] = rel_out
+                    md_to_html_map[out_path] = rel_out
                     norm_path = os.path.normpath(src_path).replace('\\', '/')
-                    md_to_html_map[norm_path] = root_out
+                    md_to_html_map[norm_path] = rel_out
                     if src_path.startswith('content/'):
-                        md_to_html_map[src_path[len('content/'):]] = root_out
+                        md_to_html_map[src_path[len('content/'):]] = rel_out
             logging.debug(f"[POSTPROCESS] md_to_html_map for {abs_output_path}: {md_to_html_map}")
 
             page_html_post = postprocess_internal_links(page_html, md_to_html_map, abs_output_path)
