@@ -1,3 +1,17 @@
+from bs4 import BeautifulSoup, Tag
+
+# --- Post-processing function for internal link rewriting ---
+def postprocess_internal_links(html, md_to_html_map):
+    """
+    Replace all internal .md links in <a> tags with their HTML equivalents using the mapping.
+    """
+    soup = BeautifulSoup(html, "html.parser")
+    for a in soup.find_all("a"):
+        if isinstance(a, Tag):
+            href = a.get("href", None)
+            if isinstance(href, str) and href.endswith('.md') and href in md_to_html_map:
+                a['href'] = md_to_html_map[href]
+    return str(soup)
 from oerforge.scan import merge_export_config
 
 def slugify(value):
@@ -279,8 +293,24 @@ def build_all_markdown_files():
                 'top_menu': nav_menu,
             }
             page_html = env.get_template('base.html').render(**context)
+            # --- Post-process internal links in final HTML ---
+            md_to_html_map = {}
+            for (source_path, slug_key), out_path in content_lookup.items():
+                if source_path.endswith('.md'):
+                    md_to_html_map[os.path.basename(source_path)] = os.path.relpath(out_path, os.path.dirname(output_path)).replace('\\', '/')
+                    md_to_html_map[source_path] = os.path.relpath(out_path, os.path.dirname(output_path)).replace('\\', '/')
+            page_html_post = postprocess_internal_links(page_html, md_to_html_map)
+            # Debug: log rewritten links
+            from bs4 import BeautifulSoup, Tag
+            soup = BeautifulSoup(page_html_post, "html.parser")
+            for a in soup.find_all("a"):
+                if isinstance(a, Tag):
+                    href = a.get("href", None)
+                    if isinstance(href, str) and href.endswith('.html'):
+                        logging.debug(f"[POSTPROCESS] Link rewritten: {a.text} -> {href}")
+            page_html = page_html_post
         except Exception as e:
-            logging.error(f"Template rendering failed for {source_path}: {e}")
+            logging.error(f"Template rendering or post-processing failed for {source_path}: {e}")
             continue
         ensure_dir(os.path.dirname(abs_output_path))
         try:
