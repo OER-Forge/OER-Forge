@@ -35,13 +35,18 @@ if not db_logger.handlers:
     db_logger.addHandler(handler)
 
 def db_log(message, level=logging.INFO):
+    """
+    Log a message to the db_utils logger and print to stdout.
+    """
     db_logger.log(level, message)
     print(f"[DB] {message}", file=sys.stdout)
 
 # --- Database Initialization ---
 
 def drop_tables(cursor):
-    """Drop all tables for a clean DB initialization."""
+    """
+    Drop all tables for a clean DB initialization.
+    """
     tables = [
         "files", "pages_files", "content", "site_info",
         "conversion_capabilities", "conversion_results", "accessibility_results"
@@ -51,7 +56,9 @@ def drop_tables(cursor):
         db_log(f"Dropped table: {table}")
 
 def create_tables(cursor):
-    """Create all required tables for OERForge."""
+    """
+    Create all required tables for OERForge.
+    """
     cursor.execute("""
     CREATE TABLE IF NOT EXISTS conversion_results (
         id INTEGER PRIMARY KEY AUTOINCREMENT,
@@ -184,7 +191,9 @@ def create_tables(cursor):
     db_log("Created table: conversion_capabilities")
 
 def insert_default_conversion_capabilities(cursor):
-    """Insert default conversion capabilities if table is empty."""
+    """
+    Insert default conversion capabilities if table is empty.
+    """
     default_conversion_matrix = {
         '.md':     ['.txt','.md', '.marp', '.tex', '.pdf', '.docx', '.ppt', '.jupyter', '.epub'],
         '.marp':   ['.txt','.md', '.marp', '.pdf', '.docx', '.ppt'],
@@ -206,7 +215,9 @@ def insert_default_conversion_capabilities(cursor):
         db_log("Inserted default conversion capabilities.")
 
 def initialize_database(db_path=None):
-    """Drop and recreate all tables, then insert default conversion capabilities."""
+    """
+    Drop and recreate all tables, then insert default conversion capabilities.
+    """
     if db_path is None:
         db_dir = os.path.join(PROJECT_ROOT, 'db')
         db_path = os.path.join(db_dir, 'sqlite.db')
@@ -224,14 +235,17 @@ def initialize_database(db_path=None):
     db_log(f"Closed DB connection after initialization at {db_path}.")
 
 # --- Migration Entrypoint ---
+
 def migrate_database(db_path=None):
-    """Run schema migration for existing database."""
+    """
+    Run schema migration for existing database.
+    Adds missing columns to conversion_results and accessibility_results.
+    """
     if db_path is None:
         db_dir = os.path.join(PROJECT_ROOT, 'db')
         db_path = os.path.join(db_dir, 'sqlite.db')
     conn = sqlite3.connect(db_path)
     cursor = conn.cursor()
-    # Migration logic: add missing columns to conversion_results and accessibility_results
     migrations = {
         "conversion_results": [
             ("reason", "TEXT"),
@@ -307,11 +321,15 @@ def get_descendants_for_parent(parent_output_path, db_path):
 # --- Section Index & Navigation Utilities ---
 
 def get_remote_images(db_path=None):
-    """Fetch all remote images from the files table."""
+    """
+    Fetch all remote images from the files table.
+    """
     return get_records('files', where_clause="is_image=1 AND is_remote=1", db_path=db_path)
 
 def get_top_level_sections(db_path=None):
-    """Fetch all top-level section indices (parent_slug IS NULL and is_section_index=1)."""
+    """
+    Fetch all top-level section indices (parent_slug IS NULL and is_section_index=1).
+    """
     conn = get_db_connection(db_path)
     cursor = conn.cursor()
     cursor.execute("SELECT * FROM content WHERE parent_slug IS NULL AND is_section_index=1 ORDER BY \"order\";")
@@ -321,7 +339,9 @@ def get_top_level_sections(db_path=None):
     return [dict(zip(col_names, row)) for row in rows]
 
 def get_children_for_section(parent_slug, db_path=None):
-    """Fetch all direct children for a given parent_slug."""
+    """
+    Fetch all direct children for a given parent_slug.
+    """
     conn = get_db_connection(db_path)
     cursor = conn.cursor()
     cursor.execute("SELECT * FROM content WHERE parent_slug=? ORDER BY \"order\";", (parent_slug,))
@@ -331,7 +351,9 @@ def get_children_for_section(parent_slug, db_path=None):
     return [dict(zip(col_names, row)) for row in rows]
 
 def get_section_by_slug(slug, db_path=None):
-    """Fetch a section record by slug."""
+    """
+    Fetch a section record by slug.
+    """
     conn = get_db_connection(db_path)
     cursor = conn.cursor()
     cursor.execute("SELECT * FROM content WHERE slug=?;", (slug,))
@@ -408,7 +430,9 @@ def insert_records(table_name, records, db_path=None, conn=None, cursor=None):
     return row_ids
 
 def set_relative_link(content_id, relative_link, db_path=None):
-    """Update the relative_link for a content item."""
+    """
+    Update the relative_link for a content item.
+    """
     conn = get_db_connection(db_path)
     cursor = conn.cursor()
     cursor.execute("UPDATE content SET relative_link=? WHERE id=?", (relative_link, content_id))
@@ -416,7 +440,9 @@ def set_relative_link(content_id, relative_link, db_path=None):
     conn.close()
 
 def set_menu_context(content_id, menu_context, db_path=None):
-    """Update the menu_context for a content item."""
+    """
+    Update the menu_context for a content item.
+    """
     conn = get_db_connection(db_path)
     cursor = conn.cursor()
     cursor.execute("UPDATE content SET menu_context=? WHERE id=?", (menu_context, content_id))
@@ -526,12 +552,12 @@ def get_available_conversions_for_page(output_path, db_path=None):
     return results
 
 # --- Image DB Helper ---
+
 def get_image_record(referenced_page, filename, db_path):
     """
     Query the files table for an image matching referenced_page and filename.
     Returns a dict or None.
     """
-    import sqlite3
     with sqlite3.connect(db_path) as conn:
         cursor = conn.cursor()
         cursor.execute(
@@ -545,7 +571,6 @@ def get_image_record(referenced_page, filename, db_path):
         return None
 
 if __name__ == "__main__":
-    import sys
     if len(sys.argv) > 1 and sys.argv[1] == "init":
         initialize_database()
         print("Database initialized.")

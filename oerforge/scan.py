@@ -33,6 +33,10 @@ DEBUG_MODE = os.environ.get("DEBUG", "0") == "1"
 LOG_LEVEL = os.environ.get("LOG_LEVEL", "INFO").upper()
 
 def configure_logging(overwrite=False):
+    """
+    Configure logging to both file and console.
+    If overwrite is True, the log file is truncated.
+    """
     log_level = logging.DEBUG if DEBUG_MODE else getattr(logging, LOG_LEVEL, logging.INFO)
     file_mode = 'w' if overwrite else 'a'
     file_handler = logging.FileHandler(BUILD_LOG_PATH, mode=file_mode, encoding='utf-8')
@@ -46,7 +50,10 @@ def configure_logging(overwrite=False):
     )
 
 def initialize_db():
-    """Ensure the database exists and schema is valid."""
+    """
+    Ensure the database exists and schema is valid.
+    If the database is missing or the schema is invalid, it is (re)initialized.
+    """
     if not os.path.exists(DB_PATH):
         db_log("Database not found. Initializing fresh database.", level=logging.WARNING)
         initialize_database(db_path=DB_PATH)
@@ -63,7 +70,10 @@ def initialize_db():
             raise SystemExit(1)
 
 def batch_read_files(file_paths):
-    """Reads multiple files and returns their contents as a dict: {path: content}."""
+    """
+    Reads multiple files and returns their contents as a dict: {path: content}.
+    Supports .md, .ipynb, and .docx files.
+    """
     contents = {}
     for path in file_paths:
         ext = os.path.splitext(path)[1].lower()
@@ -85,7 +95,10 @@ def batch_read_files(file_paths):
     return contents
 
 def read_markdown_file(path):
-    """Read markdown file content."""
+    """
+    Read markdown file content.
+    Returns the file content as a string, or None on error.
+    """
     try:
         with open(path, 'r', encoding='utf-8') as f:
             return f.read()
@@ -97,7 +110,10 @@ def read_markdown_file(path):
         return None
 
 def read_notebook_file(path):
-    """Read Jupyter notebook file content."""
+    """
+    Read Jupyter notebook file content.
+    Returns the parsed JSON, or None on error.
+    """
     try:
         with open(path, 'r', encoding='utf-8') as f:
             return json.load(f)
@@ -109,7 +125,10 @@ def read_notebook_file(path):
         return None
 
 def read_docx_file(path):
-    """Read docx file content."""
+    """
+    Read docx file content.
+    Returns the text content as a string, or None on error.
+    """
     try:
         from docx import Document
         doc = Document(path)
@@ -125,7 +144,10 @@ def read_docx_file(path):
         return None
 
 def get_conversion_flags(extension):
-    """Get conversion flags for a given file extension using the DB."""
+    """
+    Get conversion flags for a given file extension using the DB.
+    Returns a dict of conversion capability flags.
+    """
     targets = get_enabled_conversions(extension)
     flag_map = {
         '.md': 'can_convert_md',
@@ -142,14 +164,19 @@ def get_conversion_flags(extension):
             flags[flag_map[t]] = True
     return flags
 
-def build_content_record(title, file_path, item_slug, menu_context, children, parent_output_path, parent_slug, order, level, export_config=None, section_path=None):
-    """Build a content record for the database."""
+def build_content_record(
+    title, file_path, item_slug, menu_context, children,
+    parent_output_path, parent_slug, order, level,
+    export_config=None, section_path=None
+):
+    """
+    Build a content record for the database.
+    Handles deduplication of section paths and output path logic.
+    """
     md_is_section_index = bool(file_path and os.path.basename(file_path) == '_index.md')
     is_section_index = 1 if children or md_is_section_index else 0
     record_parent_slug = parent_slug if parent_slug else None
-    # output_slug: propagate nearest ancestor's slug (for output path logic)
     output_slug = parent_slug if parent_slug else None
-    # Always build a file record if file_path is present
     output_path = ''
     output_path_db = ''
     relative_link = ''
@@ -184,13 +211,16 @@ def build_content_record(title, file_path, item_slug, menu_context, children, pa
             output_path = os.path.join('build', base_name + '.html')
         else:
             output_path = os.path.join('build', *deduped_section_path, base_name + '.html')
-        # Always store output_path and parent_output_path as site-root-relative (strip 'build/' prefix if present)
+        # Store output_path and parent_output_path as site-root-relative (strip 'build/' prefix if present)
         output_path_db = output_path[6:] if output_path.startswith('build/') else output_path
         parent_output_path_db = parent_output_path[6:] if parent_output_path and parent_output_path.startswith('build/') else parent_output_path
         relative_link = output_path_db
         flags = get_conversion_flags(ext)
         file_exists = os.path.exists(os.path.join(PROJECT_ROOT, source_path))
-        logging.info(f"[DEBUG-SCAN] title={title}, file_path={file_path}, source_path={source_path}, rel_source_path={rel_source_path}, mime_type={ext}, exists={file_exists}")
+        logging.info(
+            f"[DEBUG-SCAN] title={title}, file_path={file_path}, source_path={source_path}, "
+            f"rel_source_path={rel_source_path}, mime_type={ext}, exists={file_exists}"
+        )
         record = {
             'title': title,
             'source_path': rel_source_path,
@@ -225,7 +255,6 @@ def build_content_record(title, file_path, item_slug, menu_context, children, pa
         if section_path is None:
             section_path = []
         output_path = os.path.join('build', *section_path, 'index.html')
-        # Always store output_path and parent_output_path as site-root-relative (strip 'build/' prefix if present)
         output_path_db = output_path[6:] if output_path.startswith('build/') else output_path
         parent_output_path_db = parent_output_path[6:] if parent_output_path and parent_output_path.startswith('build/') else parent_output_path
         relative_link = output_path_db
@@ -260,7 +289,10 @@ def build_content_record(title, file_path, item_slug, menu_context, children, pa
         return record, None
 
 def merge_export_config(parent, override):
-    """Merge two export config dicts, with override taking precedence."""
+    """
+    Merge two export config dicts, with override taking precedence.
+    Returns a new merged dict.
+    """
     if not parent:
         return dict(override) if override else {}
     if not override:
@@ -270,8 +302,15 @@ def merge_export_config(parent, override):
         merged[k] = v
     return merged
 
-def walk_toc(items, file_paths, parent_output_path=None, parent_slug=None, parent_menu_context=None, level=0, parent_export_config=None, section_path=None, root_dir=PROJECT_ROOT):
-    """Recursively walk the TOC and build content records, merging export configs."""
+def walk_toc(
+    items, file_paths, parent_output_path=None, parent_slug=None,
+    parent_menu_context=None, level=0, parent_export_config=None,
+    section_path=None, root_dir=PROJECT_ROOT
+):
+    """
+    Recursively walk the TOC and build content records, merging export configs.
+    Returns a list of content records.
+    """
     content_records = []
     if section_path is None:
         section_path = []
@@ -280,12 +319,11 @@ def walk_toc(items, file_paths, parent_output_path=None, parent_slug=None, paren
         file_path = item.get('file')
         order = int(idx)
         item_slug = item.get('slug', re.sub(r'[^a-zA-Z0-9]+', '_', title.lower()).strip('_')) if title else f'section_{idx}'
-        # Propagate output_slug: if parent_slug exists, use it for all descendants; else use this item's slug if present
         output_slug = parent_slug if parent_slug else item_slug if 'slug' in item else None
         menu_context = item.get('menu_context', parent_menu_context if parent_menu_context else 'main')
         children = item.get('children', [])
 
-        # --- Auto-detect _index.md for section landing pages if not explicitly set ---
+        # Auto-detect _index.md for section landing pages if not explicitly set
         if not file_path and children:
             section_dir = os.path.join('content', item_slug)
             index_md_path = os.path.join(section_dir, '_index.md')
@@ -306,10 +344,14 @@ def walk_toc(items, file_paths, parent_output_path=None, parent_slug=None, paren
             this_section_path = section_path + [item_slug]
 
         if DEBUG_MODE:
-            logging.debug(f"[TOC] Entering item: title={title}, slug={item_slug}, file={file_path}, children={len(children)}, level={level}, export={merged_export}, section_path={this_section_path}")
+            logging.debug(
+                f"[TOC] Entering item: title={title}, slug={item_slug}, file={file_path}, "
+                f"children={len(children)}, level={level}, export={merged_export}, section_path={this_section_path}"
+            )
         record, source_path = build_content_record(
             title, file_path, item_slug, menu_context, children,
-            parent_output_path, output_slug, order, level, export_config=merged_export, section_path=this_section_path
+            parent_output_path, output_slug, order, level,
+            export_config=merged_export, section_path=this_section_path
         )
         content_records.append(record)
         if source_path:
@@ -333,10 +375,10 @@ def walk_toc(items, file_paths, parent_output_path=None, parent_slug=None, paren
 
 def extract_and_register_images(content_path, content_text, db_path, root_dir=PROJECT_ROOT):
     """
-    Extract image paths from content and register in DB. 
-    root_dir allows test override for test environments.
+    Extract image paths from content and register in DB.
+    Handles both markdown and HTML image references.
     """
-    md_image_paths = re.findall(r'!\[.*?\]\((.*?)\)', content_text)
+    md_image_paths = re.findall(r'!\\[.*?\\]\\((.*?)\\)', content_text)
     soup = BeautifulSoup(content_text, "html.parser")
     from bs4 import Tag
     html_image_paths = [img.get('src') for img in soup.find_all('img') if isinstance(img, Tag) and img.get('src')]
@@ -457,7 +499,7 @@ def scan_toc_and_populate_db(config_path, db_path=DB_PATH, root_dir=PROJECT_ROOT
         conn.commit()
     except Exception as e:
         import traceback
-        logging.error(f"Commit failed in scan_toc_and_populate_db: {e}\n{traceback.format_exc()}")
+        logging.error(f"Commit failed in scan_toc_and_populate_db: {e}\\n{traceback.format_exc()}")
         if not DEBUG_MODE:
             raise
     import mimetypes
@@ -500,16 +542,20 @@ def scan_toc_and_populate_db(config_path, db_path=DB_PATH, root_dir=PROJECT_ROOT
     conn.close()
 
 def extract_and_register_videos(content_path, content_text, db_path):
-    """Extract YouTube/video links and register in a future videos table. Stub for now."""
-    # Example: Find YouTube links
-    youtube_links = re.findall(r'(https?://(?:www\.)?youtube\.com/watch\?v=[\w-]+)', content_text)
+    """
+    Extract YouTube/video links and register in a future videos table. Stub for now.
+    """
+    youtube_links = re.findall(r'(https?://(?:www\\.)?youtube\\.com/watch\\?v=[\\w-]+)', content_text)
     for url in youtube_links:
         # TODO: insert into videos table with has_local_copy=0
         logging.info(f"[VIDEO] Found YouTube link: {url} in {content_path}")
     # Extend for other video platforms as needed
 
 def main():
-    """Main entry point for scan.py."""
+    """
+    Main entry point for scan.py.
+    Configures logging, initializes the DB, and runs the scan.
+    """
     import sys
     configure_logging()
     initialize_db()

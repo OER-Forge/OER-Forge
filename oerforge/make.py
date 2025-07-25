@@ -4,6 +4,17 @@ make.py
 
 Database-driven Markdown to HTML Static Site Generator for OERForge.
 Builds HTML pages from Markdown sources using Jinja2 templates, static assets, and the SQLite database as the source of truth.
+
+Features:
+    - Converts Markdown to HTML using markdown-it-py
+    - Uses Jinja2 templates for HTML rendering
+    - Ensures all internal and asset links are relative for static hosting
+    - Populates and checks the SQLite database for content and navigation
+    - Copies static assets and images to the build directory
+    - Provides detailed logging for debugging and build inspection
+
+Usage:
+    Run this script to build the static site. The build log is written to log/build.log.
 """
 
 import os
@@ -62,10 +73,7 @@ def postprocess_internal_links(html, md_to_html_map, current_output_path=None):
     Tries multiple variants of the href to maximize match chances.
     Logs any links that could not be rewritten.
     """
-    import os
     soup = BeautifulSoup(html, "html.parser")
-    # Gather DB and TOC info for link diagnostics
-    # md_to_html_map contains all DB entries
     import sqlite3
     PROJECT_ROOT = os.path.dirname(os.path.dirname(os.path.abspath(__file__)))
     DB_PATH = os.path.join(PROJECT_ROOT, 'db', 'sqlite.db')
@@ -78,10 +86,9 @@ def postprocess_internal_links(html, md_to_html_map, current_output_path=None):
             db_md_status[os.path.basename(src_path)] = in_toc
             db_md_status[src_path] = in_toc
         conn.close()
-    except Exception as e:
+    except Exception:
         pass
-    # Try to get TOC info from global context if available
-    # If not, fallback to only DB check
+
     def extract_toc_md_files(items):
         files = set()
         for item in items:
@@ -92,8 +99,6 @@ def postprocess_internal_links(html, md_to_html_map, current_output_path=None):
                 files.update(extract_toc_md_files(item['children']))
         return files
     try:
-        import yaml
-        PROJECT_ROOT = os.path.dirname(os.path.dirname(os.path.abspath(__file__)))
         content_yml_path = os.path.join(PROJECT_ROOT, '_content.yml')
         with open(content_yml_path, 'r', encoding='utf-8') as f:
             content_config = yaml.safe_load(f)
@@ -132,7 +137,6 @@ def postprocess_internal_links(html, md_to_html_map, current_output_path=None):
             # Always rewrite as relative to the current HTML file, using build/ as the root
             if current_output_path:
                 build_dir = 'build'
-                # Ensure both paths are relative to build/
                 target_path = os.path.join(build_dir, target_html) if not target_html.startswith(build_dir + os.sep) and not target_html.startswith(build_dir + '/') else target_html
                 current_path = os.path.join(build_dir, current_output_path) if not current_output_path.startswith(build_dir + os.sep) and not current_output_path.startswith(build_dir + '/') else current_output_path
                 rel_link = os.path.relpath(target_path, os.path.dirname(current_path)).replace('\\', '/')
@@ -143,27 +147,12 @@ def postprocess_internal_links(html, md_to_html_map, current_output_path=None):
                 print(f"[DEBUG][LINK] Rewrote href to: {rel_link}")
         else:
             in_db = any(v in db_md_status for v in variants)
-            if debug_mode:
-                print(f"[DEBUG][LINK] in_db: {in_db}")
-            in_toc = False
-            for v in variants:
-                if v in db_md_status and db_md_status[v]:
-                    in_toc = True
-                    if debug_mode:
-                        print(f"[DEBUG][LINK] Variant in DB and in TOC: {v}")
-                    break
-            if debug_mode:
-                print(f"[DEBUG][LINK] in_toc: {in_toc}")
+            in_toc = any(v in db_md_status and db_md_status[v] for v in variants)
+            msg = ''
             if in_db and not in_toc:
                 msg = ' (OER-Forge: File in DB, but not in TOC)'
-                if debug_mode:
-                    print(f"[DEBUG][LINK] Diagnostic: {msg}")
             elif not in_db:
                 msg = ' (OER-Forge: Page not found in sqlite.db)'
-                if debug_mode:
-                    print(f"[DEBUG][LINK] Diagnostic: {msg}")
-            else:
-                msg = ''
             if msg:
                 not_found_msg = soup.new_string(msg)
                 if a.next_sibling:
@@ -172,8 +161,8 @@ def postprocess_internal_links(html, md_to_html_map, current_output_path=None):
                     a.parent.append(not_found_msg)
                 else:
                     a.insert_after(not_found_msg)
-                if debug_mode:
-                    print(f"[DEBUG][LINK] Inserted diagnostic message after link.")
+            if debug_mode and msg:
+                print(f"[DEBUG][LINK] Inserted diagnostic message after link: {msg}")
     return str(soup)
 
 def setup_template_env():
@@ -199,7 +188,6 @@ def get_asset_path(asset_type, filename, output_path):
     """
     asset_dir = asset_type if asset_type else ''
     asset_path = os.path.join('build', asset_dir, filename) if asset_dir else os.path.join('build', filename)
-    # output_path is the absolute path to the HTML file being rendered
     output_dir = os.path.dirname(output_path)
     rel_path = os.path.relpath(asset_path, output_dir)
     rel_path = rel_path.replace('\\', '/')
@@ -261,9 +249,8 @@ def build_nav(items, content_lookup, current_output_dir, parent_slugs=None):
         debug_msg = f"[NAV-DEBUG] file_path='{file_path}', slug='{slug}', "
         if output_path:
             rel_link = os.path.relpath(output_path, current_output_dir).replace('\\', '/')
-            # Normalize: strip leading parent dir if present (e.g., 'sample-resources/activities/activities.html' -> 'activities/activities.html')
             parent_dir = os.path.basename(os.path.normpath(current_output_dir))
-            if rel_link.startswith(parent_dir + '/'):  # Only strip if at start
+            if rel_link.startswith(parent_dir + '/'):
                 rel_link = rel_link[len(parent_dir) + 1:]
             debug_msg += f"db_output_path='{output_path}', rel_link='{rel_link}' (DB match)"
             nav_item = {'title': item.get('title', ''), 'link': rel_link, 'file': file_path, 'slug': slug}
@@ -309,7 +296,6 @@ def build_all_markdown_files():
         content_lookup[(source_path, slug)] = output_path
         db_md_files.add(source_path)
 
-    # --- Check: Every TOC Markdown file must be present in DB ---
     def extract_toc_md_files(items):
         files = set()
         for item in items:
@@ -411,7 +397,7 @@ def build_all_markdown_files():
             md_to_html_map = {}
             for (src_path, slug_key), out_path in content_lookup.items():
                 if src_path.endswith('.md'):
-                    rel_out = out_path.replace('\\', '/').lstrip('/')  # No leading slash!
+                    rel_out = out_path.replace('\\', '/').lstrip('/')
                     basename = os.path.basename(src_path)
                     md_to_html_map[basename] = rel_out
                     md_to_html_map[src_path] = rel_out
