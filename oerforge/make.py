@@ -1,16 +1,41 @@
 from bs4 import BeautifulSoup, Tag
 
 # --- Post-processing function for internal link rewriting ---
-def postprocess_internal_links(html, md_to_html_map):
+def postprocess_internal_links(html, md_to_html_map, current_output_path=None):
     """
     Replace all internal .md links in <a> tags with their HTML equivalents using the mapping.
+    Attempts to match by raw href, basename, normalized path, and relative path.
+    Computes the correct relative path from the current output HTML file to the target HTML file.
     """
+    import os
     soup = BeautifulSoup(html, "html.parser")
     for a in soup.find_all("a"):
         if isinstance(a, Tag):
             href = a.get("href", None)
-            if isinstance(href, str) and href.endswith('.md') and href in md_to_html_map:
-                a['href'] = md_to_html_map[href]
+            if isinstance(href, str) and href.endswith('.md'):
+                # Try direct match
+                target_html = md_to_html_map.get(href)
+                # Try basename
+                if not target_html:
+                    target_html = md_to_html_map.get(os.path.basename(href))
+                # Try normalized path (strip leading ../, ./)
+                if not target_html:
+                    norm_href = os.path.normpath(href).replace('\\', '/')
+                    target_html = md_to_html_map.get(norm_href)
+                # Try removing leading ./ or ../ and matching
+                cleaned = href.lstrip('./') if href else ''
+                if not target_html and cleaned:
+                    target_html = md_to_html_map.get(cleaned)
+                # Try matching with 'content/' prefix
+                if not target_html and cleaned:
+                    content_prefixed = 'content/' + cleaned
+                    target_html = md_to_html_map.get(content_prefixed)
+                if target_html and current_output_path:
+                    # Compute correct relative path from current_output_path to target_html
+                    rel_link = os.path.relpath(target_html, os.path.dirname(current_output_path)).replace('\\', '/')
+                    a['href'] = rel_link
+                elif target_html:
+                    a['href'] = target_html
     return str(soup)
 from oerforge.scan import merge_export_config
 
@@ -297,9 +322,18 @@ def build_all_markdown_files():
             md_to_html_map = {}
             for (source_path, slug_key), out_path in content_lookup.items():
                 if source_path.endswith('.md'):
-                    md_to_html_map[os.path.basename(source_path)] = os.path.relpath(out_path, os.path.dirname(output_path)).replace('\\', '/')
-                    md_to_html_map[source_path] = os.path.relpath(out_path, os.path.dirname(output_path)).replace('\\', '/')
-            page_html_post = postprocess_internal_links(page_html, md_to_html_map)
+                    rel_out = os.path.relpath(out_path, os.path.dirname(output_path)).replace('\\', '/')
+                    # Add all variants as keys
+                    md_to_html_map[os.path.basename(source_path)] = rel_out
+                    md_to_html_map[source_path] = rel_out
+                    md_to_html_map[out_path] = rel_out
+                    # Add normalized path
+                    norm_path = os.path.normpath(source_path).replace('\\', '/')
+                    md_to_html_map[norm_path] = rel_out
+                    # Add with 'content/' prefix removed
+                    if source_path.startswith('content/'):
+                        md_to_html_map[source_path[len('content/'):]] = rel_out
+            page_html_post = postprocess_internal_links(page_html, md_to_html_map, abs_output_path)
             # Debug: log rewritten links
             from bs4 import BeautifulSoup, Tag
             soup = BeautifulSoup(page_html_post, "html.parser")

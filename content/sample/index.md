@@ -8,4 +8,4 @@ Explore sample resources for modern classical mechanics and physics education. B
 
 ---
 
-Return to [Home](../home/index.md)
+Return to [Home](../index.md)
