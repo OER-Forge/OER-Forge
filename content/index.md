@@ -1,5 +1,6 @@
 <div align="center">
-  <img src="images/logo.png" alt="OER-Forge Logo" width="120" />
+  <!-- <img src="images/logo.png" alt="OER-Forge Logo" width="120" /> -->
+  ![OER-Forge LOGO](images/logo.png)
   
   # OER-Forge
   

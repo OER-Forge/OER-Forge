@@ -179,7 +179,10 @@ def convert_md_to_docx(src_path, out_path, record_id=None, conn=None):
     os.makedirs(os.path.dirname(out_path), exist_ok=True)
     try:
         import subprocess
-        subprocess.run(["pandoc", src_path, "-o", out_path], check=True)
+        # Set resource path to the directory containing the source file and the build directory
+        resource_paths = [os.path.dirname(src_path), BUILD_ROOT, os.path.join(BUILD_ROOT, 'images')]
+        resource_path_arg = "--resource-path=" + ":".join(resource_paths)
+        subprocess.run(["pandoc", src_path, "-o", out_path, resource_path_arg], check=True)
         logging.info(f"[DOCX] Converted {src_path} to {out_path}")
         # Insert converted file record into files table
         if conn is not None:
@@ -229,7 +232,10 @@ def convert_md_to_pdf(src_path, out_path, record_id=None, conn=None):
     os.makedirs(os.path.dirname(out_path), exist_ok=True)
     try:
         import subprocess
-        subprocess.run(["pandoc", src_path, "-o", out_path], check=True)
+        # Set resource path to the directory containing the source file and the build directory
+        resource_paths = [os.path.dirname(src_path), BUILD_ROOT, os.path.join(BUILD_ROOT, 'images')]
+        resource_path_arg = "--resource-path=" + ":".join(resource_paths)
+        subprocess.run(["pandoc", src_path, "-o", out_path, resource_path_arg], check=True)
         logging.info(f"[PDF] Converted {src_path} to {out_path}")
         # Insert converted file record into files table
         if conn is not None:
@@ -278,7 +284,10 @@ def convert_md_to_tex(src_path, out_path, record_id=None, conn=None):
     os.makedirs(os.path.dirname(out_path), exist_ok=True)
     try:
         import subprocess
-        subprocess.run(["pandoc", src_path, "-o", out_path], check=True)
+        # Set resource path to the directory containing the source file and the build directory
+        resource_paths = [os.path.dirname(src_path), BUILD_ROOT, os.path.join(BUILD_ROOT, 'images')]
+        resource_path_arg = "--resource-path=" + ":".join(resource_paths)
+        subprocess.run(["pandoc", src_path, "-o", out_path, resource_path_arg], check=True)
         logging.info(f"[TEX] Converted {src_path} to {out_path}")
         # Insert converted file record into files table
         if conn is not None:
