@@ -173,12 +173,17 @@ def build_content_record(title, file_path, item_slug, menu_context, children, pa
         base_name = os.path.splitext(os.path.basename(rel_path))[0]
         if section_path is None:
             section_path = []
+        # Deduplicate consecutive repeated slugs in section_path
+        deduped_section_path = []
+        for slug in section_path:
+            if not deduped_section_path or deduped_section_path[-1] != slug:
+                deduped_section_path.append(slug)
         if os.path.basename(source_path) == '_index.md':
-            output_path = os.path.join('build', *section_path, 'index.html')
+            output_path = os.path.join('build', *deduped_section_path, 'index.html')
         elif item_slug == "main":
             output_path = os.path.join('build', base_name + '.html')
         else:
-            output_path = os.path.join('build', *section_path, base_name + '.html')
+            output_path = os.path.join('build', *deduped_section_path, base_name + '.html')
         # Always store output_path and parent_output_path as site-root-relative (strip 'build/' prefix if present)
         output_path_db = output_path[6:] if output_path.startswith('build/') else output_path
         parent_output_path_db = parent_output_path[6:] if parent_output_path and parent_output_path.startswith('build/') else parent_output_path
@@ -294,8 +299,11 @@ def walk_toc(items, file_paths, parent_output_path=None, parent_slug=None, paren
         item_export = item.get('export', None)
         merged_export = merge_export_config(parent_export_config, item_export)
 
-        # Build new section_path for this item
-        this_section_path = section_path + [item_slug]
+        # Build new section_path for this item, avoid consecutive duplicate slugs
+        if section_path and section_path[-1] == item_slug:
+            this_section_path = section_path
+        else:
+            this_section_path = section_path + [item_slug]
 
         if DEBUG_MODE:
             logging.debug(f"[TOC] Entering item: title={title}, slug={item_slug}, file={file_path}, children={len(children)}, level={level}, export={merged_export}, section_path={this_section_path}")

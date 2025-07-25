@@ -129,12 +129,13 @@ def postprocess_internal_links(html, md_to_html_map, current_output_path=None):
                     print(f"[DEBUG][LINK] Found HTML mapping for variant: {v} -> {target_html}")
                 break
         if target_html:
-            # Always rewrite as relative to the current HTML file
+            # Always rewrite as relative to the current HTML file, using build/ as the root
             if current_output_path:
-                rel_link = os.path.relpath(
-                    os.path.join(os.path.dirname(current_output_path), target_html),
-                    os.path.dirname(current_output_path)
-                ).replace('\\', '/')
+                build_dir = 'build'
+                # Ensure both paths are relative to build/
+                target_path = os.path.join(build_dir, target_html) if not target_html.startswith(build_dir + os.sep) and not target_html.startswith(build_dir + '/') else target_html
+                current_path = os.path.join(build_dir, current_output_path) if not current_output_path.startswith(build_dir + os.sep) and not current_output_path.startswith(build_dir + '/') else current_output_path
+                rel_link = os.path.relpath(target_path, os.path.dirname(current_path)).replace('\\', '/')
             else:
                 rel_link = target_html
             a['href'] = rel_link
@@ -260,6 +261,10 @@ def build_nav(items, content_lookup, current_output_dir, parent_slugs=None):
         debug_msg = f"[NAV-DEBUG] file_path='{file_path}', slug='{slug}', "
         if output_path:
             rel_link = os.path.relpath(output_path, current_output_dir).replace('\\', '/')
+            # Normalize: strip leading parent dir if present (e.g., 'sample-resources/activities/activities.html' -> 'activities/activities.html')
+            parent_dir = os.path.basename(os.path.normpath(current_output_dir))
+            if rel_link.startswith(parent_dir + '/'):  # Only strip if at start
+                rel_link = rel_link[len(parent_dir) + 1:]
             debug_msg += f"db_output_path='{output_path}', rel_link='{rel_link}' (DB match)"
             nav_item = {'title': item.get('title', ''), 'link': rel_link, 'file': file_path, 'slug': slug}
             if item.get('children'):
