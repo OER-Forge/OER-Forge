@@ -147,7 +147,8 @@ def create_tables(cursor):
         export_types TEXT DEFAULT NULL,
         export_force INTEGER DEFAULT 0,
         export_custom_label TEXT DEFAULT NULL,
-        export_output_path TEXT DEFAULT NULL
+        export_output_path TEXT DEFAULT NULL,
+        in_toc BOOLEAN DEFAULT 0
     )
     """)
     db_log("Created table: content")

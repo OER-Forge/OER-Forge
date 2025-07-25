@@ -64,25 +64,107 @@ def postprocess_internal_links(html, md_to_html_map, current_output_path=None):
     """
     import os
     soup = BeautifulSoup(html, "html.parser")
+    # Gather DB and TOC info for link diagnostics
+    # md_to_html_map contains all DB entries
+    import sqlite3
+    PROJECT_ROOT = os.path.dirname(os.path.dirname(os.path.abspath(__file__)))
+    DB_PATH = os.path.join(PROJECT_ROOT, 'db', 'sqlite.db')
+    db_md_status = {}
+    try:
+        conn = sqlite3.connect(DB_PATH)
+        cursor = conn.cursor()
+        cursor.execute("SELECT source_path, in_toc FROM content WHERE mime_type='.md'")
+        for src_path, in_toc in cursor.fetchall():
+            db_md_status[os.path.basename(src_path)] = in_toc
+            db_md_status[src_path] = in_toc
+        conn.close()
+    except Exception as e:
+        pass
+    # Try to get TOC info from global context if available
+    # If not, fallback to only DB check
+    def extract_toc_md_files(items):
+        files = set()
+        for item in items:
+            file_path = item.get('file', '')
+            if isinstance(file_path, str) and file_path.endswith('.md'):
+                files.add(file_path)
+            if item.get('children'):
+                files.update(extract_toc_md_files(item['children']))
+        return files
+    try:
+        import yaml
+        PROJECT_ROOT = os.path.dirname(os.path.dirname(os.path.abspath(__file__)))
+        content_yml_path = os.path.join(PROJECT_ROOT, '_content.yml')
+        with open(content_yml_path, 'r', encoding='utf-8') as f:
+            content_config = yaml.safe_load(f)
+        toc = content_config.get('toc', [])
+        toc_md_files = set(extract_toc_md_files(toc))
+    except Exception:
+        toc_md_files = set()
+
+    debug_mode = bool(os.environ.get('DEBUG', '0') == '1')
     for a in soup.find_all("a"):
         if not isinstance(a, Tag):
             continue
         href = a.get("href", None)
         if not (isinstance(href, str) and href.endswith('.md')):
             continue
-        # Normalize to DB lookup: try direct DB key and basename
-        target_html = md_to_html_map.get(href) or md_to_html_map.get(os.path.basename(href))
+        variants = [
+            href,
+            os.path.basename(href),
+            os.path.normpath(href).replace('\\', '/'),
+            href[len('content/'): ] if href.startswith('content/') else None
+        ]
+        variants = [v for v in variants if v]
+        if debug_mode:
+            print(f"[DEBUG][LINK] Processing <a href='{href}'>")
+            print(f"[DEBUG][LINK] Variants: {variants}")
+            print(f"[DEBUG][LINK] md_to_html_map keys: {list(md_to_html_map.keys())}")
+            print(f"[DEBUG][LINK] db_md_status keys: {list(db_md_status.keys())}")
+        target_html = None
+        for v in variants:
+            if v in md_to_html_map:
+                target_html = md_to_html_map[v]
+                if debug_mode:
+                    print(f"[DEBUG][LINK] Found HTML mapping for variant: {v} -> {target_html}")
+                break
         if target_html:
             a['href'] = target_html
+            if debug_mode:
+                print(f"[DEBUG][LINK] Rewrote href to: {target_html}")
         else:
-            # Add '(Page not in sqlite.db)' message next to the link in HTML
-            not_found_msg = soup.new_string(' (OER-Forge: Page not found in sqlite.db)')
-            if a.next_sibling:
-                a.insert_after(not_found_msg)
-            elif a.parent:
-                a.parent.append(not_found_msg)
+            in_db = any(v in db_md_status for v in variants)
+            if debug_mode:
+                print(f"[DEBUG][LINK] in_db: {in_db}")
+            in_toc = False
+            for v in variants:
+                if v in db_md_status and db_md_status[v]:
+                    in_toc = True
+                    if debug_mode:
+                        print(f"[DEBUG][LINK] Variant in DB and in TOC: {v}")
+                    break
+            if debug_mode:
+                print(f"[DEBUG][LINK] in_toc: {in_toc}")
+            if in_db and not in_toc:
+                msg = ' (OER-Forge: File in DB, but not in TOC)'
+                if debug_mode:
+                    print(f"[DEBUG][LINK] Diagnostic: {msg}")
+            elif not in_db:
+                msg = ' (OER-Forge: Page not found in sqlite.db)'
+                if debug_mode:
+                    print(f"[DEBUG][LINK] Diagnostic: {msg}")
             else:
-                a.insert_after(not_found_msg)
+                msg = ''
+            if msg:
+                not_found_msg = soup.new_string(msg)
+                if a.next_sibling:
+                    a.insert_after(not_found_msg)
+                elif a.parent:
+                    a.parent.append(not_found_msg)
+                else:
+                    a.insert_after(not_found_msg)
+                if debug_mode:
+                    print(f"[DEBUG][LINK] Inserted diagnostic message after link.")
     return str(soup)
 
 def setup_template_env():

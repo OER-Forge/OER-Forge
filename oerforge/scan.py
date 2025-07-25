@@ -207,7 +207,8 @@ def build_content_record(title, file_path, item_slug, menu_context, children, pa
             'relative_link': relative_link,
             'menu_context': menu_context,
             'level': int(level),
-            'output_slug': output_slug
+            'output_slug': output_slug,
+            'in_toc': 1
         }
         if export_config:
             record['export_types'] = ','.join(export_config.get('types', []))
@@ -398,7 +399,52 @@ def scan_toc_and_populate_db(config_path, db_path=DB_PATH, root_dir=PROJECT_ROOT
         if key not in unique_records:
             unique_records[key] = rec
     deduped_records = list(unique_records.values())
+    # Insert all TOC records first
     insert_records('content', deduped_records, db_path=db_path, conn=conn, cursor=cursor)
+
+    # Scan all .md files under content/ recursively
+    all_md_files = []
+    for root, dirs, files in os.walk(os.path.join(root_dir, 'content')):
+        for f in files:
+            if f.endswith('.md'):
+                abs_path = os.path.join(root, f)
+                rel_path = os.path.relpath(abs_path, root_dir)
+                all_md_files.append(rel_path)
+
+    # Get all source_paths already in DB (from TOC)
+    toc_md_files = set(rec['source_path'] for rec in deduped_records if rec.get('mime_type') == '.md')
+    # Insert missing files with in_toc=0
+    for md_path in all_md_files:
+        if md_path not in toc_md_files:
+            # Build minimal record for non-TOC file
+            title = os.path.splitext(os.path.basename(md_path))[0]
+            ext = '.md'
+            output_path_db = md_path.replace('content/', '').replace('.md', '.html')
+            record = {
+                'title': title,
+                'source_path': md_path,
+                'output_path': output_path_db,
+                'is_autobuilt': 0,
+                'mime_type': ext,
+                'can_convert_md': 1,
+                'can_convert_tex': 0,
+                'can_convert_pdf': 0,
+                'can_convert_docx': 0,
+                'can_convert_ppt': 0,
+                'can_convert_jupyter': 0,
+                'can_convert_ipynb': 0,
+                'parent_output_path': None,
+                'slug': title,
+                'parent_slug': None,
+                'is_section_index': 0,
+                'order': 0,
+                'relative_link': output_path_db,
+                'menu_context': None,
+                'level': 0,
+                'output_slug': None,
+                'in_toc': 0
+            }
+            insert_records('content', [record], db_path=db_path, conn=conn, cursor=cursor)
     try:
         conn.commit()
     except Exception as e:
