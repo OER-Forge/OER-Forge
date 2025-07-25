@@ -185,14 +185,16 @@ def setup_template_env():
 
 def get_asset_path(asset_type, filename, output_path):
     """
-    Compute the relative path from the output HTML file to the asset.
-    Keeps asset linking robust for static deployment.
+    Compute the relative path from the output HTML file to the asset in build/.
+    This ensures asset links are always relative for static hosting.
     """
-    # Use root-relative paths without 'static/' prefix
     asset_dir = asset_type if asset_type else ''
-    asset_path = os.path.join(asset_dir, filename) if asset_dir else filename
-    root_path = '/' + asset_path.replace('\\', '/').lstrip('/')
-    return root_path
+    asset_path = os.path.join('build', asset_dir, filename) if asset_dir else os.path.join('build', filename)
+    # output_path is the absolute path to the HTML file being rendered
+    output_dir = os.path.dirname(output_path)
+    rel_path = os.path.relpath(asset_path, output_dir)
+    rel_path = rel_path.replace('\\', '/')
+    return rel_path
 
 def fetch_site_info_from_db(cursor):
     """
