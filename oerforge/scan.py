@@ -161,20 +161,22 @@ def build_content_record(title, file_path, item_slug, menu_context, children, pa
         if section_path is None:
             section_path = []
         # If this is a section index (_index.md), output to .../slug/index.html
-        if os.path.basename(source_path) == '_index.md':
-            output_path = os.path.join('build', *section_path, 'index.html')
-        elif item_slug == "main":
-            output_path = os.path.join('build', base_name + '.html')
-        else:
-            output_path = os.path.join('build', *section_path, base_name + '.html')
-        relative_link = output_path[6:] if output_path.startswith('build/') else output_path
+            if os.path.basename(source_path) == '_index.md':
+                output_path = os.path.join('build', *section_path, 'index.html')
+            elif item_slug == "main":
+                output_path = os.path.join('build', base_name + '.html')
+            else:
+                output_path = os.path.join('build', *section_path, base_name + '.html')
+            # Always store output_path as site-root-relative (strip 'build/' prefix if present)
+            output_path_db = output_path[6:] if output_path.startswith('build/') else output_path
+            relative_link = output_path_db
         flags = get_conversion_flags(ext)
         if DEBUG_MODE:
             logging.debug(f"[RECORD-BUILD] title={title}, source_path={rel_source_path}, output_path={output_path}, relative_link={relative_link}, flags={flags}, section_path={section_path}")
         record = {
             'title': title,
             'source_path': rel_source_path,
-            'output_path': output_path,
+                'output_path': output_path_db,
             'is_autobuilt': 0,
             'mime_type': ext,
             'can_convert_md': flags['can_convert_md'],

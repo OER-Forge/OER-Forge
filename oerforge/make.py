@@ -319,16 +319,16 @@ def build_all_markdown_files():
             md_to_html_map = {}
             for (src_path, slug_key), out_path in content_lookup.items():
                 if src_path.endswith('.md'):
-                    # Always add basename, relative path, and normalized path
-                    rel_out = os.path.relpath(out_path, os.path.dirname(abs_output_path)).replace('\\', '/')
+                    # Always add basename, relative path, and normalized path as root-relative
+                    root_out = '/' + out_path.replace('\\', '/').lstrip('/')
                     basename = os.path.basename(src_path)
-                    md_to_html_map[basename] = rel_out
-                    md_to_html_map[src_path] = rel_out
-                    md_to_html_map[out_path] = rel_out
+                    md_to_html_map[basename] = root_out
+                    md_to_html_map[src_path] = root_out
+                    md_to_html_map[out_path] = root_out
                     norm_path = os.path.normpath(src_path).replace('\\', '/')
-                    md_to_html_map[norm_path] = rel_out
+                    md_to_html_map[norm_path] = root_out
                     if src_path.startswith('content/'):
-                        md_to_html_map[src_path[len('content/'):]] = rel_out
+                        md_to_html_map[src_path[len('content/'):]] = root_out
             # Debug: print mapping for this page
             logging.debug(f"[POSTPROCESS] md_to_html_map for {abs_output_path}: {md_to_html_map}")
 
