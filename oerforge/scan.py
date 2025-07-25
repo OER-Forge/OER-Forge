@@ -149,45 +149,43 @@ def build_content_record(title, file_path, item_slug, menu_context, children, pa
     record_parent_slug = parent_slug if parent_slug else None
     # output_slug: propagate nearest ancestor's slug (for output path logic)
     output_slug = parent_slug if parent_slug else None
-    if DEBUG_MODE:
-        logging.debug(f"[RECORD-START] title={title}, file_path={file_path}, item_slug={item_slug}, parent_slug={parent_slug}, is_section_index={is_section_index}, order={order}, level={level}")
-        # Default values for all output path variables
-        output_path = ''
-        output_path_db = ''
-        relative_link = ''
-        rel_source_path = ''
-        ext = ''
-        base_name = ''
-        flags = {
-            'can_convert_md': 0,
-            'can_convert_tex': 0,
-            'can_convert_pdf': 0,
-            'can_convert_docx': 0,
-            'can_convert_ppt': 0,
-            'can_convert_jupyter': 0,
-            'can_convert_ipynb': 0
-        }
-        if file_path:
-            source_path = file_path if file_path.startswith('content/') else f'content/{file_path}'
-            rel_source_path = os.path.relpath(os.path.join(PROJECT_ROOT, source_path), PROJECT_ROOT)
-            ext = os.path.splitext(source_path)[1].lower()
-            rel_path = source_path[8:] if source_path.startswith('content/') else source_path
-            base_name = os.path.splitext(os.path.basename(rel_path))[0]
-            if section_path is None:
-                section_path = []
-            if os.path.basename(source_path) == '_index.md':
-                output_path = os.path.join('build', *section_path, 'index.html')
-            elif item_slug == "main":
-                output_path = os.path.join('build', base_name + '.html')
-            else:
-                output_path = os.path.join('build', *section_path, base_name + '.html')
-            # Always store output_path and parent_output_path as site-root-relative (strip 'build/' prefix if present)
-            output_path_db = output_path[6:] if output_path.startswith('build/') else output_path
-            parent_output_path_db = parent_output_path[6:] if parent_output_path and parent_output_path.startswith('build/') else parent_output_path
-            relative_link = output_path_db
-            flags = get_conversion_flags(ext)
-        if DEBUG_MODE:
-            logging.debug(f"[RECORD-BUILD] title={title}, source_path={rel_source_path}, output_path={output_path_db}, relative_link={relative_link}, flags={flags}, section_path={section_path}")
+    # Always build a file record if file_path is present
+    output_path = ''
+    output_path_db = ''
+    relative_link = ''
+    rel_source_path = ''
+    ext = ''
+    base_name = ''
+    flags = {
+        'can_convert_md': 0,
+        'can_convert_tex': 0,
+        'can_convert_pdf': 0,
+        'can_convert_docx': 0,
+        'can_convert_ppt': 0,
+        'can_convert_jupyter': 0,
+        'can_convert_ipynb': 0
+    }
+    if file_path:
+        source_path = file_path if file_path.startswith('content/') else f'content/{file_path}'
+        rel_source_path = os.path.relpath(os.path.join(PROJECT_ROOT, source_path), PROJECT_ROOT)
+        ext = os.path.splitext(source_path)[1].lower()
+        rel_path = source_path[8:] if source_path.startswith('content/') else source_path
+        base_name = os.path.splitext(os.path.basename(rel_path))[0]
+        if section_path is None:
+            section_path = []
+        if os.path.basename(source_path) == '_index.md':
+            output_path = os.path.join('build', *section_path, 'index.html')
+        elif item_slug == "main":
+            output_path = os.path.join('build', base_name + '.html')
+        else:
+            output_path = os.path.join('build', *section_path, base_name + '.html')
+        # Always store output_path and parent_output_path as site-root-relative (strip 'build/' prefix if present)
+        output_path_db = output_path[6:] if output_path.startswith('build/') else output_path
+        parent_output_path_db = parent_output_path[6:] if parent_output_path and parent_output_path.startswith('build/') else parent_output_path
+        relative_link = output_path_db
+        flags = get_conversion_flags(ext)
+        file_exists = os.path.exists(os.path.join(PROJECT_ROOT, source_path))
+        logging.info(f"[DEBUG-SCAN] title={title}, file_path={file_path}, source_path={source_path}, rel_source_path={rel_source_path}, mime_type={ext}, exists={file_exists}")
         record = {
             'title': title,
             'source_path': rel_source_path,
@@ -225,8 +223,6 @@ def build_content_record(title, file_path, item_slug, menu_context, children, pa
         output_path_db = output_path[6:] if output_path.startswith('build/') else output_path
         parent_output_path_db = parent_output_path[6:] if parent_output_path and parent_output_path.startswith('build/') else parent_output_path
         relative_link = output_path_db
-        if DEBUG_MODE:
-            logging.debug(f"[RECORD-BUILD] (section) title={title}, output_path={output_path}, output_path_db={output_path_db}, relative_link={relative_link}, section_path={section_path}")
         record = {
             'title': title,
             'source_path': None,

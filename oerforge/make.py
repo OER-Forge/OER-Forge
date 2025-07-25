@@ -70,42 +70,11 @@ def postprocess_internal_links(html, md_to_html_map, current_output_path=None):
         href = a.get("href", None)
         if not (isinstance(href, str) and href.endswith('.md')):
             continue
-
-        # Build robust candidate keys for mapping lookup
-        candidates = set()
-        candidates.add(href)
-        candidates.add(os.path.basename(href))
-        candidates.add(os.path.normpath(href).replace('\\', '/'))
-        candidates.add(href.lstrip('./'))
-        candidates.add(href.lstrip('../'))
-        candidates.add('content/' + href.lstrip('./'))
-        candidates.add('content/' + href.lstrip('../'))
-        # Try adding current directory prefix
-        if current_output_path:
-            current_dir = os.path.dirname(current_output_path)
-            rel_to_current = os.path.normpath(os.path.join(current_dir, href)).replace('\\', '/')
-            candidates.add(rel_to_current)
-            candidates.add(os.path.basename(rel_to_current))
-        # Add index-specific variants
-        if os.path.basename(href) == 'index.md':
-            candidates.add('index.md')
-            candidates.add('content/index.md')
-            candidates.add('../index.md')
-            candidates.add('./index.md')
-        print(f"[POSTPROCESS] href: {href}")
-        print(f"[POSTPROCESS] candidate keys: {list(candidates)}")
-        print(f"[POSTPROCESS] mapping keys: {list(md_to_html_map.keys())}")
-        target_html = next((md_to_html_map.get(c) for c in candidates if c), None)
-
+        # Normalize to DB lookup: try direct DB key and basename
+        target_html = md_to_html_map.get(href) or md_to_html_map.get(os.path.basename(href))
         if target_html:
-            print(f"[POSTPROCESS] MATCH: {href} -> {target_html}")
-            if current_output_path:
-                rel_link = os.path.relpath(target_html, os.path.dirname(current_output_path)).replace('\\', '/')
-                a['href'] = rel_link
-            else:
-                a['href'] = target_html
+            a['href'] = target_html
         else:
-            print(f"[POSTPROCESS] Could not rewrite link: {href}")
             # Add '(Page not in sqlite.db)' message next to the link in HTML
             not_found_msg = soup.new_string(' (OER-Forge: Page not found in sqlite.db)')
             if a.next_sibling:
@@ -238,8 +207,30 @@ def build_all_markdown_files():
     conn = get_db_connection(DB_PATH)
     cursor = conn.cursor()
     cursor.execute("SELECT source_path, slug, output_path FROM content WHERE mime_type = '.md'")
+    db_md_files = set()
     for source_path, slug, output_path in cursor.fetchall():
         content_lookup[(source_path, slug)] = output_path
+        db_md_files.add(source_path)
+
+    # --- Check: Every TOC Markdown file must be present in DB ---
+    def extract_toc_md_files(items):
+        files = set()
+        for item in items:
+            file_path = item.get('file', '')
+            if isinstance(file_path, str) and file_path.endswith('.md'):
+                files.add(file_path)
+            if item.get('children'):
+                files.update(extract_toc_md_files(item['children']))
+        return files
+    toc_md_files = extract_toc_md_files(toc)
+    missing_in_db = toc_md_files - db_md_files
+    if missing_in_db:
+        for missing in missing_in_db:
+            abs_missing_path = os.path.join(PROJECT_ROOT, 'content', missing) if not missing.startswith('content/') else os.path.join(PROJECT_ROOT, missing)
+            if os.path.exists(abs_missing_path):
+                logging.error(f"[DB-CHECK] TOC file '{missing}' exists on disk but is missing from DB after scan. Add file to _content.yml toc:  - title: <your title>\n    file: {missing}\n    slug: <your-slug>")
+            else:
+                logging.error(f"[DB-CHECK] TOC file '{missing}' missing from DB and not found on disk. This may be a DB population bug or a missing file.")
 
     upsert_site_info(cursor, site, footer)
     conn.commit()
