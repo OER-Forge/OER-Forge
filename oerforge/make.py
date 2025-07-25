@@ -272,21 +272,25 @@ def build_all_markdown_files():
         return
 
     env = setup_template_env()
-    for source_path, output_path, title, slug, export_types in records:
+    logging.debug(f"[BUILD] Total markdown records: {len(records)}")
+    files_written = []
+    files_skipped = []
+    for i, (source_path, output_path, title, slug, export_types) in enumerate(records):
+        logging.debug(f"[BUILD] Record {i}: source_path={source_path}, output_path={output_path}, title={title}, slug={slug}, export_types={export_types}")
         abs_source_path = os.path.join(PROJECT_ROOT, source_path) if not os.path.isabs(source_path) else source_path
-        is_main_index = os.path.normpath(source_path) in ["content/index.md", "index.md"] or slug == "home"
-        abs_output_path = os.path.join(BUILD_HTML_DIR, "index.html") if is_main_index else (
-            os.path.join(PROJECT_ROOT, output_path) if not os.path.isabs(output_path) else output_path
-        )
-        logging.info(f"[BUILD] {source_path} -> {abs_output_path} (title: {title}, exports: {export_types})")
+        abs_output_path = os.path.join(BUILD_HTML_DIR, output_path) if not os.path.isabs(output_path) else output_path
+        logging.debug(f"[BUILD] abs_source_path={abs_source_path}, abs_output_path={abs_output_path}")
         if not os.path.exists(abs_source_path):
-            logging.warning(f"Source file not found: {abs_source_path}. Skipping.")
+            logging.error(f"[BUILD] Source file not found: {abs_source_path}. Skipping.")
+            files_skipped.append((source_path, abs_output_path, 'source missing'))
             continue
         try:
             with open(abs_source_path, 'r', encoding='utf-8') as f:
                 md_text = f.read()
+            logging.debug(f"[BUILD] Read markdown from {abs_source_path} (length={len(md_text)})")
         except Exception as e:
-            logging.error(f"Failed to read {abs_source_path}: {e}")
+            logging.error(f"[BUILD] Failed to read {abs_source_path}: {e}")
+            files_skipped.append((source_path, abs_output_path, f'read error: {e}'))
             continue
         html_body = convert_markdown_to_html(md_text)
         try:
@@ -319,7 +323,6 @@ def build_all_markdown_files():
             md_to_html_map = {}
             for (src_path, slug_key), out_path in content_lookup.items():
                 if src_path.endswith('.md'):
-                    # Always add basename, relative path, and normalized path as root-relative
                     root_out = '/' + out_path.replace('\\', '/').lstrip('/')
                     basename = os.path.basename(src_path)
                     md_to_html_map[basename] = root_out
@@ -329,7 +332,6 @@ def build_all_markdown_files():
                     md_to_html_map[norm_path] = root_out
                     if src_path.startswith('content/'):
                         md_to_html_map[src_path[len('content/'):]] = root_out
-            # Debug: print mapping for this page
             logging.debug(f"[POSTPROCESS] md_to_html_map for {abs_output_path}: {md_to_html_map}")
 
             page_html_post = postprocess_internal_links(page_html, md_to_html_map, abs_output_path)
@@ -341,15 +343,24 @@ def build_all_markdown_files():
                         logging.debug(f"[POSTPROCESS] Link rewritten: {a.text} -> {href}")
             page_html = page_html_post
         except Exception as e:
-            logging.error(f"Template rendering or post-processing failed for {source_path}: {e}")
+            logging.error(f"[BUILD] Template rendering or post-processing failed for {source_path}: {e}")
+            files_skipped.append((source_path, abs_output_path, f'template error: {e}'))
             continue
         ensure_dir(os.path.dirname(abs_output_path))
         try:
             with open(abs_output_path, 'w', encoding='utf-8') as outf:
                 outf.write(page_html)
-            logging.info(f"Wrote HTML: {abs_output_path}")
+            logging.info(f"[BUILD] Wrote HTML: {abs_output_path}")
+            files_written.append((source_path, abs_output_path))
         except Exception as e:
-            logging.error(f"Failed to write output for {source_path}: {e}")
+            logging.error(f"[BUILD] Failed to write output for {source_path}: {e}")
+            files_skipped.append((source_path, abs_output_path, f'write error: {e}'))
+    logging.info(f"[SUMMARY] Files written: {len(files_written)}")
+    for src, out in files_written:
+        logging.info(f"[SUMMARY] WROTE: {src} -> {out}")
+    logging.info(f"[SUMMARY] Files skipped: {len(files_skipped)}")
+    for src, out, reason in files_skipped:
+        logging.info(f"[SUMMARY] SKIPPED: {src} -> {out} ({reason})")
     conn.close()
     copy_static_assets_to_build()
     copy_db_images_to_build()

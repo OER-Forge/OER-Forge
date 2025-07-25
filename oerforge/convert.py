@@ -22,6 +22,10 @@ def get_page_files_dir(output_path):
     """
     Given an output file path (e.g., build/about.html), return the associated files directory (e.g., build/about_files/).
     """
+    # Ensure output_path is always inside build/
+    BUILD_DIR = os.path.join(os.path.dirname(os.path.dirname(os.path.abspath(__file__))), 'build')
+    if not os.path.isabs(output_path) and not output_path.startswith('build/'):
+        output_path = os.path.join(BUILD_DIR, output_path)
     base, _ = os.path.splitext(output_path)
     return f"{base}_files"
 
