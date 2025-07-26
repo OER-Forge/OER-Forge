@@ -1,106 +1,106 @@
 [
   {
-    "input": "content/sample/notebooks/01_notes.md",
-    "output": "/Users/caballero/repos/OER-Forge/OER-Forge/build/sample/notebooks/01_notes_files/01_notes.marp",
-    "status": "skipped",
-    "reason": "No converter for .md -> .marp",
-    "start_time": "2025-07-25T19:56:11.395747",
-    "end_time": "2025-07-25T19:56:11.396572"
-  },
-  {
-    "input": "content/news/2025-07-08-launching-open-physics-ed-org.md",
-    "output": "/Users/caballero/repos/OER-Forge/OER-Forge/build/news/2025-07-08-launching-open-physics-ed-org_files/2025-07-08-launching-open-physics-ed-org.jupyter",
+    "input": "content/sample/welcome.md",
+    "output": "/Users/caballero/repos/OER-Forge/OER-Forge/build/sample/welcome_files/welcome.jupyter",
     "status": "skipped",
     "reason": "No converter for .md -> .jupyter",
-    "start_time": "2025-07-25T19:56:11.395287",
-    "end_time": "2025-07-25T19:56:11.395525"
-  },
-  {
-    "input": "content/news/2025-07-08-launching-open-physics-ed-org.md",
-    "output": "/Users/caballero/repos/OER-Forge/OER-Forge/build/news/2025-07-08-launching-open-physics-ed-org_files/2025-07-08-launching-open-physics-ed-org.marp",
-    "status": "skipped",
-    "reason": "No converter for .md -> .marp",
-    "start_time": "2025-07-25T19:56:11.395166",
-    "end_time": "2025-07-25T19:56:11.395212"
+    "start_time": "2025-07-25T20:04:20.459320",
+    "end_time": "2025-07-25T20:04:20.459574"
   },
   {
     "input": "content/news/2025-07-08-launching-open-physics-ed-org.md",
     "output": "/Users/caballero/repos/OER-Forge/OER-Forge/build/news/2025-07-08-launching-open-physics-ed-org_files/2025-07-08-launching-open-physics-ed-org.ppt",
     "status": "skipped",
     "reason": "No converter for .md -> .ppt",
-    "start_time": "2025-07-25T19:56:11.395308",
-    "end_time": "2025-07-25T19:56:11.395568"
-  },
-  {
-    "input": "content/sample/welcome.md",
-    "output": "/Users/caballero/repos/OER-Forge/OER-Forge/build/sample/welcome_files/welcome.marp",
-    "status": "skipped",
-    "reason": "No converter for .md -> .marp",
-    "start_time": "2025-07-25T19:56:11.395530",
-    "end_time": "2025-07-25T19:56:11.396063"
+    "start_time": "2025-07-25T20:04:20.459139",
+    "end_time": "2025-07-25T20:04:20.459275"
   },
   {
     "input": "content/sample/welcome.md",
     "output": "/Users/caballero/repos/OER-Forge/OER-Forge/build/sample/welcome_files/welcome.ppt",
     "status": "skipped",
     "reason": "No converter for .md -> .ppt",
-    "start_time": "2025-07-25T19:56:11.395771",
-    "end_time": "2025-07-25T19:56:11.396916"
+    "start_time": "2025-07-25T20:04:20.459333",
+    "end_time": "2025-07-25T20:04:20.459625"
   },
   {
     "input": "content/sample/welcome.md",
-    "output": "/Users/caballero/repos/OER-Forge/OER-Forge/build/sample/welcome_files/welcome.jupyter",
+    "output": "/Users/caballero/repos/OER-Forge/OER-Forge/build/sample/welcome_files/welcome.marp",
+    "status": "skipped",
+    "reason": "No converter for .md -> .marp",
+    "start_time": "2025-07-25T20:04:20.459223",
+    "end_time": "2025-07-25T20:04:20.459354"
+  },
+  {
+    "input": "content/news/2025-07-08-launching-open-physics-ed-org.md",
+    "output": "/Users/caballero/repos/OER-Forge/OER-Forge/build/news/2025-07-08-launching-open-physics-ed-org_files/2025-07-08-launching-open-physics-ed-org.jupyter",
     "status": "skipped",
     "reason": "No converter for .md -> .jupyter",
-    "start_time": "2025-07-25T19:56:11.395782",
-    "end_time": "2025-07-25T19:56:11.396976"
+    "start_time": "2025-07-25T20:04:20.459244",
+    "end_time": "2025-07-25T20:04:20.459486"
+  },
+  {
+    "input": "content/news/2025-07-08-launching-open-physics-ed-org.md",
+    "output": "/Users/caballero/repos/OER-Forge/OER-Forge/build/news/2025-07-08-launching-open-physics-ed-org_files/2025-07-08-launching-open-physics-ed-org.marp",
+    "status": "skipped",
+    "reason": "No converter for .md -> .marp",
+    "start_time": "2025-07-25T20:04:20.459058",
+    "end_time": "2025-07-25T20:04:20.459160"
+  },
+  {
+    "input": "content/sample/notebooks/01_notes.md",
+    "output": "/Users/caballero/repos/OER-Forge/OER-Forge/build/sample/notebooks/01_notes_files/01_notes.marp",
+    "status": "skipped",
+    "reason": "No converter for .md -> .marp",
+    "start_time": "2025-07-25T20:04:20.459432",
+    "end_time": "2025-07-25T20:04:20.459859"
   },
   {
     "input": "content/sample/notebooks/01_notes.md",
     "output": "/Users/caballero/repos/OER-Forge/OER-Forge/build/sample/notebooks/01_notes_files/01_notes.ppt",
     "status": "skipped",
     "reason": "No converter for .md -> .ppt",
-    "start_time": "2025-07-25T19:56:11.396041",
-    "end_time": "2025-07-25T19:56:11.397131"
+    "start_time": "2025-07-25T20:04:20.459490",
+    "end_time": "2025-07-25T20:04:20.459898"
   },
   {
     "input": "content/sample/notebooks/intro.md",
     "output": "/Users/caballero/repos/OER-Forge/OER-Forge/build/sample/notebooks/intro_files/intro.marp",
     "status": "skipped",
     "reason": "No converter for .md -> .marp",
-    "start_time": "2025-07-25T19:56:11.396177",
-    "end_time": "2025-07-25T19:56:11.397163"
+    "start_time": "2025-07-25T20:04:20.459578",
+    "end_time": "2025-07-25T20:04:20.459960"
   },
   {
     "input": "content/sample/notebooks/01_notes.md",
     "output": "/Users/caballero/repos/OER-Forge/OER-Forge/build/sample/notebooks/01_notes_files/01_notes.jupyter",
     "status": "skipped",
     "reason": "No converter for .md -> .jupyter",
-    "start_time": "2025-07-25T19:56:11.396193",
-    "end_time": "2025-07-25T19:56:11.397193"
+    "start_time": "2025-07-25T20:04:20.459590",
+    "end_time": "2025-07-25T20:04:20.459978"
   },
   {
     "input": "content/sample/notebooks/intro.md",
     "output": "/Users/caballero/repos/OER-Forge/OER-Forge/build/sample/notebooks/intro_files/intro.ppt",
     "status": "skipped",
     "reason": "No converter for .md -> .ppt",
-    "start_time": "2025-07-25T19:56:11.396555",
-    "end_time": "2025-07-25T19:56:11.397232"
+    "start_time": "2025-07-25T20:04:20.459824",
+    "end_time": "2025-07-25T20:04:20.460012"
   },
   {
     "input": "content/sample/notebooks/intro.md",
     "output": "/Users/caballero/repos/OER-Forge/OER-Forge/build/sample/notebooks/intro_files/intro.jupyter",
     "status": "skipped",
     "reason": "No converter for .md -> .jupyter",
-    "start_time": "2025-07-25T19:56:11.396895",
-    "end_time": "2025-07-25T19:56:11.397743"
+    "start_time": "2025-07-25T20:04:20.459837",
+    "end_time": "2025-07-25T20:04:20.460043"
   },
   {
     "input": "content/sample/notebooks/01_notes.md",
     "output": "/Users/caballero/repos/OER-Forge/OER-Forge/build/sample/notebooks/01_notes_files/01_notes.pdf",
     "status": "failed",
     "reason": null,
-    "start_time": "2025-07-25T19:56:11.395836",
-    "end_time": "2025-07-25T19:56:11.682109"
+    "start_time": "2025-07-25T20:04:20.459409",
+    "end_time": "2025-07-25T20:04:20.980331"
   }
 ]
